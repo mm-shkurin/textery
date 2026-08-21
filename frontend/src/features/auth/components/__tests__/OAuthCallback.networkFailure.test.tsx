@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { OAuthCallback } from '../OAuthCallback'
+import { act, screen } from '@testing-library/react'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
-import * as authSession from '../../utils/authSession'
+import * as authSession from '../../../../shared/session/authSession'
 import { NETWORK_LOGIN_FAILURE_MESSAGE } from '../../utils/authMessages'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
+import { navigate, renderCallbackAt } from './oauthCallbackTestSupport'
 
 // Scenario 4.2 — the visitor lands on /auth/callback with a VALID handoff code, but the exchange
 // fails with a NETWORK / TIMEOUT / SERVER (5xx) error. This is the UNauthenticated first-sign-in
@@ -24,7 +23,6 @@ import { RequestTimeoutError } from '../../../../shared/api/httpClient'
 // rejection path never stores. NETWORK_LOGIN_FAILURE_MESSAGE is imported from the REAL (unmocked)
 // authMessages so the assertion pins the exact copy the login banner will render.
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -35,18 +33,10 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-vi.mock('../../utils/authSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/authSession')>()
+vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn(), isAuthenticated: vi.fn() }
 })
-
-function renderAtCallback() {
-  return render(
-    <MemoryRouter initialEntries={['/auth/callback?code=valid-abc&provider=vk']}>
-      <OAuthCallback />
-    </MemoryRouter>,
-  )
-}
 
 // Reject with the given shape, settle the component's `.catch`, and swallow the rejection so it is
 // not flagged as unhandled once `.catch` consumes it.
@@ -67,6 +57,11 @@ async function renderAndSettleRejection(reason: unknown) {
 // error card renders instead of routing to /login. Case 3 is the born-green bounding guard.
 // Skipped until green-frontend adds the isLoginNetworkError branch that routes transport/5xx
 // failures to /login with NETWORK_LOGIN_FAILURE_MESSAGE.
+
+function renderAtCallback() {
+  return renderCallbackAt('?code=valid-abc&provider=vk')
+}
+
 describe('OAuthCallback network / server exchange failure', () => {
   afterEach(() => {
     navigate.mockReset()

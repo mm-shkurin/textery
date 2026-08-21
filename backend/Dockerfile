@@ -35,11 +35,23 @@ COPY usecase usecase
 COPY adapters adapters
 COPY application application
 
+# The app needs no write access to its own code and no root capability: it binds
+# 8000, which is unprivileged. A container escape from an application flaw lands
+# on an unprivileged account instead of root on the host's user namespace.
+RUN useradd --create-home --uid 10001 app && chown -R app:app /app
+USER app
+
+# The layer roots, inner-first — the same map pytest gets from pyproject.toml's
+# `pythonpath`. This is what replaced nine sys.path.insert calls in the entry
+# point: a package setup the interpreter is told about, rather than one the
+# application patches at import time.
+ENV PYTHONPATH=/app/domain/src:/app/usecase/src:/app/adapters/rest/src:/app/adapters/db/src:/app/adapters/security/src:/app/adapters/generation_provider/src:/app/adapters/oauth_provider/src:/app/adapters/geolocation_provider/src:/app/adapters/rendering/src:/app/application/src:/app/application/src/app
+
 EXPOSE 8000
 
 # Migrate, then serve. alembic.ini's script_location is relative, so alembic must
 # run with cwd = adapters/db.
-CMD ["sh", "-c", "cd adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --app-dir application/src --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "cd adapters/db && alembic upgrade head && cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
 
 # Probes /health, which the app owns and which actually checks its dependencies
 # (router/health/health_router.py answers 503 when one is down). Probing

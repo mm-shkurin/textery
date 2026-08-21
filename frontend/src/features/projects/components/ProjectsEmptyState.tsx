@@ -1,4 +1,5 @@
-import './ProjectsEmptyState.css'
+import styles from './ProjectsEmptyState.module.css'
+import projectsToolbarStyles from './ProjectsToolbar.module.css'
 
 interface ProjectsEmptyStateProps {
   searching: boolean
@@ -26,11 +27,11 @@ export function ProjectsEmptyState({
 }: ProjectsEmptyStateProps) {
   if (searching) {
     return (
-      <div className="projects-empty" data-testid="projects-empty-search">
-        <p className="projects-empty-title">Ничего не найдено.</p>
+      <div className={styles['projects-empty']} data-testid="projects-empty-search">
+        <p className={styles['projects-empty-title']}>Ничего не найдено.</p>
         <button
           type="button"
-          className="projects-empty-secondary"
+          className={styles['projects-empty-secondary']}
           data-testid="projects-clear-search"
           onClick={onClearSearch}
         >
@@ -41,15 +42,15 @@ export function ProjectsEmptyState({
   }
 
   return (
-    <div className="projects-empty" data-testid="projects-empty-none">
+    <div className={styles['projects-empty']} data-testid="projects-empty-none">
       {/* Decorative: the two lines below say everything the drawing says, so an alt text would
           make a screen reader announce the state twice. */}
-      <img className="projects-empty-art" src="/design/projects-empty.png" alt="" />
-      <p className="projects-empty-title">Здесь пока ничего нет</p>
-      <p className="projects-empty-hint">Начните работу здесь</p>
+      <img className={styles['projects-empty-art']} src="/design/projects-empty.png" alt="" />
+      <p className={styles['projects-empty-title']}>Здесь пока ничего нет</p>
+      <p className={styles['projects-empty-hint']}>Начните работу здесь</p>
       <button
         type="button"
-        className="projects-create-button"
+        className={`${styles['projects-create-button']} ${projectsToolbarStyles['projects-create-button']}`}
         data-testid="projects-create"
         onClick={onCreateProject}
       >

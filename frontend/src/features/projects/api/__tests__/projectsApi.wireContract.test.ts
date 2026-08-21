@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listProjects, MISSING_UPDATED_AT_MESSAGE } from '../projectsApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 import {
   expectSingleFeedRequest,
   PROJECT_WIRE_WITHOUT_UPDATED_AT,

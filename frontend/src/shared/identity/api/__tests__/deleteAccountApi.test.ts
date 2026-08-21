@@ -2,11 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { deletionConfirmationKind, requestAccountDeletion } from '../deleteAccountApi'
 import { DeletionRejectedError } from '../profileErrors'
 import type { Profile } from '../profileWire'
-import {
-  clearSession,
-  getAccessToken,
-  saveSession,
-} from '../../../../features/auth/utils/authSession'
+import { clearSession, getAccessToken, saveSession } from '../../../session/authSession'
 
 // The one irreversible operation in the product. Two things are asserted here that nothing else
 // can: which field goes on the wire for which kind of account, and that a refused confirmation

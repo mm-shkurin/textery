@@ -1,3 +1,6 @@
+import profileMenuStyles from './ProfileMenu.module.css'
+import navbarStyles from '../navbar/Navbar.module.css'
+
 // The glyphs the profile menu draws, inline rather than as files under /design: each is a
 // handful of path data, and an <img> for each would be more network requests for shapes that
 // must recolour with the text around them (`currentColor` cannot cross an <img> boundary).
@@ -6,7 +9,7 @@
 export function ProfileItemIcon() {
   return (
     <svg
-      className="profile-menu-icon"
+      className={profileMenuStyles['profile-menu-icon']}
       viewBox="0 0 16 16"
       fill="none"
       aria-hidden="true"
@@ -28,7 +31,9 @@ export function ProfileItemIcon() {
 export function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
-      className={`profile-chevron${expanded ? ' profile-chevron-up' : ''}`}
+      className={`${profileMenuStyles['profile-chevron']} ${navbarStyles['profile-chevron']}${
+        expanded ? ' ' + profileMenuStyles['profile-chevron-up'] : ''
+      }`}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
@@ -49,7 +54,7 @@ export function ChevronIcon({ expanded }: { expanded: boolean }) {
 export function SignOutIcon() {
   return (
     <svg
-      className="profile-menu-icon"
+      className={profileMenuStyles['profile-menu-icon']}
       viewBox="0 0 16 16"
       fill="none"
       aria-hidden="true"

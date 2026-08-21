@@ -16,10 +16,34 @@
 | 10 | Editor pages (pagination, page setup, headers/footers) | ✅ | 🔧 | — | — | — | — | — | 0/70 | 0% |
 | 12 | Мои проекты (list/search/sort, grid + list view) | ✅ | 🔧 | — | 🔧 | — | — | — | 1/177 | 1% |
 | 13 | Profile management                     | ✅   | 🔧   | —    | 🔧  | —     | —    | —     | n/t   | n/t |
+| 14 | Analytics Event Tracking (server-emitted events + browser ingest) | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | n/t | n/t |
 
 **Легенда `Tests`/`%`.** `n/t` — «not tracked»: код фазы существует и смержен, но
 per-scenario чеклист под него не заводился, поэтому знаменатель из тест-спеки не
 применим. Это честнее нуля, который читается как «работы не было».
+
+**Note on #14 (Analytics Event Tracking).** Promoted from Backlog on 2026-08-19 —
+spec phase complete (interview, story, api-spec, test-spec; `mockups` `[S]`, the story adds
+no new UI surface). `1/171` is not work done: the one counted scenario is
+`03_Load_Tests.md` §3.1, marked `[S]` out of scope because it would require bounding
+`GenerationStorage.list_stale` and this story changes no existing behaviour — carried as
+`tasks/7-refactoring-bound-stale-generation-sweep/`. Backend starts at API §1.1.
+
+**Update 2026-08-21 — shipped as production code, `n/t`.** Scenario 1.1 completed the
+full TDD cycle; the remaining 170 did not, and at ~6 work units per scenario the sprint
+deadline was not reachable that way. On the developer's instruction the rest of the story
+was written directly as production code: the ingest route with its bounds and refusals,
+the five server-emitted events, registration attribution and technical context on
+`accounts`, and the browser half (visitor identity, first-touch freeze, three events).
+`Tests` is `n/t` rather than a fraction — the per-scenario checklist is no longer the
+state of this story, and a percentage computed against it would read as 1% for work that
+is shipped. What EXISTS in tests: 1.1's own cycle, the frontend analytics suite (16
+cases), and the existing suites the change had to keep green (1148 backend, 1061
+frontend). What does NOT: per-scenario acceptance coverage for §1.2–§13.3, and any
+verification against a live Postgres — the Docker daemon was down on the machine this
+landed from, so `adapters/db` tests and `alembic upgrade head` were not run. That is the
+open risk to close first: the migrations and the four new storage adapters are the part
+of this story nothing has executed. `Load` stays `—`: no load scenario was run.
 
 **Note on #16 (OAuth sign-in).** До 15.08 строка стояла в `·` («папки истории нет»)
 по всем backend-фазам — это было просто неверно: папка `stories/16-oauth-signin/` есть,
@@ -75,7 +99,6 @@ types) may run in any order relative to each other and may interleave with #5–
 |----|----------------------------------------|------|------|------|-----|-------|------|-------|-------|----|
 | 9  | Landing & Marketing                    |      |      |      |     |       |      |       |       |    |
 | 11 | Document Management (rename/delete/duplicate) |      |      |      |     |       |      |       |       |    |
-| 14 | Analytics Event Tracking                |      |      |      |     |       |      |       |       |    |
 | 15 | Funnels & Reports (CSV export)          |      |      |      |     |       |      |       |       |    |
 
 **Note on #12 (Мои проекты).** Promoted to In Progress on 2026-08-01 — `/interview` ran,

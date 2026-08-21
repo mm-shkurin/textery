@@ -21,13 +21,13 @@ class SaveStatements:
     def __init__(self) -> None:
         self.repository = FakeDocumentRepository()
         self.sanitizer = FakeHtmlSanitizer()
-        self.unit_of_work = FakeUnitOfWork()
-        self.clock = FakeClock()
+        self._unit_of_work = FakeUnitOfWork()
+        self._clock = FakeClock()
         self.usecase = SaveDocument(
             document_repository=self.repository,
             html_sanitizer=self.sanitizer,
-            clock=self.clock,
-            unit_of_work=self.unit_of_work,
+            clock=self._clock,
+            unit_of_work=self._unit_of_work,
         )
         # Every save is recorded, not just the last: the replay case asserts that
         # a second identical submit produced the SAME version as the first, which
@@ -50,7 +50,7 @@ class SaveStatements:
             owner_id=owner_id,
             document_type="эссе",
             idempotency_key=f"key-{uuid4()}",
-            created_at=self.clock.now(),
+            created_at=self._clock.now(),
         )
         await self.repository.save_new(document)
         await self.remember_stored_state(document)
@@ -103,7 +103,7 @@ class SaveStatements:
             f"a successful save advances the version by one, expected {version}, "
             f"got {self.saved.version}"
         )
-        assert self.saved.updated_at == self.clock.now(), (
+        assert self.saved.updated_at == self._clock.now(), (
             "a successful save stamps the clock's time, not the document's old one"
         )
 
@@ -130,8 +130,8 @@ class SaveStatements:
         assert self.sanitizer.sanitized == contents, why
 
     def assert_committed_once(self) -> None:
-        assert self.unit_of_work.commit_call_count == 1, (
-            f"expected exactly one commit, got {self.unit_of_work.commit_call_count}"
+        assert self._unit_of_work.commit_call_count == 1, (
+            f"expected exactly one commit, got {self._unit_of_work.commit_call_count}"
         )
 
     def assert_rejected_with(self, error_code: str) -> None:

@@ -24,3 +24,16 @@ class FakeHandoffCodeRepository:
             return None
         del self._by_value[value]
         return code.account_id
+
+    # What a test may look at. The dictionary behind it is this fake's own
+    # bookkeeping: a test asserting on it is coupled to a rename that changes
+    # nothing about the usecase under test.
+    @property
+    def stored(self) -> list[HandoffCode]:
+        return list(self._by_value.values())
+
+    def holds(self, value: str) -> bool:
+        return value in self._by_value
+
+    def find(self, value: str) -> HandoffCode | None:
+        return self._by_value.get(value)

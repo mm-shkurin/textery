@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Defect B (documents_create.yaml): the Idempotency-Key is `required: true` and "Replaying the
 // same key returns the existing document (200) instead of creating a new one" — a documented

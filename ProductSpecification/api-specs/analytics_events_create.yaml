@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: Record a client-origin analytics event
+  version: 1.0.0
+
+paths:
+  /api/v1/analytics/events:
+    post:
+      summary: >
+        Record one product-analytics event observed in the browser. The product's only
+        endpoint that accepts a write without a token — SITE_VISITED and
+        REGISTRATION_STARTED happen before an account exists.
+      operationId: recordAnalyticsEvent
+      tags:
+        - analytics
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: >
+            Bearer access token, OPTIONAL. Absent → the event is stored with
+            `user_id = null`. Present and valid → stored with the token's subject.
+            Present and invalid (expired, tampered, wrong scheme, refresh-typed) → 401,
+            nothing stored: a bad token is refused, never downgraded to anonymous.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEventRequest'
+      responses:
+        '204':
+          description: >
+            Stored, and readable on another connection by the time this answers — the
+            write is committed before the response, not queued. Deliberately NOT 202:
+            "accepted for later processing" would make the read-after-write guard
+            unassertable and hand Story 15 an unstated staleness window.
+
+            Also the answer to a repeat of an `occurrence_key` already stored **under the
+            same `event_name` for the same `visitor_id`**: the duplicate writes no second
+            row and is not an error. React StrictMode double-invokes effects and the
+            second request really is sent (`useGeneratedDocumentInit.ts` records this), so
+            the client cannot prevent the duplicate — the server collapses it. The key is
+            unique per visitor, so two different visitors sharing a key are two events and
+            neither can probe the other.
+        '400':
+          description: >
+            Canonical `{error_code, message}`. Never echoes the rejected value back —
+            this endpoint is anonymous and its errors reach anyone.
+            `UNKNOWN_EVENT_NAME` — a name outside the three below, INCLUDING the nine
+            server-only and subscription names. The catalogue declares twelve; only a
+            browser-origin subset is accepted here, or anyone could POST
+            SUBSCRIPTION_ACTIVATED into the table Story 15 reads revenue from.
+            `INVALID_VISITOR_ID` — absent or not a UUID.
+            `INVALID_OCCURRENCE_KEY` — absent or not a UUID.
+            `INVALID_PAYLOAD` — over the byte cap, over the depth or key-count cap, or
+            containing a NUL (U+0000) or a lone surrogate, both of which Postgres `jsonb`
+            refuses and which would otherwise surface as a 500.
+        '401':
+          description: An Authorization header was sent and did not resolve to a live account.
+        '409':
+          description: >
+            `OCCURRENCE_KEY_CONFLICT` — the same `visitor_id` + `occurrence_key` was
+            already stored under a DIFFERENT `event_name`. Nothing is stored and the first
+            row is untouched. A repeat under the same name is a replay and answers 204;
+            reusing one key for another event is not a replay, and collapsing it silently
+            would discard a real event while answering success.
+        '413':
+          description: >
+            `REQUEST_BODY_TOO_LARGE`, canonical envelope. Enforced on bytes actually read,
+            so a chunked body carrying no `Content-Length` cannot walk past it
+            (the scar is recorded in `avatar_router.py`).
+        '429':
+          description: >
+            `RATE_LIMITED` — over 120 events per 60 s for one bucket. Buckets key on
+            `client_source()` in a key space separate from OAuth's, so analytics traffic
+            cannot exhaust an IP's login budget.
+        '503':
+          description: >
+            The rate limiter's own store is unavailable. Fails CLOSED — the event is
+            refused rather than admitted. The story-wide rule "an analytics failure never
+            changes the user's operation" applies to the product's operations, not to the
+            only volume bound on its busiest write path.
+        '500':
+          description: Internal server error — generic client-safe message only.
+
+components:
+  schemas:
+    AnalyticsEventRequest:
+      type: object
+      required:
+        - event_name
+        - visitor_id
+        - occurrence_key
+      properties:
+        event_name:
+          type: string
+          enum: [SITE_VISITED, REGISTRATION_STARTED, EDITOR_OPENED]
+          description: >
+            The browser-origin subset of the 12-name catalogue. The other nine are emitted
+            server-side by the usecase that performed the transition and are not reachable
+            from here.
+        visitor_id:
+          type: string
+          format: uuid
+          description: >
+            Browser-scoped identity, minted client-side and held in `localStorage`.
+            UNTRUSTED: it is client-asserted, forgeable, and bound to nothing. The server
+            never infers `user_id` from it, and no security, billing or entitlement
+            decision may key on it — stated here because Story 15 consumes it as a join
+            key and must not mistake it for an authenticated identity.
+            REQUIRED on this route (absent or unparseable → 400 INVALID_VISITOR_ID), even
+            though the stored column is nullable: the column allows NULL only so a
+            server-side emission for a generation requested before this migration is not
+            lost, and no browser-origin row is ever stored without one.
+        occurrence_key:
+          type: string
+          format: uuid
+          description: >
+            Client-minted, one per occurrence rather than per request. Two requests
+            carrying the same key are one event.
+        payload:
+          type: object
+          nullable: true
+          description: >
+            Optional free-form context. Omitted, explicit null and `{}` are three inputs
+            with ONE stored representation: `{}`. The column is NOT NULL with default
+            `{}`, so Story 15 never has to handle two spellings of "no context".
+            Serialized form <= 4096 bytes, nesting depth <= 8,
+            at most 64 keys in total — a size cap alone does not bound parse depth, and
+            Python's decoder answers deep nesting with a RecursionError, i.e. a 500 on a
+            request that passed validation. MUST NOT carry an IP address, a UTM value, an
+            email address or any other personal datum: those live on the account row, in
+            exactly one place, so that deleting the account removes them.
+        degraded:
+          type: boolean
+          default: false
+          description: >
+            True when `visitor_id` could not be persisted (private-mode Safari, enterprise
+            policy) and is therefore per-page-load. Such a visitor counts more than once,
+            so Story 15 must exclude these rows from unique-visitor figures rather than
+            silently merging an inflated count into real behaviour.
+    # Deliberately absent from the request schema, so they are dropped at parse time
+    # rather than bound: `user_id` (derived from the token), `event_time` (assigned from
+    # the server's injected Clock — a client timestamp is ignored, never trusted), `id`
+    # and `sequence` (both server-minted; `sequence` is the total-order key, since the
+    # OAuth pair shares one `event_time` by design and instance clocks skew).

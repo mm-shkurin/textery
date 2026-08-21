@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { RequestTimeoutError } from '../../../../shared/api/httpClient'
-import { isTransientFailure } from '../../hooks/autosaveRetryPolicy'
+import { isTransientFailure } from '../../utils/autosaveRetryPolicy'
 import * as documentApi from '../../api/documentApi'
 import {
   crossDebounceBoundary,

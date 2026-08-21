@@ -31,20 +31,20 @@ class RenameAccount:
         account_repository: AccountRepository,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.account_repository = account_repository
+        self._account_repository = account_repository
         # A real UnitOfWork bound to the SAME session as the repository is not
         # optional in production: NullUnitOfWork's commit() is a silent no-op, so a
         # mis-wired usecase answers 200, returns the new name, and persists
         # nothing, with no error anywhere. test_login_wiring.py exists because that
         # already happened once.
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, account_id: UUID, name: object) -> Account:
         # Validated BEFORE the account is read, so a malformed name costs zero
         # queries and cannot be distinguished by timing from a well-formed one
         # against a missing account.
         normalized = AccountName(name).value
-        account = await self.account_repository.find_by_id(account_id)
+        account = await self._account_repository.find_by_id(account_id)
         if account is None:
             raise unauthorized()
         try:
@@ -56,11 +56,11 @@ class RenameAccount:
             # Called unconditionally -- there is no `if normalized:` here. That
             # guard is exactly how "clear my name" becomes a 200 that changes
             # nothing, because the cleared value IS None.
-            await self.account_repository.update_name(account_id, normalized)
-            await self.unit_of_work.commit()
+            await self._account_repository.update_name(account_id, normalized)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to persist the renamed account")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise
         # The entity was read before the UPDATE, so it still carries the old name;
         # applying the change here is what makes the returned profile the state the

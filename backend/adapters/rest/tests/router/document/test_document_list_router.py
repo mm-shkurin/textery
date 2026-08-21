@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from document.document import Document
+from document.document_filter import DocumentFilter
 from shared.page import DEFAULT_LIMIT, Page
 
 _LONG_CONTENT = "<p>" + ("x" * 1000) + "</p>"
@@ -122,7 +123,16 @@ class TestListDocuments:
         async with list_client(usecase) as client:
             await client.get("/api/v1/documents?limit=5&cursor=anchor")
 
-        usecase.execute.assert_awaited_once_with(owner_id=owner_id, limit=5, cursor="anchor")
+        usecase.execute.assert_awaited_once_with(
+            owner_id=owner_id,
+            limit=5,
+            cursor="anchor",
+            # The unfiltered request still carries a filter object, and it must be
+            # the empty one: a request with no `q`/`created_from`/`created_to` has
+            # to reach the usecase asking for the whole history, not for whatever a
+            # partially-populated filter would narrow it to.
+            document_filter=DocumentFilter(),
+        )
 
     async def test_should_default_paging_when_unspecified(self, mocker, list_client, owner_id):
         usecase = mocker.Mock()
@@ -132,7 +142,7 @@ class TestListDocuments:
             await client.get("/api/v1/documents")
 
         usecase.execute.assert_awaited_once_with(
-            owner_id=owner_id, limit=DEFAULT_LIMIT, cursor=None
+            owner_id=owner_id, limit=DEFAULT_LIMIT, cursor=None, document_filter=DocumentFilter()
         )
 
     async def test_should_not_be_swallowed_by_the_by_id_route(self, mocker, list_client):
@@ -163,3 +173,28 @@ class TestListDocumentsRequiresBearer:
         assert response.status_code == 401, f"got {response.status_code}: {response.text}"
         assert response.json()["error_code"] == "UNAUTHORIZED"
         usecase.execute.assert_not_awaited(), "no history may be read without a token"
+
+
+class TestListDocumentsRefusesInTheProductsEnvelope:
+    """A bad `?limit=` answers `{error_code, message}`, whatever kind of bad it is.
+
+    The history list and the projects feed take the same parameter and must
+    refuse it the same way. Declaring `limit: int` on the route handed that
+    refusal to Pydantic, whose 422 carries `{"detail": ...}` and echoes the
+    rejected value.
+    """
+
+    async def test_should_refuse_a_non_numeric_limit_in_the_canonical_envelope(
+        self, mocker, list_client
+    ):
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock()
+
+        async with list_client(usecase) as client:
+            response = await client.get("/api/v1/documents?limit=abc")
+
+        assert response.status_code == 400, f"got {response.status_code}: {response.text}"
+        assert response.json()["error_code"] == "INVALID_LIMIT", (
+            f"unexpected body {response.json()}"
+        )
+        usecase.execute.assert_not_awaited(), "an unreadable limit must not reach the usecase"

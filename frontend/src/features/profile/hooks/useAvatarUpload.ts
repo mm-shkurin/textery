@@ -11,10 +11,22 @@ import { avatarRejectionMessage, AVATAR_RESIZE_FAILED_MESSAGE } from '../utils/p
 // too many bytes) never leaves the browser and is reported inline next to the buttons — nothing
 // happened, and the user's next move is to pick a different file. A request the SERVER refused or
 // never answered gets the banner with «Повторить», the same treatment the name's save has.
+// The picture control's position, as ONE value. The two failure channels are mutually exclusive
+// by construction here — a file the client refused is never also a request that failed — which is
+// exactly what four independent switches could not say.
+interface AvatarState {
+  busy: boolean
+  rejection: string | null
+  failed: boolean
+  // How many avatar writes have landed — the confirmation toast keys off it, the same way the
+  // name form's does.
+  savedCount: number
+}
+
+const IDLE: AvatarState = { busy: false, rejection: null, failed: false, savedCount: 0 }
+
 export function useAvatarUpload() {
-  const [busy, setBusy] = useState(false)
-  const [rejection, setRejection] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
+  const [state, setState] = useState<AvatarState>(IDLE)
   // Synchronous, unlike `busy`: two clicks in one tick both read the state React has not
   // re-rendered yet, and the account would get two uploads for one choice.
   const busyRef = useRef(false)
@@ -25,25 +37,29 @@ export function useAvatarUpload() {
   async function run(action: () => Promise<void>): Promise<void> {
     if (busyRef.current) return
     busyRef.current = true
-    setBusy(true)
-    setRejection(null)
-    setFailed(false)
+    setState((current) => ({ ...current, busy: true, rejection: null, failed: false }))
     try {
       await action()
+      // Counted only on the path that actually wrote: the design's «Изменения сохранены» alert
+      // fires «после загрузки/удаления фото», not after a refused file.
+      setState((current) => ({ ...current, savedCount: current.savedCount + 1 }))
       retryRef.current = null
     } catch (error) {
       if (error instanceof AvatarRejectedError) {
         // The server's own refusal of the image. Inline, like a client-side one: it is still a
         // fact about the file, and «Повторить» on the identical bytes would fail identically.
-        setRejection(avatarRejectionMessage(error.errorCode))
+        setState((current) => ({
+          ...current,
+          rejection: avatarRejectionMessage(error.errorCode),
+        }))
         retryRef.current = null
       } else {
-        setFailed(true)
+        setState((current) => ({ ...current, failed: true }))
         retryRef.current = action
       }
     } finally {
       busyRef.current = false
-      setBusy(false)
+      setState((current) => ({ ...current, busy: false }))
     }
   }
 
@@ -52,8 +68,7 @@ export function useAvatarUpload() {
     // than a decode of something the app already knows it will not use.
     const refused = avatarFileRejection(file)
     if (refused !== null) {
-      setRejection(refused)
-      setFailed(false)
+      setState((current) => ({ ...current, rejection: refused, failed: false }))
       return
     }
 
@@ -63,8 +78,11 @@ export function useAvatarUpload() {
     } catch {
       // A file that says `image/png` and does not decode. Nothing was sent, so this is a
       // file-level complaint rather than a retryable failure.
-      setRejection(AVATAR_RESIZE_FAILED_MESSAGE)
-      setFailed(false)
+      setState((current) => ({
+        ...current,
+        rejection: AVATAR_RESIZE_FAILED_MESSAGE,
+        failed: false,
+      }))
       return
     }
 
@@ -82,5 +100,13 @@ export function useAvatarUpload() {
     if (action !== null) await run(action)
   }
 
-  return { busy, rejection, failed, upload, remove, retry }
+  return {
+    busy: state.busy,
+    rejection: state.rejection,
+    failed: state.failed,
+    savedCount: state.savedCount,
+    upload,
+    remove,
+    retry,
+  }
 }

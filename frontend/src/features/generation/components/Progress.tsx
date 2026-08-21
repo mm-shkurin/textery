@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
 import type { GenerationUiState } from '../hooks/useGeneration'
-import { type DocumentType } from '../../../shared/documentTypes'
-import { writingProgressMessage, writtenProgressMessage } from '../../../shared/copy/documentTypeCopy'
+import { type DocumentType } from '../../../shared/domain/documentTypes'
+import {
+  writingProgressMessage,
+  writtenProgressMessage,
+} from '../../../shared/copy/documentTypeCopy'
+import chatWorkspaceStyles from './ChatWorkspace.module.css'
 
 interface ProgressProps {
   state: GenerationUiState
@@ -15,7 +19,7 @@ export function Progress({ state, documentType }: ProgressProps) {
       <ChatMsg text="Анализирую тему и требования" />
       {state === 'pending' && (
         <ChatMsg active text={writingProgressMessage(documentType)}>
-          <span className="typing-dots">
+          <span className={chatWorkspaceStyles['typing-dots']}>
             <span />
             <span />
             <span />
@@ -42,12 +46,21 @@ interface ChatMsgProps {
 }
 
 function ChatMsg({ text, active, done, error, children }: ChatMsgProps) {
-  const bubbleCls = ['chat-bubble', active && 'active', done && 'done', error && 'error']
+  const bubbleCls = [
+    chatWorkspaceStyles['chat-bubble'],
+    active && chatWorkspaceStyles.active,
+    done && chatWorkspaceStyles.done,
+    error && chatWorkspaceStyles.error,
+  ]
     .filter(Boolean)
     .join(' ')
   return (
-    <div className="chat-msg">
-      <div className={`chat-avatar${error ? ' error-avatar' : ''}`}>{error ? '✕' : '✦'}</div>
+    <div className={chatWorkspaceStyles['chat-msg']}>
+      <div
+        className={`${chatWorkspaceStyles['chat-avatar']}${error ? ' ' + chatWorkspaceStyles['error-avatar'] : ''}`}
+      >
+        {error ? '✕' : '✦'}
+      </div>
       <div className={bubbleCls}>
         {text}
         {children}

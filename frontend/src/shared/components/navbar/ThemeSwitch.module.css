@@ -1,0 +1,77 @@
+/* The guest theme switch — a 56x30 track with a knob that slides between two glyphs.
+ *
+ * Every colour is a semantic token, so the control is legible in the theme it is currently in as
+ * well as the one it switches to. A raw swatch here would be the one element on the page that
+ * kept its light appearance after the click that turned everything else dark. */
+
+.theme-switch {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 56px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 15px;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.theme-switch:hover {
+  border-color: var(--border-strong);
+}
+
+/* The knob rides ABOVE the glyphs, so the inactive one shows through beside it and the active one
+   is covered. `pointer-events: none` keeps every click on the button itself — a knob that
+   swallowed clicks would make the centre of the control dead. */
+.theme-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  box-shadow: var(--theme-switch-knob-shadow);
+  pointer-events: none;
+  transition: transform 160ms ease;
+}
+
+.theme-switch[aria-checked='true'] .theme-switch-knob {
+  transform: translateX(26px);
+}
+
+.theme-switch-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* No transition for anyone who asked the system for less motion. The knob still moves — it has to,
+   it is the state — it just arrives without the slide. */
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch-knob {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .theme-switch {
+    width: 48px;
+    height: 26px;
+    padding: 0 5px;
+  }
+
+  .theme-switch-knob {
+    width: 18px;
+    height: 18px;
+  }
+
+  .theme-switch[aria-checked='true'] .theme-switch-knob {
+    transform: translateX(22px);
+  }
+}

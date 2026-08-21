@@ -28,7 +28,7 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
             password_hash="hash",
             created_at=self.FIXED_CLOCK_NOW,
         )
-        await self.account_repository.save(account)
+        await self._account_repository.save(account)
         self.registered_email = account.email
 
     async def verify_an_account_that_has_no_code(self) -> None:
@@ -46,15 +46,15 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
         self._assert_validation_exception(
             "INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE
         )
-        assert self.verification_code_repository.find_active_by_account_id_call_count == 1, (
+        assert self._verification_code_repository.find_active_by_account_id_call_count == 1, (
             "expected the account to be found and its code looked up exactly once, got "
-            f"{self.verification_code_repository.find_active_by_account_id_call_count} call(s)"
+            f"{self._verification_code_repository.find_active_by_account_id_call_count} call(s)"
         )
-        assert self.account_repository.saved_accounts[0].is_verified is False, (
+        assert self._account_repository.saved_accounts[0].is_verified is False, (
             "expected the account to stay unverified"
         )
-        assert self.unit_of_work.commit_call_count == 0, (
-            f"expected no commit, got {self.unit_of_work.commit_call_count}"
+        assert self._unit_of_work.commit_call_count == 0, (
+            f"expected no commit, got {self._unit_of_work.commit_call_count}"
         )
 
     async def verify_with_the_issued_code(self) -> None:
@@ -81,22 +81,22 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
     async def verify_with_the_issued_code_after_it_expired(self) -> None:
         # The code expires 10 minutes after issuance; step exactly onto the expiry
         # instant, which auth_verify.yaml treats as already expired.
-        self.clock.fixed_now = self.FIXED_CLOCK_NOW + timedelta(minutes=10)
+        self._clock.fixed_now = self.FIXED_CLOCK_NOW + timedelta(minutes=10)
         await self.verify_with_the_issued_code()
 
     def assert_rejected_as_invalid_code_without_touching_repositories(self) -> None:
         self._assert_validation_exception("INVALID_CODE", self.INVALID_CODE_MESSAGE)
-        assert self.account_repository.find_by_email_call_count == 0, (
+        assert self._account_repository.find_by_email_call_count == 0, (
             f"expected a malformed code to be rejected before any account lookup, "
-            f"got {self.account_repository.find_by_email_call_count} find_by_email call(s)"
+            f"got {self._account_repository.find_by_email_call_count} find_by_email call(s)"
         )
-        assert self.verification_code_repository.find_active_by_account_id_call_count == 0, (
+        assert self._verification_code_repository.find_active_by_account_id_call_count == 0, (
             f"expected a malformed code to be rejected before any verification-code lookup, got "
-            f"{self.verification_code_repository.find_active_by_account_id_call_count} call(s)"
+            f"{self._verification_code_repository.find_active_by_account_id_call_count} call(s)"
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
+        assert len(self._account_repository.saved_accounts) == 1, (
             f"expected no Account write on the malformed-code path (only the register-time "
-            f"save), got {len(self.account_repository.saved_accounts)} saves"
+            f"save), got {len(self._account_repository.saved_accounts)} saves"
         )
 
     def assert_rejected_as_invalid_email(self) -> None:
@@ -113,13 +113,13 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
             f"expected no exception to be raised, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
+        assert len(self._account_repository.saved_accounts) == 1, (
             f"expected the Account to be written once (at register); verify now transitions "
             f"it in place via the atomic conditional UPDATE (transition_to_verified), not a "
-            f"second save, got {len(self.account_repository.saved_accounts)} saves"
+            f"second save, got {len(self._account_repository.saved_accounts)} saves"
         )
         original = self.account_snapshot
-        verified_account = self.account_repository.saved_accounts[-1]
+        verified_account = self._account_repository.saved_accounts[-1]
         actual_unchanged = {
             field: getattr(verified_account, field) for field in self.UNCHANGED_BY_VERIFY_FIELDS
         }
@@ -136,14 +136,14 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
             f"expected the persisted Account.is_verified to be True after verification, "
             f"got {verified_account.is_verified}"
         )
-        verified_code = self.verification_code_repository.saved_codes[-1]
+        verified_code = self._verification_code_repository.saved_codes[-1]
         assert verified_code.consumed_at == self.FIXED_CLOCK_NOW, (
             f"expected the matched VerificationCode.consumed_at to be set to the clock's "
             f"current time on successful verification, got {verified_code.consumed_at}"
         )
-        assert self.unit_of_work.commit_call_count == 1, (
+        assert self._unit_of_work.commit_call_count == 1, (
             f"expected unit_of_work.commit() to be called exactly once, "
-            f"got {self.unit_of_work.commit_call_count}"
+            f"got {self._unit_of_work.commit_call_count}"
         )
 
     def assert_rejected_as_invalid_or_expired(self) -> None:
@@ -156,21 +156,21 @@ class VerifyAccountStatements(VerifyAccountStatementsBase):
         self._assert_validation_exception(
             "INVALID_OR_EXPIRED_CODE", self.INVALID_OR_EXPIRED_MESSAGE
         )
-        assert len(self.account_repository.saved_accounts) == 1, (
+        assert len(self._account_repository.saved_accounts) == 1, (
             f"expected no Account write on a rejected verify (only the register-time save), "
-            f"got {len(self.account_repository.saved_accounts)} saves"
+            f"got {len(self._account_repository.saved_accounts)} saves"
         )
-        assert self.account_repository.saved_accounts[0].is_verified is False, (
+        assert self._account_repository.saved_accounts[0].is_verified is False, (
             "expected the account to stay unverified after a rejected verify"
         )
-        assert len(self.verification_code_repository.saved_codes) == 1, (
+        assert len(self._verification_code_repository.saved_codes) == 1, (
             f"expected no VerificationCode write on a rejected verify, "
-            f"got {len(self.verification_code_repository.saved_codes)} saves"
+            f"got {len(self._verification_code_repository.saved_codes)} saves"
         )
-        assert self.verification_code_repository.saved_codes[0].consumed_at is None, (
+        assert self._verification_code_repository.saved_codes[0].consumed_at is None, (
             "expected the code to stay unconsumed after a rejected verify -- a consumed "
             "code could never be retried"
         )
-        assert self.unit_of_work.commit_call_count == 0, (
-            f"expected no commit on a rejected verify, got {self.unit_of_work.commit_call_count}"
+        assert self._unit_of_work.commit_call_count == 0, (
+            f"expected no commit on a rejected verify, got {self._unit_of_work.commit_call_count}"
         )

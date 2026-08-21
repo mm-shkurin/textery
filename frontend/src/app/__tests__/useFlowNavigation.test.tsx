@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useFlowNavigation } from '../useFlowNavigation'
-import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { clearSession, saveSession } from '../../shared/session/authSession'
 
 const navigate = vi.fn()
 

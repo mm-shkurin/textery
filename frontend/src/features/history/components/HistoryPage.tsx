@@ -1,9 +1,12 @@
-import { useCallback } from 'react'
-import { listDocuments } from '../api/historyApi'
+import { useCallback, useState } from 'react'
+import { listDocuments, type HistoryFilter } from '../api/historyApi'
 import { useHistoryList } from '../hooks/useHistoryList'
+import { useDeleteDocument } from '../hooks/useDeleteDocument'
 import { HistoryRows } from './HistoryRows'
-import './HistoryPage.css'
+import styles from './HistoryPage.module.css'
 import { HistoryRow } from './HistoryRow'
+import { HistoryToolbar } from './HistoryToolbar'
+import { HistoryDeleteModal } from './HistoryDeleteModal'
 import { QueryBoundary } from '../../../shared/query/QueryBoundary'
 
 interface HistoryPageProps {
@@ -30,17 +33,41 @@ function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
   // No explicit page size: `listDocuments` defaults to the server's own default (20), so passing
   // it here was a third copy of one number — restating a value this component has no opinion
   // about, in a place that would not be updated if the server's changed.
-  const fetchPage = useCallback((cursor?: string) => listDocuments(undefined, cursor), [])
-  const { items, isLoading, error, hasMore, loadMore } = useHistoryList('documents', fetchPage)
+  const [filter, setFilter] = useState<HistoryFilter>({})
+  const fetchPage = useCallback(
+    (cursor?: string) => listDocuments(undefined, cursor, filter),
+    [filter],
+  )
+  // The filter is part of the CACHE KEY, not only of the request. Under one key the pages fetched
+  // for «отчёт» would be appended to the pages fetched for the unfiltered list, and going back to
+  // an earlier search would show whatever the last search left behind.
+  const listKey = `documents:${filter.query ?? ''}:${filter.createdFrom ?? ''}:${filter.createdTo ?? ''}`
+  const { items, isLoading, error, hasMore, loadMore } = useHistoryList(listKey, fetchPage)
+  const deletion = useDeleteDocument()
+
+  const isFiltered = Boolean(filter.query?.trim() || filter.createdFrom || filter.createdTo)
 
   return (
-    <div className="history-page" data-testid="history-page">
-      <div className="history-head">
-        <button type="button" className="history-back" data-testid="history-back" onClick={onBack}>
+    <div className={styles['history-page']} data-testid="history-page">
+      <div className={styles['history-head']}>
+        <button
+          type="button"
+          className={styles['history-back']}
+          data-testid="history-back"
+          onClick={onBack}
+        >
           ← Назад
         </button>
-        <h1 className="history-title">Мои работы</h1>
+        <h1 className={styles['history-title']}>Мои работы</h1>
       </div>
+
+      <HistoryToolbar
+        filter={filter}
+        onChange={setFilter}
+        // Only while a filter is active, and only once loading has finished: a count rendered
+        // mid-fetch reports the previous filter's rows against the new filter's label.
+        resultCount={isFiltered && !isLoading ? items.length : null}
+      />
 
       <HistoryRows
         isLoading={isLoading}
@@ -48,7 +75,11 @@ function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
         hasMore={hasMore}
         loadMore={loadMore}
         isEmpty={items.length === 0}
-        emptyText="Вы ещё не создавали работ."
+        // The empty state has to say WHICH emptiness it is. «Вы ещё не создавали работ» under an
+        // active search tells a user with fifty documents that they have none.
+        emptyText={
+          isFiltered ? 'Ничего не найдено по этому запросу.' : 'Вы ещё не создавали работ.'
+        }
         testId="history-documents"
       >
         {items.map((d) => (
@@ -57,9 +88,21 @@ function HistoryPageScreen({ onOpenDocument, onBack }: HistoryPageProps) {
             entry={d}
             formatDate={formatDate}
             onOpen={onOpenDocument}
+            onDelete={deletion.request}
+            isDeleting={deletion.isDeleting && deletion.pending?.documentId === d.documentId}
           />
         ))}
       </HistoryRows>
+
+      {deletion.pending !== null && (
+        <HistoryDeleteModal
+          entry={deletion.pending}
+          isDeleting={deletion.isDeleting}
+          error={deletion.error}
+          onCancel={deletion.cancel}
+          onConfirm={deletion.confirm}
+        />
+      )}
     </div>
   )
 }

@@ -3,8 +3,9 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { OAuthCallback } from '../OAuthCallback'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
-import * as authSession from '../../utils/authSession'
-import { sessionTokensFromWire, type SessionTokens } from '../../api/sessionTokens'
+import * as authSession from '../../../../shared/session/authSession'
+import { sessionTokensFromWire, type SessionTokens } from '../../../../shared/session/sessionTokens'
+import { deferred, navigate } from './oauthCallbackTestSupport'
 
 // Scenario 4.6 — a 200 exchange WITHOUT a usable token must fail closed. The visitor lands on
 // /auth/callback with a VALID handoff code; the exchange RESOLVES 200 (not a rejection — the 4.x
@@ -29,7 +30,6 @@ const GOOD_SESSION: SessionTokens = {
   refreshTokenExpiresAt: '2026-07-29T10:00:00Z',
 }
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -40,18 +40,10 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-vi.mock('../../utils/authSession', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../utils/authSession')>()
+vi.mock('../../../../shared/session/authSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../shared/session/authSession')>()
   return { ...actual, saveSession: vi.fn() }
 })
-
-function deferred<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((res) => {
-    resolve = res
-  })
-  return { promise, resolve }
-}
 
 // Render the callback with a valid code, resolve the (mocked) exchange with the given session, and
 // settle the component's `.then`. saveSession is ARMED to return true so the negative assertions are

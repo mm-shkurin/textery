@@ -22,9 +22,9 @@ class RefreshStatements:
 
     def __init__(self) -> None:
         self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.token_service = FakeTokenService()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._token_service = FakeTokenService()
         self.account: Account | None = None
         self.issued_pair: TokenPair | None = None
 
@@ -37,43 +37,43 @@ class RefreshStatements:
         account = Account.reconstitute(
             id=uuid4(),
             email="user@example.ru",
-            password_hash=self.password_hasher.hash("Str0ng!Pass"),
+            password_hash=self._password_hasher.hash("Str0ng!Pass"),
             created_at=self.FIXED_NOW,
             is_verified=is_verified,
         )
-        await self.account_repository.save(account)
+        await self._account_repository.save(account)
         self.account = account
         return account
 
     async def given_a_refresh_token_for_a_verified_account(self) -> None:
         account = await self._given_account(is_verified=True)
-        self.token_service.refresh_subject = account.id
+        self._token_service.refresh_subject = account.id
 
     async def given_a_refresh_token_for_an_account_that_since_became_unverified(self) -> None:
         # A token outlives the state it was minted from. The account was verified
         # when the token was issued and is not any more.
         account = await self._given_account(is_verified=False)
-        self.token_service.refresh_subject = account.id
+        self._token_service.refresh_subject = account.id
 
     async def given_a_refresh_token_for_an_account_that_no_longer_exists(self) -> None:
         # Nothing saved: the token names an account id the repository cannot find,
         # which is what a deleted account looks like from here.
-        self.token_service.refresh_subject = uuid4()
+        self._token_service.refresh_subject = uuid4()
 
     async def given_a_token_the_token_service_rejects(self) -> None:
         # Stands for every cause at once -- expired, forged, signed by a rotated
         # key, or an access token submitted at /refresh. The port collapses them
         # into one exception on purpose, so the usecase has exactly one branch.
         await self._given_account(is_verified=True)
-        self.token_service.raise_on_read_refresh_subject = InvalidTokenException(
+        self._token_service.raise_on_read_refresh_subject = InvalidTokenException(
             "refresh token is not valid"
         )
 
     async def submit_the_refresh_token(self) -> None:
         try:
             self.issued_pair = await RefreshAccessToken(
-                account_repository=self.account_repository,
-                token_service=self.token_service,
+                account_repository=self._account_repository,
+                token_service=self._token_service,
             ).execute(refresh_token=self.SUBMITTED_TOKEN)
         except Exception as exc:
             self.thrown_exception = exc
@@ -83,12 +83,12 @@ class RefreshStatements:
             f"expected no exception on a valid refresh, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert self.token_service.issued_for == [
+        assert self._token_service.issued_for == [
             (self.registered_account.id, self.registered_account.email)
         ], (
             f"expected exactly one pair issued for "
             f"{(self.registered_account.id, self.registered_account.email)}, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )
         expected_pair = FakeTokenService().issue_pair(
             account_id=self.registered_account.id, email=self.registered_account.email
@@ -113,7 +113,7 @@ class RefreshStatements:
         actual = (self.thrown_exception.error_code, self.thrown_exception.message)
         expected = ("INVALID_REFRESH_TOKEN", self.INVALID_REFRESH_MESSAGE)
         assert actual == expected, f"expected {expected}, got {actual}"
-        assert self.token_service.issued_for == [], (
+        assert self._token_service.issued_for == [], (
             f"expected no token pair to be issued on a rejected refresh, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )

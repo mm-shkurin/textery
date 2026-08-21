@@ -5,7 +5,7 @@ import { resetIdentity } from '../../../shared/identity/identityStore'
 import { fetchProfile } from '../../../shared/identity/api/profileApi'
 import { requestAccountDeletion } from '../../../shared/identity/api/deleteAccountApi'
 import { DeletionRejectedError } from '../../../shared/identity/api/profileErrors'
-import { clearSession, getAccessToken, saveSession } from '../../../features/auth/utils/authSession'
+import { clearSession, getAccessToken, saveSession } from '../../../shared/session/authSession'
 import { profileWith, stubObjectUrls } from './avatarTestSupport'
 import { LANDING_MARKER, renderAtProfile } from './deletionTestSupport'
 

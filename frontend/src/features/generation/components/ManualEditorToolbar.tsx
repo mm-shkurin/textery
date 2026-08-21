@@ -1,8 +1,9 @@
 import { Fragment, useState } from 'react'
 import type { Editor } from '@tiptap/react'
-import './ManualEditorToolbar.css'
-import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from './editorToolbarActions'
-import type { ToolbarActionKey } from './editorToolbarActions'
+import styles from './ManualEditorToolbar.module.css'
+import linkPopoverStyles from './LinkPopover.module.css'
+import { TOOLBAR_ACTIONS, TOOLBAR_DIVIDER_BEFORE } from '../utils/editorToolbarActions'
+import type { ToolbarActionKey } from '../utils/editorToolbarActions'
 import { ManualEditorSaveStatus } from './ManualEditorSaveStatus'
 import { LinkPopover } from './LinkPopover'
 
@@ -41,12 +42,12 @@ export function ManualEditorToolbar({
   }
 
   return (
-    <div className="me-toolbar">
+    <div className={styles['me-toolbar']}>
       {TOOLBAR_ACTIONS.map((action) => {
         const button = (
           <button
             type="button"
-            className="me-toolbar-btn"
+            className={styles['me-toolbar-btn']}
             aria-label={action.ariaLabel}
             data-testid={action.testId}
             onClick={() => handleClick(action)}
@@ -60,13 +61,13 @@ export function ManualEditorToolbar({
         return (
           <Fragment key={action.key}>
             {TOOLBAR_DIVIDER_BEFORE.has(action.key) && (
-              <div className="me-toolbar-divider" aria-hidden="true" />
+              <div className={styles['me-toolbar-divider']} aria-hidden="true" />
             )}
             {action.ui ? (
               // Only the UI (link) button needs the positioning-context span:
               // the popover anchors to it. Non-UI buttons render bare so the
               // toolbar row is their direct DOM parent.
-              <span className="me-link-popover-anchor">
+              <span className={linkPopoverStyles['me-link-popover-anchor']}>
                 {button}
                 {editor && action.ui === 'link-popover' && openUiKey === action.key && (
                   <LinkPopover editor={editor} onClose={() => setOpenUiKey(null)} />
@@ -78,7 +79,7 @@ export function ManualEditorToolbar({
           </Fragment>
         )
       })}
-      <div className="me-toolbar-status">
+      <div className={styles['me-toolbar-status']}>
         <ManualEditorSaveStatus
           documentId={documentId}
           hasUnsavedChanges={hasUnsavedChanges}
@@ -94,9 +95,18 @@ export function ManualEditorToolbar({
           reaching handleSave's own in-flight guard, which is what
           queues the "save again" intent.
         */}
-        <button type="button" className="me-save-btn" aria-disabled={isSaving} onClick={onSave}>
+        <button
+          type="button"
+          className={styles['me-save-btn']}
+          aria-disabled={isSaving}
+          onClick={onSave}
+        >
           {isSaving && (
-            <span data-testid="save-spinner" className="me-save-spinner" aria-hidden="true" />
+            <span
+              data-testid="save-spinner"
+              className={styles['me-save-spinner']}
+              aria-hidden="true"
+            />
           )}
           Сохранить
         </button>

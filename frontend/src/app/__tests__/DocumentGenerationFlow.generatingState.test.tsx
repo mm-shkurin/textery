@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
-import { clearSession, saveSession } from '../../features/auth/utils/authSession'
+import { clearSession, saveSession } from '../../shared/session/authSession'
 import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationParameters'
 
 // Story 18, scenario 1.2 — "When the result is not ready yet, a generating state is shown".

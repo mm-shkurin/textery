@@ -1,8 +1,11 @@
 name: backend-ci
 
+# No branch filter: this repository takes commits straight on the working
+# branch and uses no pull requests, so a `[main, dev]` filter meant the gates
+# below ran on none of the commits as they were made -- a red tip was found
+# days later by a manual run.
 on:
   push:
-    branches: [main, dev]
   pull_request:
 
 jobs:
@@ -39,6 +42,15 @@ jobs:
       # violations, which is what an ungated rule reliably collects.
       - name: Check file sizes
         run: python scripts/check_file_size.py
+
+      # The test cases in `docs/testing/` are copies; the source of truth lives in
+      # the monorepo's ProductSpecification. The sync was documented as a
+      # pre-release step and gated by nothing, so the sprint's own story shipped
+      # with no cases in the published repository at all. In that published
+      # repository the source directory is absent and the script says so and
+      # exits 0 -- it only ever fails where it can actually be fixed.
+      - name: Check test-case copies are current
+        run: python scripts/sync_test_cases.py --check
 
   # Its own job, and not folded into `lint`: mypy needs the runtime dependencies
   # installed to see FastAPI's and SQLAlchemy's own type information, which the

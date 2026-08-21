@@ -16,6 +16,19 @@ logger at WARNING with no handler at all. Two consequences, both silent:
 Running under uvicorn does not fix it. Uvicorn configures `uvicorn`, `uvicorn.error`
 and `uvicorn.access` and deliberately leaves every other logger alone, so the
 application's own tree is exactly as unconfigured as it is under plain `python`.
+
+`configure_logging` installs one stderr handler on the root logger. stderr, not
+a file: the process runs in a container (`infra/docker/backend.Dockerfile`),
+where the collector reads the stream and a file inside the layer would be
+discarded with it.
+
+`disable_existing_loggers` is False, which is load-bearing here rather than
+boilerplate. It runs at import of `main`, by which point uvicorn has already
+built `uvicorn.error` and `uvicorn.access`; the default True would switch both
+off and trade the application's silence for the server's.
+
+Module loggers are left unconfigured on purpose -- they propagate to root, so one
+handler serves all twelve and a new module needs no entry there.
 """
 
 import logging
@@ -47,20 +60,7 @@ def resolve_log_level() -> str:
 
 
 def configure_logging() -> None:
-    """Install one stderr handler on the root logger.
-
-    stderr, not a file: the process runs in a container (`infra/docker/
-    backend.Dockerfile`), where the collector reads the stream and a file inside
-    the layer would be discarded with it.
-
-    `disable_existing_loggers` is False, which is load-bearing here rather than
-    boilerplate. This runs at import of `main`, by which point uvicorn has already
-    built `uvicorn.error` and `uvicorn.access`; the default True would switch both
-    off and trade the application's silence for the server's.
-
-    Module loggers are left unconfigured on purpose -- they propagate to root, so
-    one handler serves all twelve and a new module needs no entry here.
-    """
+    """Install one stderr handler on the root logger (see the module docstring)."""
     level = resolve_log_level()
     dictConfig(
         {

@@ -45,9 +45,13 @@ export function findings(report) {
 // down, an exemption whose date has passed, and a row describing something npm no longer reports.
 // The last one is not cosmetic — a ledger carrying rows that no longer mean anything is one a
 // reader starts skimming, and skimming is how the first kind gets waved through.
-export function problems(report, today) {
+// `ledger` is a parameter, defaulting to the real one, so the self-test can exercise the accepted
+// and expired paths against a fixture. Without it those two cases can only be tested while the real
+// ledger happens to be non-empty — and the day it is emptied (as it was on 2026-08-21) the gate's
+// own guard silently stops guarding half of it.
+export function problems(report, today, ledger = ACCEPTED) {
   const found = findings(report)
-  const accepted = new Map(ACCEPTED.map((entry) => [key(entry), entry]))
+  const accepted = new Map(ledger.map((entry) => [key(entry), entry]))
   const listed = []
 
   const unlisted = found.filter((finding) => {
@@ -69,10 +73,12 @@ export function problems(report, today) {
           `  ${finding.package} — ${finding.ghsa}: the exception expired on ${entry.expires} (today is ${today}).\n` +
           `    Recheck it. Fix: ${entry.revisit}. Extending the date is a decision to be made again, not a formality.`,
       ),
-    ...ACCEPTED.filter((entry) => !found.some((finding) => key(finding) === key(entry))).map(
-      (entry) =>
-        `  ${entry.package} — ${entry.ghsa}: listed as accepted, but npm audit no longer reports it.\n` +
-        '    Delete the entry; a stale ledger is one nobody reads.',
-    ),
+    ...ledger
+      .filter((entry) => !found.some((finding) => key(finding) === key(entry)))
+      .map(
+        (entry) =>
+          `  ${entry.package} — ${entry.ghsa}: listed as accepted, but npm audit no longer reports it.\n` +
+          '    Delete the entry; a stale ledger is one nobody reads.',
+      ),
   ]
 }

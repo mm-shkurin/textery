@@ -22,18 +22,16 @@ from generation.generation import (
     Generation,
 )
 from model.base import Base
+from model.check_constraints import one_of
 
-ALLOWED_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
-_ALLOWED_STATUSES_SQL = ", ".join(repr(status) for status in ALLOWED_STATUSES)
+# The status field's value space, and the source of the table's CHECK constraint.
+GENERATION_STATUSES = (PENDING_STATUS, IN_PROGRESS_STATUS, COMPLETED_STATUS, FAILED_STATUS)
 
 
 class GenerationModel(Base):
     __tablename__ = "generations"
     __table_args__ = (
-        CheckConstraint(
-            f"status IN ({_ALLOWED_STATUSES_SQL})",
-            name="ck_generations_status",
-        ),
+        CheckConstraint(one_of("status", GENERATION_STATUSES), name="ck_generations_status"),
         # Serves the owner-scoped history keyset: equality on owner_id, then the
         # (created_at, id) pair the cursor seeks on, DESC to match ORDER BY. Leads
         # with owner_id, so it also covers every plain by-owner lookup -- which is
@@ -78,6 +76,12 @@ class GenerationModel(Base):
     volume_pages: Mapped[int] = mapped_column(Integer, nullable=False)
     requirements: Mapped[str | None] = mapped_column(String, nullable=True)
     extra_wishes: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Nullable with no server default, and deliberately no CHECK constraint: the
+    # allowlist lives in the domain (`text_style.SUPPORTED_TEXT_STYLES`) and a
+    # constraint here would have to be migrated in lockstep with it, turning a
+    # widened allowlist into an outage for the rows written first. NULL is "the
+    # user chose no register", which every row predating the picker genuinely is.
+    text_style: Mapped[str | None] = mapped_column(String, nullable=True)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str | None] = mapped_column(String, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -108,6 +112,7 @@ class GenerationModel(Base):
             volume_pages=generation.volume_pages,
             requirements=generation.requirements,
             extra_wishes=generation.extra_wishes,
+            text_style=generation.text_style,
             document_type=generation.document_type,
             content=generation.content,
             error_message=generation.error_message,
@@ -126,6 +131,7 @@ class GenerationModel(Base):
             volume_pages=self.volume_pages,
             requirements=self.requirements,
             extra_wishes=self.extra_wishes,
+            text_style=self.text_style,
             document_type=self.document_type,
             content=self.content,
             error_message=self.error_message,

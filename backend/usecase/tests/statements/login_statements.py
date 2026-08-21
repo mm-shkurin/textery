@@ -42,12 +42,12 @@ class LoginStatements:
 
     def __init__(self) -> None:
         self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.token_service = FakeTokenService()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._token_service = FakeTokenService()
+        self._clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
+        self._verification_code_repository = FakeVerificationCodeRepository()
+        self._unit_of_work = FakeUnitOfWork()
         self.account_email: str | None = None
         self.account_password: str | None = None
         self.account_id: UUID | None = None
@@ -72,10 +72,10 @@ class LoginStatements:
     async def _register(self, password: str) -> None:
         scope = RegisterRequestScope.builder(password=password, confirm_password=password)
         result = await RegisterUser(
-            password_hasher=self.password_hasher,
-            account_repository=self.account_repository,
-            clock=self.clock,
-            verification_code_repository=self.verification_code_repository,
+            password_hasher=self._password_hasher,
+            account_repository=self._account_repository,
+            clock=self._clock,
+            verification_code_repository=self._verification_code_repository,
         ).execute(
             email=scope.email,
             password=scope.password,
@@ -88,10 +88,10 @@ class LoginStatements:
 
     async def _verify(self) -> None:
         await VerifyAccount(
-            account_repository=self.account_repository,
-            verification_code_repository=self.verification_code_repository,
-            clock=self.clock,
-            unit_of_work=self.unit_of_work,
+            account_repository=self._account_repository,
+            verification_code_repository=self._verification_code_repository,
+            clock=self._clock,
+            unit_of_work=self._unit_of_work,
         ).execute(email=self.registered_email, code=arranged(self.issued_code, "issued_code"))
 
     async def given_verified_account(self) -> None:
@@ -112,11 +112,11 @@ class LoginStatements:
         account = Account.reconstitute(
             id=uuid4(),
             email="legacy@example.ru",
-            password_hash=self.password_hasher.hash(self.LEGACY_WEAK_PASSWORD),
+            password_hash=self._password_hasher.hash(self.LEGACY_WEAK_PASSWORD),
             created_at=self.FIXED_CLOCK_NOW,
             is_verified=True,
         )
-        await self.account_repository.save(account)
+        await self._account_repository.save(account)
         self.account_email = account.email
         self.account_id = account.id
         self.account_password = self.LEGACY_WEAK_PASSWORD
@@ -124,9 +124,9 @@ class LoginStatements:
     async def _execute_login(self, email: str, password: str) -> None:
         try:
             self.issued_pair = await LoginUser(
-                account_repository=self.account_repository,
-                password_hasher=self.password_hasher,
-                token_service=self.token_service,
+                account_repository=self._account_repository,
+                password_hasher=self._password_hasher,
+                token_service=self._token_service,
             ).execute(email=email, password=password)
         except Exception as exc:
             self.thrown_exception = exc
@@ -155,9 +155,9 @@ class LoginStatements:
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
         expected_subject = (self.registered_account_id, self.registered_email)
-        assert self.token_service.issued_for == [expected_subject], (
+        assert self._token_service.issued_for == [expected_subject], (
             f"expected exactly one pair issued for {expected_subject}, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )
         expected_pair = FakeTokenService().issue_pair(
             account_id=self.registered_account_id, email=self.registered_email
@@ -185,14 +185,14 @@ class LoginStatements:
         an oracle for which emails are registered.
         """
         self._assert_validation_exception("INVALID_CREDENTIALS", self.INVALID_CREDENTIALS_MESSAGE)
-        assert self.token_service.issued_for == [], (
+        assert self._token_service.issued_for == [], (
             f"expected no token pair to be issued on a rejected login, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )
 
     def assert_rejected_as_unverified(self) -> None:
         self._assert_validation_exception("UNVERIFIED", self.UNVERIFIED_MESSAGE)
-        assert self.token_service.issued_for == [], (
+        assert self._token_service.issued_for == [], (
             f"expected no token pair to be issued for an unverified account, "
-            f"got {self.token_service.issued_for}"
+            f"got {self._token_service.issued_for}"
         )

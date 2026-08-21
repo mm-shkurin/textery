@@ -19,35 +19,35 @@ class LoginFailedAttemptStatements(LoginStatements):
     def __init__(self) -> None:
         super().__init__()
         self.call_log: list[str] = []
-        self.account_repository.call_log = self.call_log
-        self.unit_of_work.call_log = self.call_log
+        self._account_repository.call_log = self.call_log
+        self._unit_of_work.call_log = self.call_log
 
     async def _execute_login(self, email: str, password: str) -> None:
         # Measure only the login action. The given* setup verifies the account via
         # VerifyAccount, which commits on this same shared UnitOfWork -- reset the
         # spies so a stray setup commit is not counted against the login branch.
-        self.unit_of_work.commit_call_count = 0
-        self.account_repository.increment_failed_attempts_calls.clear()
+        self._unit_of_work.commit_call_count = 0
+        self._account_repository.increment_failed_attempts_calls.clear()
         self.call_log.clear()
         try:
             self.issued_pair = await LoginUser(
-                account_repository=self.account_repository,
-                password_hasher=self.password_hasher,
-                token_service=self.token_service,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                password_hasher=self._password_hasher,
+                token_service=self._token_service,
+                unit_of_work=self._unit_of_work,
             ).execute(email=email, password=password)
         except Exception as exc:
             self.thrown_exception = exc
 
     def assert_counted_the_failed_attempt_then_rejected(self) -> None:
-        assert self.account_repository.increment_failed_attempts_calls == [self.account_id], (
+        assert self._account_repository.increment_failed_attempts_calls == [self.account_id], (
             f"expected exactly one atomic increment for the found account "
             f"{self.account_id}, got "
-            f"{self.account_repository.increment_failed_attempts_calls}"
+            f"{self._account_repository.increment_failed_attempts_calls}"
         )
-        assert self.unit_of_work.commit_call_count == 1, (
+        assert self._unit_of_work.commit_call_count == 1, (
             f"expected exactly one commit to persist the failed attempt, got "
-            f"{self.unit_of_work.commit_call_count}"
+            f"{self._unit_of_work.commit_call_count}"
         )
         assert self.call_log == ["increment_failed_attempts", "commit"], (
             f"expected the counter to be incremented then committed BEFORE the "
@@ -62,24 +62,24 @@ class LoginFailedAttemptStatements(LoginStatements):
         # failure (serialization/deadlock/dropped connection) into a leaked 5xx on
         # what used to be an un-failable read path. Arm the shared UoW to blow up
         # on commit, then drive the same wrong-password branch.
-        self.unit_of_work.raise_on_commit = RuntimeError("commit failed")
+        self._unit_of_work.raise_on_commit = RuntimeError("commit failed")
         await self.login_with_a_wrong_password()
 
     def assert_rejected_as_invalid_credentials_and_rolled_back(self) -> None:
         # The client still gets the generic 5.2 rejection -- never the raw
         # commit/RuntimeError -- and the poisoned txn was rolled back.
         self.assert_rejected_as_invalid_credentials()
-        assert self.unit_of_work.rollback_call_count == 1, (
+        assert self._unit_of_work.rollback_call_count == 1, (
             f"expected exactly one rollback after the commit failure, got "
-            f"{self.unit_of_work.rollback_call_count}"
+            f"{self._unit_of_work.rollback_call_count}"
         )
 
     def assert_did_not_count_any_attempt(self) -> None:
-        assert self.account_repository.increment_failed_attempts_calls == [], (
+        assert self._account_repository.increment_failed_attempts_calls == [], (
             f"expected no failed-attempt increment on this branch, got "
-            f"{self.account_repository.increment_failed_attempts_calls}"
+            f"{self._account_repository.increment_failed_attempts_calls}"
         )
-        assert self.unit_of_work.commit_call_count == 0, (
+        assert self._unit_of_work.commit_call_count == 0, (
             f"expected no commit on a branch that writes nothing, got "
-            f"{self.unit_of_work.commit_call_count}"
+            f"{self._unit_of_work.commit_call_count}"
         )

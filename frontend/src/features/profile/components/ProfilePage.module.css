@@ -1,0 +1,169 @@
+/* Цвета экрана объявлены в src/styles/tokens-*.css (--profile-page-bg, --profile-row-fg, --profile-card-line). */
+/* «Мой профиль» — shell, the three cards, and the rows inside them.
+   Figma nodes 1127:10768 / 1202:6364 / 1227:9790 / 1202:6227.
+
+   Geometry is taken 1:1 off the frame, the way «Мои проекты» already takes it: the content there
+   runs x=140…1780 on a 1920 page and ships as a 1640px column. The 1.3333 divisor in index.css is
+   about the `Pallete` frame, not these — applying it here would put this screen at 1230px beside a
+   1640px sibling, and the two are one navigation apart.
+
+   The form's own rules are in ProfileForm.css, the theme switch in ProfileTheme.css and the
+   deletion dialog in ProfileModal.css. */
+
+/* The page is a COOLER grey than `--bg-page`, which is the product's blue wash (hex e3f2ff). The
+   design puts these cards on hex F4F6FB and the difference is visible when three white panels sit on
+   it. Declared locally because the token sheets belong to another session this sprint; both themes
+   are given here on purpose — a colour with only a light form is a white patch on a dark page. */
+
+.profile-screen {
+  min-height: 100vh;
+  background: var(--profile-page-bg);
+}
+
+/* 1640, the same column as the feed — which is what the frame draws. Node 1127:10768 lays its
+   three cards out at x=140…1780 under a bar of exactly that width, so the "single-column form is
+   narrower" rule this shipped with was a convention applied over a measurement. At 1240 the cards
+   stopped 400px short of the bar heading them, which reads as the bar being too wide.
+
+   `width`, not `max-width` + padding: the padding version subtracts the gutter FROM the 1640,
+   which starts the cards inside the column the design draws rather than on its edge. */
+.profile-page {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+  padding: 32px 0 64px;
+}
+
+.profile-heading {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+}
+
+/* 18/22 in hex 464551 — the darker grey the two page subtitles share. `--profile-row-fg` is the
+   lighter hex 6b7280 the frame keeps for values INSIDE a card. */
+.profile-subtitle {
+  margin-top: 12px;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text-divider);
+}
+
+/* ---- the three cards ---- */
+.profile-card {
+  margin-top: 24px;
+  padding: 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--profile-card-line);
+  border-radius: 12px;
+}
+
+.profile-card-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-card-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--profile-row-fg);
+}
+
+/* A row is a label on the left and its control on the right, separated from the row above by a
+   hairline. `flex-start` rather than `center`: the deletion row's warning runs to two lines on a
+   narrow window, and centring would float its button against the middle of that paragraph. */
+.profile-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+/* A rule between rows, and between a card's SUBTITLE and its first row — but never directly under
+   a bare title. «Личные данные» is followed straight by the picture row in the mockup, while
+   «Внешний вид» and «Аккаунт» each get a hairline under their subtitle. */
+.profile-row-divided + .profile-row-divided,
+.profile-card-subtitle + .profile-row-divided {
+  border-top: 1px solid var(--profile-card-line);
+}
+
+.profile-row-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 16/19 — a value is a size ABOVE its 14px label in the frame, not the same size as it. */
+.profile-row-value {
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 19px;
+  color: var(--profile-row-fg);
+  max-width: 720px;
+}
+
+/* ---- the identity, in the row the design gives to the picture ---- */
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.profile-who {
+  min-width: 0;
+}
+
+/* `anywhere`, because both of these are user data: a display name with no spaces and a long
+   address must wrap inside the card rather than widen it. */
+.profile-primary {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.profile-secondary {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--profile-row-fg);
+  overflow-wrap: anywhere;
+}
+
+.profile-since {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  /* 20 either side and a 16px band above the first card — `Main`'s padding in frame 1311:7203. */
+  .profile-page {
+    width: min(1640px, 100% - 40px);
+    padding: 16px 0 40px;
+  }
+
+  .profile-heading {
+    font-size: 22px;
+  }
+
+  .profile-subtitle {
+    font-size: 15px;
+  }
+
+  .profile-card {
+    padding: 24px 16px;
+  }
+
+  /* The row STACKS: a label and a 144px button cannot share 320px, and the button is what gets
+     squeezed to nothing when they try. */
+  .profile-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  /* The identity stays a ROW: the disc and the text fit inside 360 and keep the screen short. */
+  .profile-identity {
+    gap: 14px;
+  }
+}

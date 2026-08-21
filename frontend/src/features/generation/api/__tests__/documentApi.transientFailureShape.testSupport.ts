@@ -4,7 +4,7 @@
 // rather than one of them hand-rolling a weaker inline variant.
 import { expect } from 'vitest'
 import { RequestTimeoutError, isHttpError } from '../../../../shared/api/httpClient'
-import { isTransientFailure, mayHaveLandedServerSide } from '../../hooks/autosaveRetryPolicy'
+import { isTransientFailure, mayHaveLandedServerSide } from '../../utils/autosaveRetryPolicy'
 import { saveDocument, type SaveDocumentResult } from '../documentApi'
 import { ACCESS_TOKEN, type FetchMock } from '../../../../shared/api/__tests__/originStubs'
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportDocument } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Scenario 2.1 — the export REQUEST contract only. exportDocument(documentId, format) must issue
 // GET /api/v1/documents/{documentId}/export?format=<pdf|docx> (documents_export.yaml, owner-scoped,

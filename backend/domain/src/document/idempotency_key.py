@@ -1,5 +1,7 @@
+from shared import limits
+
 MIN_KEY_LENGTH = 1
-MAX_KEY_LENGTH = 128
+MAX_KEY_LENGTH = limits.MAX_IDEMPOTENCY_KEY_LENGTH
 
 
 class IdempotencyKey:

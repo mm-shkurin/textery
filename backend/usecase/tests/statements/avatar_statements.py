@@ -20,13 +20,13 @@ class AvatarStatements(ProfileStatementsBase):
 
     def __init__(self) -> None:
         super().__init__()
-        self.avatar_repository = FakeAvatarRepository()
+        self._avatar_repository = FakeAvatarRepository()
         self.write_failure = RuntimeError("the avatar write failed")
         self.served_avatar = None
         self.uploaded_bytes = b""
 
     async def given_a_stored_avatar(self) -> None:
-        await self.avatar_repository.update_avatar(
+        await self._avatar_repository.update_avatar(
             account_id=self.account_id,
             data=png(),
             media_type=PNG,
@@ -34,10 +34,10 @@ class AvatarStatements(ProfileStatementsBase):
         )
 
     def given_the_avatar_write_fails(self) -> None:
-        self.avatar_repository.raise_on_update = self.write_failure
+        self._avatar_repository.raise_on_update = self.write_failure
 
     def given_the_avatar_clear_fails(self) -> None:
-        self.avatar_repository.raise_on_clear = self.write_failure
+        self._avatar_repository.raise_on_clear = self.write_failure
 
     async def upload_a_png(self) -> None:
         await self._upload(png(64, 64))
@@ -54,36 +54,36 @@ class AvatarStatements(ProfileStatementsBase):
     async def remove_the_avatar(self) -> None:
         self.returned_account = await self._capture(
             DeleteAvatar(
-                account_repository=self.account_repository,
-                avatar_repository=self.avatar_repository,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                avatar_repository=self._avatar_repository,
+                unit_of_work=self._unit_of_work,
             ).execute(self.account_id)
         )
 
     async def serve_the_avatar(self) -> None:
         self.served_avatar = await self._capture(
-            GetAvatar(avatar_repository=self.avatar_repository).execute(self.account_id)
+            GetAvatar(avatar_repository=self._avatar_repository).execute(self.account_id)
         )
 
     async def _upload(self, data: bytes) -> None:
         self.uploaded_bytes = data
         self.returned_account = await self._capture(
             UpdateAvatar(
-                account_repository=self.account_repository,
-                avatar_repository=self.avatar_repository,
-                clock=self.clock,
-                unit_of_work=self.unit_of_work,
+                account_repository=self._account_repository,
+                avatar_repository=self._avatar_repository,
+                clock=self._clock,
+                unit_of_work=self._unit_of_work,
             ).execute(self.account_id, data)
         )
 
     def assert_the_stored_bytes_are_exactly_what_was_uploaded(self) -> None:
-        stored = self.avatar_repository.stored[self.account_id]
+        stored = self._avatar_repository.stored[self.account_id]
         assert stored.data == self.uploaded_bytes, (
             "expected the bytes to be stored unchanged -- no decode, no re-encode"
         )
 
     def assert_the_stored_media_type_is(self, expected: str) -> None:
-        stored = self.avatar_repository.stored[self.account_id]
+        stored = self._avatar_repository.stored[self.account_id]
         assert stored.media_type == expected, (
             f"expected the type read from the magic bytes, {expected!r}, got {stored.media_type!r}"
         )
@@ -101,25 +101,25 @@ class AvatarStatements(ProfileStatementsBase):
         assert self.profile.avatar_updated_at is None
 
     def assert_the_stored_timestamp_matches_the_returned_one(self) -> None:
-        stored = self.avatar_repository.stored[self.account_id]
+        stored = self._avatar_repository.stored[self.account_id]
         assert stored.updated_at == self.profile.avatar_updated_at, (
             "expected the timestamp written to storage to be the one the client was "
             f"told, got {stored.updated_at!r} against {self.profile.avatar_updated_at!r}"
         )
 
     def assert_no_avatar_is_stored(self) -> None:
-        assert self.account_id not in self.avatar_repository.stored, (
+        assert self.account_id not in self._avatar_repository.stored, (
             "expected storage to hold no avatar for this account"
         )
 
     def assert_nothing_reached_storage(self) -> None:
-        assert self.avatar_repository.update_avatar_calls == [], (
+        assert self._avatar_repository.update_avatar_calls == [], (
             "expected a refused upload to never reach the repository, got "
-            f"{self.avatar_repository.update_avatar_calls!r}"
+            f"{self._avatar_repository.update_avatar_calls!r}"
         )
 
     def assert_the_avatar_was_cleared_once(self) -> None:
-        assert self.avatar_repository.clear_avatar_calls == [self.account_id]
+        assert self._avatar_repository.clear_avatar_calls == [self.account_id]
 
     def assert_refused_as_an_unsupported_type(self) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
@@ -133,7 +133,7 @@ class AvatarStatements(ProfileStatementsBase):
         )
 
     def assert_the_served_bytes_and_type_are_the_stored_ones(self) -> None:
-        stored = self.avatar_repository.stored[self.account_id]
+        stored = self._avatar_repository.stored[self.account_id]
         assert self.served_avatar is not None, "expected an avatar to have been served"
         assert (self.served_avatar.data, self.served_avatar.media_type) == (
             stored.data,
@@ -146,6 +146,6 @@ class AvatarStatements(ProfileStatementsBase):
         )
 
     def assert_the_work_was_rolled_back(self) -> None:
-        assert self.unit_of_work.rollback_call_count == 1, (
-            f"expected exactly one rollback, got {self.unit_of_work.rollback_call_count}"
+        assert self._unit_of_work.rollback_call_count == 1, (
+            f"expected exactly one rollback, got {self._unit_of_work.rollback_call_count}"
         )

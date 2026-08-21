@@ -1,23 +1,26 @@
 import logging
+from http import HTTPStatus
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
+from analytics.client_context import campaign_parameters_of, observed_context
 from auth.oauth.complete_oauth_callback import CompleteOAuthCallback
 from auth.oauth.exchange_handoff_code import ExchangeHandoffCode
 from auth.oauth.oauth_error_codes import OAUTH_CALLBACK_FAILED, OAuthCallbackError
 from auth.oauth.start_oauth import StartOAuth
 from dto.auth.login_response_dto import LoginResponseDto
 from dto.auth.oauth_exchange_request_dto import OAuthExchangeRequestDto
+from router import api_routes
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/auth/oauth", tags=["auth", "oauth"])
+router = APIRouter(prefix=api_routes.OAUTH, tags=["auth", "oauth"])
 
 # 302, not FastAPI's default 307: the browser is finishing a navigation, and the
 # provider/frontend legs of this handshake are plain GETs.
-_REDIRECT_STATUS = 302
+_REDIRECT_STATUS = HTTPStatus.FOUND
 
 
 def get_start_oauth_usecase() -> StartOAuth:
@@ -54,16 +57,23 @@ def client_source(request: Request) -> str:
 @router.get("/{provider}/start")
 async def start(
     provider: str,
+    request: Request,
     source: str = Depends(client_source),
     usecase: StartOAuth = Depends(get_start_oauth_usecase),
 ) -> RedirectResponse:
-    authorization_url = await usecase.execute(provider, source)
+    # The five `utm_*` are read off the query string rather than declared as
+    # parameters, deliberately: a declared parameter with a type is a parameter
+    # FastAPI can refuse, and this route answers 302/404/500 with no 400 at all.
+    # Story 14 does not give it one — a broken marketing link must not end at a
+    # broken sign-in. Anything unusable is dropped when it is parked.
+    authorization_url = await usecase.execute(provider, source, campaign_parameters_of(request))
     return RedirectResponse(authorization_url, status_code=_REDIRECT_STATUS)
 
 
 @router.get("/{provider}/callback")
 async def callback(
     provider: str,
+    request: Request,
     code: str = "",
     state: str = "",
     source: str = Depends(client_source),
@@ -77,7 +87,20 @@ async def callback(
     # any other casing raises UNKNOWN_OAUTH_PROVIDER before reaching here, so the
     # frontend's exact-match guard never sees `Yandex`/`YANDEX`.
     try:
-        handoff_code = await usecase.execute(provider, code, state, source)
+        # `/callback` IS a browser request, so the caller's address, agent and
+        # language are present here exactly as they are at `/register` — which is
+        # what lets a provider-created account carry the same technical context as
+        # a registered one, with no trick needed.
+        observed = observed_context(request)
+        handoff_code = await usecase.execute(
+            provider,
+            code,
+            state,
+            source,
+            client_ip=observed.client_ip,
+            user_agent=observed.user_agent,
+            accept_language=observed.accept_language,
+        )
         params = {"code": handoff_code, "provider": provider}
     except OAuthCallbackError as error:
         # The client only ever sees the generic ?error=; the operator-facing reason

@@ -1,5 +1,6 @@
-import { formatCardDate } from '../../../shared/formatCardDate'
+import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import type { Profile } from '../../../shared/identity/api/profileApi'
+import profilePageStyles from './ProfilePage.module.css'
 
 interface ProfileIdentityCardProps {
   profile: Profile
@@ -23,17 +24,20 @@ export function ProfileIdentityCard({ profile }: ProfileIdentityCardProps) {
   const hasName = (profile.name?.trim() ?? '') !== ''
 
   return (
-    <div className="profile-who">
-      <div className="profile-primary" data-testid="profile-identity-primary">
+    <div className={profilePageStyles['profile-who']}>
+      <div className={profilePageStyles['profile-primary']} data-testid="profile-identity-primary">
         {hasName ? profile.name : profile.email}
       </div>
-      <div className="profile-secondary" data-testid="profile-identity-secondary">
+      <div
+        className={profilePageStyles['profile-secondary']}
+        data-testid="profile-identity-secondary"
+      >
         {hasName ? profile.email : 'Имя не задано'}
       </div>
       {/* The year is FORCED on. `formatCardDate` hides it when it matches the current year, which
           is right for «изменено 15 июля» on a project card and wrong here: «На Textery с 3 февраля»
           is a sentence missing its point. */}
-      <div className="profile-since" data-testid="profile-since">
+      <div className={profilePageStyles['profile-since']} data-testid="profile-since">
         На Textery с {formatCardDate(profile.createdAt, { alwaysShowYear: true })}
       </div>
     </div>

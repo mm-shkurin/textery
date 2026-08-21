@@ -1,6 +1,7 @@
 import { setThemePreference } from '../../../shared/theme/themeStore'
 import { useThemePreference } from '../../../shared/theme/useThemePreference'
 import type { ThemePreference } from '../../../shared/theme/theme'
+import profileThemeStyles from './ProfileTheme.module.css'
 
 const SEGMENTS: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'Системная' },
@@ -20,18 +21,22 @@ export function ProfileThemeSwitch() {
   const preference = useThemePreference()
 
   return (
-    <div className="profile-theme-switch" role="radiogroup" aria-label="Тема оформления">
+    <div
+      className={profileThemeStyles['profile-theme-switch']}
+      role="radiogroup"
+      aria-label="Тема оформления"
+    >
       {SEGMENTS.map((segment) => (
         <label
           key={segment.value}
-          className={`profile-theme-segment${
-            preference === segment.value ? ' profile-theme-segment-on' : ''
+          className={`${profileThemeStyles['profile-theme-segment']}${
+            preference === segment.value ? ' ' + profileThemeStyles['profile-theme-segment-on'] : ''
           }`}
         >
           <input
             type="radio"
             name="profile-theme"
-            className="profile-theme-radio"
+            className={profileThemeStyles['profile-theme-radio']}
             value={segment.value}
             checked={preference === segment.value}
             data-testid={`profile-theme-${segment.value}`}

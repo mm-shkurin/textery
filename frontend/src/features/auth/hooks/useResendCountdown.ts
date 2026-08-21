@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SECOND_MS } from '../../../shared/config/runtime'
 
 // The wait between resend attempts, in seconds. A client-side courtesy only: it stops the
 // impatient double-click, it does not enforce anything. The rate limit that matters is the
 // server's, and this countdown does not know what it is.
 export const RESEND_COUNTDOWN_SECONDS = 60
-
-const SECOND_MS = 1000
 
 export interface ResendCountdown {
   // Seconds left; 0 means a resend is allowed.
@@ -46,17 +45,29 @@ export function useResendCountdown(initialSeconds = RESEND_COUNTDOWN_SECONDS): R
   )
 
   // Keyed on the DEADLINE, not on the seconds remaining. Depending on `secondsLeft` tore the
-  // interval down and rebuilt it on every tick — sixty timers per countdown, each one a chance for
-  // the teardown and the next schedule to interleave differently. One timer per deadline, stopped
-  // by the tick that reaches it.
+  // timer down and rebuilt it on every tick — sixty timers per countdown, each one a chance for
+  // the teardown and the next schedule to interleave differently. One chain per deadline, ended by
+  // the tick that reaches it.
+  //
+  // A self-rescheduling `setTimeout`, not `setInterval`: an interval fires on ITS OWN cadence, so
+  // every unit of scheduling lag and every throttled tick in a hidden tab accumulates against a
+  // fixed 1000ms grid that no longer lines up with the second boundaries the display is drawing.
+  // Each tick here re-reads the clock and aims the next one at the next whole second remaining, so
+  // the chain re-syncs to the deadline after any drift instead of compounding it.
   useEffect(() => {
     if (deadline <= Date.now()) return
-    const timer = setInterval(() => {
+    let timer: ReturnType<typeof setTimeout>
+    const tick = () => {
       const current = Date.now()
       setNow(current)
-      if (current >= deadline) clearInterval(timer)
-    }, SECOND_MS)
-    return () => clearInterval(timer)
+      if (current >= deadline) return
+      // Time to the next whole-second boundary of the remaining span, never longer than a second
+      // and never zero (which would spin).
+      const untilNextBoundary = (deadline - current) % SECOND_MS || SECOND_MS
+      timer = setTimeout(tick, untilNextBoundary)
+    }
+    timer = setTimeout(tick, (deadline - Date.now()) % SECOND_MS || SECOND_MS)
+    return () => clearTimeout(timer)
   }, [deadline])
 
   return useMemo(

@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react'
 import { Composer, MAX_TOPIC_LENGTH } from './Composer'
 import { EMPTY_PARAMETERS, type GenerationParameters } from '../utils/generationParameters'
+import type { DocumentType } from '../../../shared/domain/documentTypes'
 
 interface ComposerPanelProps {
   topicLabel: string
+  documentType: DocumentType
   onSubmit: (topic: string, parameters: GenerationParameters) => void
 }
 
@@ -18,7 +20,7 @@ interface ComposerPanelProps {
  * Owning the draft here draws the re-render boundary around the two fields that actually change.
  * The workspace above learns about the draft exactly once, when it is sent.
  */
-export function ComposerPanel({ topicLabel, onSubmit }: ComposerPanelProps) {
+export function ComposerPanel({ topicLabel, documentType, onSubmit }: ComposerPanelProps) {
   const [topic, setTopic] = useState('')
   const [parameters, setParameters] = useState<GenerationParameters>(EMPTY_PARAMETERS)
 
@@ -32,6 +34,7 @@ export function ComposerPanel({ topicLabel, onSubmit }: ComposerPanelProps) {
   return (
     <Composer
       topicLabel={topicLabel}
+      documentType={documentType}
       topic={topic}
       parameters={parameters}
       setParameters={setParameters}

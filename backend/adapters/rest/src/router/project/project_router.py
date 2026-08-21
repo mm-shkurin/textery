@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, Response
 from dto.project.project_page_params import parse_page_request
 from dto.project.project_response_dto import ProjectPageDto
 from project.list_projects import ListProjects
+from router import api_routes
 from security.current_owner import get_current_owner_id
 
-router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
+router = APIRouter(prefix=api_routes.PROJECTS, tags=["projects"])
 
 
 def get_list_projects_usecase() -> ListProjects:

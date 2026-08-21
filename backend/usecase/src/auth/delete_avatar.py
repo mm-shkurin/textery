@@ -27,20 +27,20 @@ class DeleteAvatar:
         avatar_repository: AvatarRepository,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.account_repository = account_repository
-        self.avatar_repository = avatar_repository
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._account_repository = account_repository
+        self._avatar_repository = avatar_repository
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, account_id: UUID) -> Account:
-        account = await self.account_repository.find_by_id(account_id)
+        account = await self._account_repository.find_by_id(account_id)
         if account is None:
             raise unauthorized()
         try:
-            await self.avatar_repository.clear_avatar(account_id)
-            await self.unit_of_work.commit()
+            await self._avatar_repository.clear_avatar(account_id)
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to clear the avatar")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise
         # None is the removal: the profile now reports avatar_updated_at=null,
         # which is the same state an account that never had an avatar is in.

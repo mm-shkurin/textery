@@ -6,6 +6,22 @@ import * as api from '../../api/generationApi'
 vi.mock('../../api/generationApi')
 
 const POLL_INTERVAL_MS = 5000
+// 5000 + 7500 + 11250: the first three gaps of the 1.5x backoff.
+const FIRST_THREE_GAPS_MS = 23750
+// Smaller than the shortest gap between two checks, so one step can never contain two of them.
+const STEP_MS = 250
+
+// Drives the clock forward until exactly one more status check has been made. Needed because the
+// gap between checks grows, so no fixed advance corresponds to "one tick".
+async function advanceToNextCheck() {
+  const before = vi.mocked(api.getGeneration).mock.calls.length
+  for (let waited = 0; waited < 120000; waited += STEP_MS) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STEP_MS)
+    })
+    if (vi.mocked(api.getGeneration).mock.calls.length > before) return
+  }
+}
 
 function pending() {
   return {
@@ -47,9 +63,10 @@ describe('useGeneration when the status endpoint is slower than the poll interva
       result.current.submit('тема')
     })
 
-    // Three ticks pass while the very first check is still unanswered.
+    // Three ticks pass while the very first check is still unanswered. They are not evenly
+    // spaced: the poll backs off, so this is the sum of the first three gaps.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+      await vi.advanceTimersByTimeAsync(FIRST_THREE_GAPS_MS)
     })
 
     expect(api.getGeneration).toHaveBeenCalledTimes(1)
@@ -57,8 +74,8 @@ describe('useGeneration when the status endpoint is slower than the poll interva
     // Once it answers, polling resumes normally — the guard skips ticks, it does not end the poll.
     await act(async () => {
       releaseFirst(pending())
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
     })
+    await advanceToNextCheck()
 
     expect(api.getGeneration).toHaveBeenCalledTimes(2)
     expect(result.current.state).toBe('pending')

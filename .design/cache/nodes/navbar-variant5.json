@@ -1,0 +1,586 @@
+{
+ "id": "1086:4929",
+ "name": "Navbar/Variant5",
+ "type": "COMPONENT",
+ "absoluteBoundingBox": {
+  "x": 2711.0,
+  "y": -8896.0,
+  "width": 1920.0,
+  "height": 100.0
+ },
+ "constraints": {
+  "vertical": "TOP",
+  "horizontal": "LEFT"
+ },
+ "fills": [
+  {
+   "blendMode": "NORMAL",
+   "visible": false,
+   "type": "SOLID",
+   "color": {
+    "r": 1.0,
+    "g": 1.0,
+    "b": 1.0,
+    "a": 1.0
+   }
+  }
+ ],
+ "strokeWeight": 1.0,
+ "strokeAlign": "INSIDE",
+ "clipsContent": false,
+ "children": [
+  {
+   "id": "1086:4930",
+   "name": "Rectangle 115",
+   "type": "RECTANGLE",
+   "absoluteBoundingBox": {
+    "x": 2711.0,
+    "y": -8896.0,
+    "width": 1920.0,
+    "height": 100.0
+   },
+   "constraints": {
+    "vertical": "SCALE",
+    "horizontal": "SCALE"
+   },
+   "fills": [
+    {
+     "blendMode": "NORMAL",
+     "type": "SOLID",
+     "color": {
+      "r": 0.8901960849761963,
+      "g": 0.9490196108818054,
+      "b": 1.0,
+      "a": 1.0
+     }
+    }
+   ],
+   "strokeWeight": 1.0,
+   "strokeAlign": "INSIDE"
+  },
+  {
+   "id": "1086:4931",
+   "name": "Component 21",
+   "type": "INSTANCE",
+   "absoluteBoundingBox": {
+    "x": 3087.0,
+    "y": -8880.0,
+    "width": 1168.0,
+    "height": 68.0
+   },
+   "constraints": {
+    "vertical": "SCALE",
+    "horizontal": "SCALE"
+   },
+   "fills": [
+    {
+     "blendMode": "NORMAL",
+     "visible": false,
+     "type": "SOLID",
+     "color": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     }
+    }
+   ],
+   "strokeWeight": 1.3333333730697632,
+   "strokeAlign": "INSIDE",
+   "clipsContent": false,
+   "componentId": "317:1858",
+   "children": [
+    {
+     "id": "I1086:4931;316:2083",
+     "name": "Component 17",
+     "type": "INSTANCE",
+     "absoluteBoundingBox": {
+      "x": 3087.0,
+      "y": -8880.0,
+      "width": 236.0,
+      "height": 60.0
+     },
+     "constraints": {
+      "vertical": "SCALE",
+      "horizontal": "SCALE"
+     },
+     "fills": [
+      {
+       "blendMode": "NORMAL",
+       "visible": false,
+       "type": "SOLID",
+       "color": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+       }
+      }
+     ],
+     "strokeWeight": 1.3333333730697632,
+     "strokeAlign": "INSIDE",
+     "clipsContent": false,
+     "componentId": "316:1986",
+     "children": [
+      {
+       "id": "I1086:4931;316:2083;316:1975",
+       "name": "Subtract",
+       "type": "BOOLEAN_OPERATION",
+       "absoluteBoundingBox": {
+        "x": 3087.0,
+        "y": -8878.0322265625,
+        "width": 46.048828125,
+        "height": 55.51249313354492
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.0,
+          "g": 0.30588236451148987,
+          "b": 0.8784313797950745,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 0.0,
+       "strokeAlign": "INSIDE",
+       "children": [
+        {
+         "id": "I1086:4931;316:2083;316:1976",
+         "name": "Rectangle 5",
+         "type": "VECTOR",
+         "absoluteBoundingBox": {
+          "x": 3087.0,
+          "y": -8879.205078125,
+          "width": 46.04878234863281,
+          "height": 57.85714340209961
+         },
+         "constraints": {
+          "vertical": "SCALE",
+          "horizontal": "SCALE"
+         },
+         "strokeWeight": 1.3333333730697632,
+         "strokeAlign": "INSIDE",
+         "cornerRadius": 6.6666669845581055,
+         "opacity": 0.5
+        },
+        {
+         "id": "I1086:4931;316:2083;316:1977",
+         "name": "Rectangle 6",
+         "type": "VECTOR",
+         "absoluteBoundingBox": {
+          "x": 3117.219482421875,
+          "y": -8869.5615234375,
+          "width": 28.780487060546875,
+          "height": 37.85714340209961
+         },
+         "constraints": {
+          "vertical": "SCALE",
+          "horizontal": "SCALE"
+         },
+         "fills": [
+          {
+           "blendMode": "NORMAL",
+           "type": "SOLID",
+           "color": {
+            "r": 0.5176282525062561,
+            "g": 0.3857325613498688,
+            "b": 0.3857325613498688,
+            "a": 1.0
+           }
+          }
+         ],
+         "strokeWeight": 1.3333333730697632,
+         "strokeAlign": "INSIDE",
+         "cornerRadius": 6.6666669845581055,
+         "opacity": 0.5
+        }
+       ]
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1978",
+       "name": "Textery",
+       "type": "TEXT",
+       "absoluteBoundingBox": {
+        "x": 3150.317138671875,
+        "y": -8880.0,
+        "width": 172.68292236328125,
+        "height": 60.0
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.0,
+          "g": 0.0,
+          "b": 0.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "OUTSIDE",
+       "style": {
+        "fontFamily": "Inter",
+        "fontPostScriptName": "Inter-SemiBold",
+        "fontStyle": "Semi Bold",
+        "fontWeight": 600,
+        "fontSize": 42.66666793823242,
+        "textAlignHorizontal": "LEFT",
+        "textAlignVertical": "CENTER",
+        "letterSpacing": -0.8533333587646484,
+        "lineHeightPx": 51.6363639831543,
+        "lineHeightPercent": 100.0,
+        "lineHeightUnit": "INTRINSIC_%"
+       },
+       "characters": "Textery"
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1979",
+       "name": "Vector 7",
+       "type": "VECTOR",
+       "absoluteBoundingBox": {
+        "x": 3094.195068359375,
+        "y": -8860.7138671875,
+        "width": 17.987804412841797,
+        "height": 21.428571701049805
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.9803921580314636,
+          "g": 0.9921568632125854,
+          "b": 1.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "CENTER"
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1980",
+       "name": "Rectangle 7",
+       "type": "VECTOR",
+       "absoluteBoundingBox": {
+        "x": 3119.3779296875,
+        "y": -8865.990234375,
+        "width": 25.182926177978516,
+        "height": 31.428571701049805
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.0,
+          "g": 0.0,
+          "b": 0.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "INSIDE",
+       "cornerRadius": 6.6666669845581055
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1981",
+       "name": "Vector 8",
+       "type": "VECTOR",
+       "absoluteBoundingBox": {
+        "x": 3126.5732421875,
+        "y": -8854.2861328125,
+        "width": 7.9146342277526855,
+        "height": 8.571428298950195
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.9803921580314636,
+          "g": 0.9921568632125854,
+          "b": 1.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "CENTER"
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1982",
+       "name": "Rectangle 8",
+       "type": "RECTANGLE",
+       "absoluteBoundingBox": {
+        "x": 3135.207275390625,
+        "y": -8854.2861328125,
+        "width": 1.4390244483947754,
+        "height": 8.571428298950195
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.9803921580314636,
+          "g": 0.9921568632125854,
+          "b": 1.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "INSIDE"
+      },
+      {
+       "id": "I1086:4931;316:2083;316:1983",
+       "name": "Vector 9",
+       "type": "VECTOR",
+       "absoluteBoundingBox": {
+        "x": 3129.451171875,
+        "y": -8852.857421875,
+        "width": 2.158536672592163,
+        "height": 3.5714285373687744
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.0,
+          "g": 0.0,
+          "b": 0.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "CENTER",
+       "rectangleCornerRadii": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "id": "I1086:4931;317:1829",
+     "name": "Component 19",
+     "type": "INSTANCE",
+     "absoluteBoundingBox": {
+      "x": 3921.66650390625,
+      "y": -8879.6669921875,
+      "width": 333.3333435058594,
+      "height": 66.66667175292969
+     },
+     "constraints": {
+      "vertical": "SCALE",
+      "horizontal": "SCALE"
+     },
+     "fills": [
+      {
+       "blendMode": "NORMAL",
+       "visible": false,
+       "type": "SOLID",
+       "color": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0,
+        "a": 1.0
+       }
+      }
+     ],
+     "strokeWeight": 1.3333333730697632,
+     "strokeAlign": "INSIDE",
+     "clipsContent": false,
+     "componentId": "317:1828",
+     "children": [
+      {
+       "id": "I1086:4931;317:1829;316:1991",
+       "name": "Rectangle 112",
+       "type": "RECTANGLE",
+       "absoluteBoundingBox": {
+        "x": 3921.66650390625,
+        "y": -8879.6669921875,
+        "width": 333.3333435058594,
+        "height": 66.66667175292969
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 0.0,
+          "g": 0.30588236451148987,
+          "b": 0.8784313797950745,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "INSIDE",
+       "cornerRadius": 12.0
+      },
+      {
+       "id": "I1086:4931;317:1829;316:2029",
+       "name": "Создать генерацию",
+       "type": "TEXT",
+       "absoluteBoundingBox": {
+        "x": 3921.66650390625,
+        "y": -8879.6669921875,
+        "width": 333.3333435058594,
+        "height": 66.66667175292969
+       },
+       "constraints": {
+        "vertical": "SCALE",
+        "horizontal": "SCALE"
+       },
+       "fills": [
+        {
+         "blendMode": "NORMAL",
+         "type": "SOLID",
+         "color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+         }
+        }
+       ],
+       "strokeWeight": 1.3333333730697632,
+       "strokeAlign": "OUTSIDE",
+       "style": {
+        "fontFamily": "Inter",
+        "fontPostScriptName": "Inter-Bold",
+        "fontStyle": "Bold",
+        "fontWeight": 700,
+        "fontSize": 21.33333396911621,
+        "textAlignHorizontal": "CENTER",
+        "textAlignVertical": "CENTER",
+        "letterSpacing": -0.4266666793823242,
+        "lineHeightPx": 25.81818199157715,
+        "lineHeightPercent": 100.0,
+        "lineHeightUnit": "INTRINSIC_%"
+       },
+       "characters": "Создать генерацию"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "1086:4932",
+   "name": "Rectangle 112",
+   "type": "RECTANGLE",
+   "absoluteBoundingBox": {
+    "x": 3722.0,
+    "y": -8879.0,
+    "width": 180.0,
+    "height": 67.0
+   },
+   "constraints": {
+    "vertical": "SCALE",
+    "horizontal": "SCALE"
+   },
+   "fills": [
+    {
+     "blendMode": "NORMAL",
+     "type": "SOLID",
+     "color": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+     }
+    }
+   ],
+   "strokeWeight": 1.3333333730697632,
+   "strokeAlign": "INSIDE",
+   "cornerRadius": 12.0
+  },
+  {
+   "id": "1086:4933",
+   "name": "Профиль",
+   "type": "TEXT",
+   "absoluteBoundingBox": {
+    "x": 3778.0,
+    "y": -8879.0,
+    "width": 124.0,
+    "height": 67.0
+   },
+   "constraints": {
+    "vertical": "SCALE",
+    "horizontal": "SCALE"
+   },
+   "fills": [
+    {
+     "blendMode": "NORMAL",
+     "type": "SOLID",
+     "color": {
+      "r": 0.0,
+      "g": 0.0,
+      "b": 0.0,
+      "a": 1.0
+     }
+    }
+   ],
+   "strokeWeight": 1.3333333730697632,
+   "strokeAlign": "OUTSIDE",
+   "style": {
+    "fontFamily": "Inter",
+    "fontPostScriptName": "Inter-Bold",
+    "fontStyle": "Bold",
+    "fontWeight": 700,
+    "fontSize": 21.33333396911621,
+    "textAlignHorizontal": "CENTER",
+    "textAlignVertical": "CENTER",
+    "letterSpacing": -0.4266666793823242,
+    "lineHeightPx": 25.81818199157715,
+    "lineHeightPercent": 100.0,
+    "lineHeightUnit": "INTRINSIC_%"
+   },
+   "characters": "Профиль"
+  }
+ ]
+}

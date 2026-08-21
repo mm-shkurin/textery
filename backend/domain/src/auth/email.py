@@ -1,8 +1,9 @@
 import re
 import unicodedata
 
-MAX_EMAIL_LENGTH = 254
+from shared import limits
 
+MAX_EMAIL_LENGTH = limits.MAX_EMAIL_LENGTH
 _DOMAIN_LABEL = r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
 _DOMAIN_PATTERN = re.compile(rf"^(?:{_DOMAIN_LABEL}\.)+[A-Za-z]{{2,}}$")
 _ACCEPTED_UNICODE_CATEGORY_PREFIXES = ("L", "Mn", "Mc", "Me", "Nd")

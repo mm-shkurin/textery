@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import historyPageStyles from './HistoryPage.module.css'
 
 interface HistoryRowsProps {
   isLoading: boolean
@@ -29,7 +30,11 @@ export function HistoryRows({
   // duplicate.
   if (error) {
     return (
-      <div className="history-error" role="alert" data-testid={`${testId}-error`}>
+      <div
+        className={historyPageStyles['history-error']}
+        role="alert"
+        data-testid={`${testId}-error`}
+      >
         {error}
       </div>
     )
@@ -39,7 +44,7 @@ export function HistoryRows({
   // spinner would throw away what the visitor is reading.
   if (isLoading && isEmpty) {
     return (
-      <div className="history-loading" data-testid={`${testId}-loading`}>
+      <div className={historyPageStyles['history-loading']} data-testid={`${testId}-loading`}>
         Загрузка…
       </div>
     )
@@ -47,19 +52,19 @@ export function HistoryRows({
 
   if (isEmpty) {
     return (
-      <div className="history-empty" data-testid={`${testId}-empty`}>
+      <div className={historyPageStyles['history-empty']} data-testid={`${testId}-empty`}>
         {emptyText}
       </div>
     )
   }
 
   return (
-    <div className="history-list" data-testid={testId}>
+    <div className={historyPageStyles['history-list']} data-testid={testId}>
       {children}
       {hasMore && (
         <button
           type="button"
-          className="history-more"
+          className={historyPageStyles['history-more']}
           data-testid={`${testId}-more`}
           onClick={loadMore}
           disabled={isLoading}

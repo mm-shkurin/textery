@@ -1,0 +1,127 @@
+/* Topic composer — mockup 01/04-generation-form.html field + submit-row tokens, worn by the
+   chat-panel composer that replaced the standalone form page (known-debt #9). */
+
+.composer h3 {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Mockup `.required::after` — the topic is the one mandatory input, and the send button's
+   disabled state is the only other signal that it is. Rendered as an aria-hidden <span> in the
+   markup rather than generated content, because this heading is the textarea's accessible name
+   and browsers include `content:` in the name computation. */
+.composer h3.required .composer-required-marker {
+  color: var(--error);
+}
+
+.composer-input {
+  width: 100%;
+  resize: vertical;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.composer-input::placeholder {
+  color: var(--text-muted);
+}
+
+.composer-input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+
+.composer-send {
+  width: 100%;
+  padding: 14px 32px;
+  font-size: 15px;
+}
+
+/* Mobile mockup `.submit-hint` — centred under the full-width submit button. */
+.composer-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* Требования / объём / дополнительные пожелания — the three fields beside the topic, drawn in
+   mockups/desktop/04-generation-form.html. The mockup puts требования and объём on one row, with
+   the volume narrow enough that it does not compete with the free text beside it. */
+.composer-parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.composer-parameters-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.composer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer-field-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.composer-field-volume {
+  flex: 0 0 132px;
+}
+
+.composer-field-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.composer-field-input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  resize: vertical;
+}
+
+/* Below the mockup's own width the two stack rather than squeezing the volume box to a
+   digit-and-a-half. */
+@media (max-width: 640px) {
+  .composer-parameters-row {
+    flex-direction: column;
+  }
+
+  .composer-field-volume {
+    flex: 1 1 auto;
+  }
+}
+
+/* The style picker sits in the parameters block beside требования and объём. A native select
+   styled to match the text inputs around it, rather than a custom listbox: the register is one
+   choice out of a closed set, and the element already carries that meaning for free. */
+.composer-style-select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.composer-style-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}

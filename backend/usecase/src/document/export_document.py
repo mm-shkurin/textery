@@ -13,8 +13,8 @@ class ExportDocument:
     def __init__(
         self, document_repository: DocumentRepository, document_renderer: DocumentRenderer
     ) -> None:
-        self.document_repository = document_repository
-        self.document_renderer = document_renderer
+        self._document_repository = document_repository
+        self._document_renderer = document_renderer
 
     async def execute(
         self, document_id: UUID, owner_id: UUID, format: str | None
@@ -25,10 +25,10 @@ class ExportDocument:
         export_format = ExportFormat.parse(format)
         # Absent and foreign collapse to the same None (owner-scoped SQL), mirroring
         # GetDocument. A refused request never reaches the render step.
-        document = await self.document_repository.find_by_id_and_owner(document_id, owner_id)
+        document = await self._document_repository.find_by_id_and_owner(document_id, owner_id)
         if document is None:
             return None
-        content = self.document_renderer.render(document.content, export_format)
+        content = self._document_renderer.render(document.content, export_format)
         return RenderedExport(
             content=content,
             export_format=export_format,

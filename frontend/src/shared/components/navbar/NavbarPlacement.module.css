@@ -1,0 +1,65 @@
+/* WHERE a bar sits on its page, as opposed to what the bar looks like — the shell width it aligns
+   to and the air under it. Kept out of `Navbar.css` so that file stays a description of one
+   object, and kept out of the pages' own stylesheets because those belong to other sessions.
+
+   Both classes now carry the SAME 1640 column, because both frames draw it: node 573:4551 on
+   «Мои проекты» and node 1134:12269 on «Профиль» are the same 1640x84 bar at the same x=140, and
+   the profile's cards under it run the full 1640 too. The earlier 1240 here was reasoning about a
+   single-column form rather than reading the frame, and it put the bar and the cards of one
+   screen on two different widths. */
+
+/* The air above and below is PADDING on a transparent WRAPPER, not margin, and not padding on the
+   bar itself.
+
+   Margin was the bug: a vertical margin on a child escapes through a parent that has no padding,
+   border or overflow of its own, and `.profile-screen` is exactly that — a bare element that only
+   paints a background. The 24px top margin collapsed out of it, pushed the screen and its
+   background down, and left a 24px band of the page's own `--bg-page` above the bar, which reads
+   on screen as a deliberate blue rule.
+
+   Padding on the bar would not do either: the pill paints a background, so padding-top would grow
+   the white plate rather than the gap above it. Hence the wrapper, which paints nothing. */
+
+.navbar-projects-placement {
+  /* 40 in both frames: the bar ends at y=11195 and the section under it starts at 11235. */
+  padding-bottom: 40px;
+}
+
+.navbar-profile-placement {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+@media (min-width: 1920px) {
+  .navbar-projects-placement {
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .navbar-projects-placement {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-projects-placement {
+    margin-bottom: 16px;
+  }
+
+  /* 40 of air above the bar and 20 under it, per the 360px frames — as padding on the
+     transparent wrapper, never as a margin that would collapse out of the screen.
+     Only the profile's wrapper carries a width: the projects one sits INSIDE the feed's own
+     column, so a width here would inset it twice. */
+  .navbar-profile-placement {
+    width: min(1640px, 100% - 40px);
+    padding-top: 40px;
+    padding-bottom: 20px;
+  }
+
+  .navbar-projects-placement {
+    padding-bottom: 20px;
+  }
+}

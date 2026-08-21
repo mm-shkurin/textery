@@ -21,14 +21,14 @@ class TestCreateLoginUserSharesOneSession:
 
     async def test_should_wire_a_real_uow_sharing_the_repository_session(self):
         async with wired_on_one_session(create_login_user) as (login, sentinel_session):
-            assert isinstance(login.unit_of_work, SqlAlchemyUnitOfWork), (
+            assert isinstance(login._unit_of_work, SqlAlchemyUnitOfWork), (
                 "expected create_login_user to wire a real SqlAlchemyUnitOfWork so "
                 "the failed-attempt commit is not a silent no-op, got "
-                f"{login.unit_of_work!r}"
+                f"{login._unit_of_work!r}"
             )
 
-            account_session = login.account_repository._session
-            unit_of_work_session = login.unit_of_work._session
+            account_session = login._account_repository._session
+            unit_of_work_session = login._unit_of_work._session
 
             assert account_session is sentinel_session, (
                 "expected the account repository to be backed by the wiring's "

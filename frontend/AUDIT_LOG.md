@@ -383,3 +383,102 @@ Outstanding итерации 5, но то, что удерживает план�
 - `safeRedirectTarget.ts` фактически мёртв: единственный вызов
   (`OAuthCallback.tsx:60`) передаёт `undefined`, функция может вернуть только `'/'`.
 - `ProfileMenu.css` (201) и два тест-файла профиля (269, 212) — над лимитом 200.
+
+## Iteration 4 — Score: 2.5 / 3.0 — 2026-08-20 — 30aee5f1
+### Fixed Issues:
+- The tip failed two of its own five CI gates. `npm run format:check` had nine
+  outstanding files; `npm run test:coverage` was under the declared floor on
+  functions (97.41% vs 98%) and branches (91.55% vs 92%).
+- The coverage gap was two modules with no suite at all. `shared/lib/browser.ts`
+  — the single answer to "are we in a browser", so every off-browser branch in
+  the product runs through it — now has one, including the storage calls that
+  THROW in private mode rather than returning null.
+- `ProfilePage` had its three exits untested; the unsaved-name guard sits at the
+  click seam because react-router navigation fires no `beforeunload`, so a
+  regression there discards a typed name silently.
+- Coverage after: functions 98.17%, branches 92.35%, 1041 tests passing.
+
+### Outstanding Blockers:
+- The release ref `gitverse-frontend/main` is behind HEAD by the sprint's work.
+- `4f2d7873` touches 56 files across five unrelated features — not atomic, not
+  revertible feature-wise.
+- Single-author history (603 vs 7); no review signal anywhere, and the project
+  forgoes PRs by policy.
+- `ProjectsPage.tsx` (212 lines) mixes query-string state, feed orchestration and
+  rendering; `httpClient.ts` (205) and `ProfileMenu.css` (201) are over the cap.
+- Only the editor is code-split: the main chunk is 133 kB gzip and carries the
+  router, the query client and every feature screen on first paint.
+
+## Iteration 5 — Score: 3.0 / 3.0 — 2026-08-21 — c2bb0a4a
+### Fixed Issues:
+- The analytics slice, shipped the same day, had reinvented the storage guard the
+  jury's `useDismissOnOutside` remark was about: `safely()` in `visitorId.ts` plus
+  bare `window.localStorage` and `window.location` in three modules. All of it now
+  goes through `shared/lib/browser.ts`, and `writeStored`'s boolean return IS the
+  visitor identity's `degraded` flag rather than a second guard beside it.
+- `useProfileNameForm` held four `useState`s describing one save attempt. They only
+  ever changed together, so each transition was three or four calls a future edit
+  could get half-right — one `SaveAttempt` object now.
+- CHANGELOG had gone 26 commits without an entry (limit 25).
+
+### Outstanding Blockers:
+- The release ref `gitverse-frontend/main` is 639 frontend commits behind HEAD,
+  dated 2026-08-14. Nothing from this sprint is on the graded repository.
+- Single-author history (628 vs 7), and the committer email on all of them is
+  malformed: `trape3977@g,ail.com` — visible in the first `git log` a grader runs.
+- `GIT-BULK`: four commits over 40 files, `4f2d7873` (56 files) the worst.
+
+## Iteration 6 — Score: 2.5 / 3.0 — 2026-08-21 — 86f03d4b — confirmation
+### Fixed Issues:
+- Story 14's UI test cases existed only as Gherkin in `ProductSpecification` and
+  had never been published: this sprint's only frontend work had no test case a
+  jury could open, and `sync-test-cases.mjs --check` was announcing the hole. 24
+  cases rewritten into the executable eight-field template and synced.
+- The README's quick start could not be followed: it documented a default for
+  `VITE_API_PROXY_TARGET` that `requireProxyTarget()` does not have, so
+  `npm install && npm run dev` died on a variable the README called optional. The
+  `docker run` example proxied `/api` to the container's own loopback.
+- `format:check` was red on HEAD — `fbf7e5fb` committed `reporting.test.ts`
+  unformatted.
+
+### Outstanding Blockers:
+- `analyticsClient.ts:59` calls `fetch` directly rather than through `httpClient`,
+  so a hung analytics request has no bound at all; only `keepalive` is deliberate.
+- Five per-feature error→Russian mappings (`auth/api/apiError.ts`,
+  `projects/api/loadFailureMessages.ts`, `generation/hooks/saveFailureMessages.ts`,
+  `shared/identity/api/profileErrors.ts`, `shared/api/send.ts`) with two
+  incompatible error shapes — no single mapping.
+- `features/generation/components/` holds seven non-component modules and a hook
+  while `utils/` and `hooks/` exist beside it; `shared/` keeps four modules loose
+  at the slice root.
+- Thirteen `OAuthCallback.*.test.tsx` files repeat the same router + exchange mock
+  preamble by hand.
+- Auth tokens remain in `sessionStorage`; the accepted-risk note and the
+  httpOnly-cookie end state are unchanged.
+
+## Publish — 2026-08-21 — gitverse-frontend/main 219d4bbf..5fc76ef0
+### What landed:
+- The mirror is the `frontend/` subtree with that directory as the root. Rewritten
+  with `python -m git_filter_repo --subdirectory-filter frontend` on a throwaway
+  clone: **4.6 seconds**, against the ~1.5 hours `git subtree split` takes walking
+  all 1756 monorepo commits.
+- `filter-repo` hashes are deterministic and the previous publish used it too, so all
+  603 already-published commits reproduced their hashes and `219d4bbf` came out an
+  ANCESTOR of the new history. The push was a plain fast-forward: **no `--force`,
+  nothing rewritten, no safety branch needed.** 662 commits now; the sprint's 59 are
+  59 commits, not the squashed dump that cost a mark last sprint.
+- `feat/figma-alignment` published as a new ref (`63de17f2`, 641 commits), tree
+  matching `feat/figma-alignment:frontend`, an ancestor of `main`.
+- Verified after: tree byte-identical to `HEAD:frontend`; no `node_modules/`, `dist/`
+  or `.env` tracked.
+
+### Outstanding Blockers:
+- `refactor(usecase): five flows stop carrying every step themselves` sits in the
+  frontend history under a backend title — it carries two zero-line frontend renames
+  the backend session's commit swept up. Content is correct; retitling it would mean
+  rewriting published history.
+- `GIT-BULK` and `GIT-DIRECT-MAIN` remain: history, not editable. The second is
+  waiver material — the no-PR policy it flags is documented at `README.md:237`.
+- The committer email on every frontend commit is `trape3977@g,ail.com`. Raised;
+  the owner chose to leave it.
+

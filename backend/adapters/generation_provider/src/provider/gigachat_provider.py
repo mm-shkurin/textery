@@ -8,40 +8,28 @@ import httpx
 
 from generation.generation_provider import ProviderError
 from provider.gigachat_responses import read_access_token, read_completion
+from provider.gigachat_settings import SETTINGS
 from shared.exceptions import ConfigurationException
 
 MISSING_CREDENTIALS_MESSAGE = "GIGACHAT_CREDENTIALS environment variable is not set"
-# GigaChat's OAuth tokens last ~30 minutes. The margin is subtracted so the cache
-# expires before the server's copy does.
-_TOKEN_TTL_SECONDS = 30 * 60
-_TOKEN_EXPIRY_MARGIN_SECONDS = 60
-TOKEN_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
-COMPLETIONS_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
-SCOPE = "GIGACHAT_API_PERS"
 CREDENTIALS_ENV_VAR = "GIGACHAT_CREDENTIALS"
 CA_BUNDLE_ENV_VAR = "GIGACHAT_CA_BUNDLE"
-# Split, where a single `timeout=30` scalar used to set all four httpx phases at
-# once. Connect and read want very different numbers here: failing to reach the
-# host is answered in seconds and retrying is cheap, while a completion for a
-# multi-page document is the model composing text and legitimately takes minutes.
-# Under one 30-second scalar a slow-but-working generation was indistinguishable
-# from an outage -- three attempts, three timeouts, and a row written `failed`
-# for a provider that was answering the whole time.
-CONNECT_TIMEOUT_SECONDS = 10.0
-READ_TIMEOUT_SECONDS = 180.0
-WRITE_TIMEOUT_SECONDS = 30.0
-POOL_TIMEOUT_SECONDS = 10.0
-# The token exchange is a small, fast call and gets its own read budget: waiting
-# three minutes on an OAuth handshake only delays the real failure.
-TOKEN_READ_TIMEOUT_SECONDS = 15.0
-# GigaChat's TLS cert chains to the Russian Minsvyaz trust CA, which is not in
-# most system trust stores. Bundled PEM fetched from gu-st.ru — GIGACHAT_CA_BUNDLE
-# overrides it, but this is the working default rather than disabling verification.
-_DEFAULT_CA_BUNDLE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "certs",
-    "russiantrustedca.pem",
-)
+
+# Endpoints, timeouts and the trust bundle are configuration, and live in
+# gigachat_defaults.toml with an environment override each -- see gigachat_settings.
+# Re-exported under their old names because they are what the adapter's own tests
+# assert against, and a test that hardcodes the URL it expects proves nothing.
+TOKEN_URL = SETTINGS.token_url
+COMPLETIONS_URL = SETTINGS.completions_url
+SCOPE = SETTINGS.scope
+MODEL = SETTINGS.model
+CONNECT_TIMEOUT_SECONDS = SETTINGS.connect_timeout
+READ_TIMEOUT_SECONDS = SETTINGS.read_timeout
+WRITE_TIMEOUT_SECONDS = SETTINGS.write_timeout
+POOL_TIMEOUT_SECONDS = SETTINGS.pool_timeout
+TOKEN_READ_TIMEOUT_SECONDS = SETTINGS.token_read_timeout
+_TOKEN_TTL_SECONDS = SETTINGS.token_ttl
+_TOKEN_EXPIRY_MARGIN_SECONDS = SETTINGS.token_expiry_margin
 
 
 class GigaChatProvider:
@@ -50,7 +38,7 @@ class GigaChatProvider:
         if not credentials:
             raise ConfigurationException(MISSING_CREDENTIALS_MESSAGE)
         self._credentials = credentials
-        self._verify = os.environ.get(CA_BUNDLE_ENV_VAR, _DEFAULT_CA_BUNDLE)
+        self._verify = SETTINGS.ca_bundle
         # monotonic, not wall-clock: an NTP correction must not make a cached
         # token look older or younger than it is. Injectable so the cache's expiry
         # is testable without sleeping for half an hour.
@@ -122,7 +110,7 @@ class GigaChatProvider:
                 COMPLETIONS_URL,
                 headers={"Authorization": f"Bearer {token}"},
                 json={
-                    "model": "GigaChat",
+                    "model": MODEL,
                     "messages": [{"role": "user", "content": prompt}],
                 },
             )

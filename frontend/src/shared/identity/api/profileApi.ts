@@ -6,7 +6,7 @@
 // comes back trimmed. Callers must recompute "unsaved" against the response, never against what
 // they sent, or such a name stays dirty forever after a successful save.
 import { isHttpError } from '../../api/httpClient'
-import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
+import { authorizedRequest } from '../../session/authorizedRequest'
 import { identityRequest } from './identityRequest'
 import { NameRejectedError } from './profileErrors'
 import { toProfile, type Profile } from './profileWire'

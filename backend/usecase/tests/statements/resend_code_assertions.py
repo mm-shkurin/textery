@@ -18,8 +18,8 @@ class ResendCodeAssertions:
     INVALID_OR_EXPIRED_CODE = "INVALID_OR_EXPIRED_CODE"
     INVALID_OR_EXPIRED_MESSAGE = "The verification code is invalid or has expired."
 
-    verification_code_repository: FakeVerificationCodeRepository
-    account_repository: FakeAccountRepository
+    _verification_code_repository: FakeVerificationCodeRepository
+    _account_repository: FakeAccountRepository
     codes_before_resend: int
     thrown_exception: Exception | None
     old_code: str | None
@@ -33,9 +33,9 @@ class ResendCodeAssertions:
         self._assert_validation_exception(
             self.thrown_exception, self.COOLDOWN_ERROR_CODE, self.COOLDOWN_MESSAGE
         )
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend, (
+        assert len(self._verification_code_repository.saved_codes) == self.codes_before_resend, (
             f"expected an in-cooldown resend to issue NO new code, saved_codes went from "
-            f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
+            f"{self.codes_before_resend} to {len(self._verification_code_repository.saved_codes)}"
         )
 
     def assert_new_code_issued_and_supersedes_the_old_one(self) -> None:
@@ -45,7 +45,7 @@ class ResendCodeAssertions:
             f"expected the NEW code to verify the account, got "
             f"{type(self.new_code_verify_exception).__name__}: {self.new_code_verify_exception}"
         )
-        assert self.account_repository.saved_accounts[-1].is_verified is True, (
+        assert self._account_repository.saved_accounts[-1].is_verified is True, (
             "expected the account to be verified by the NEW code after supersession"
         )
 
@@ -57,7 +57,7 @@ class ResendCodeAssertions:
         # expires_at is the only monotonic field the entity exposes (= created_at
         # + fixed expiry), so it tracks created_at ordering.
         self._assert_fresh_code_issued()
-        new_entity = self.verification_code_repository.saved_codes[-1]
+        new_entity = self._verification_code_repository.saved_codes[-1]
         assert self.old_code_entity is not None and (
             new_entity.expires_at > self.old_code_entity.expires_at
         ), (
@@ -78,9 +78,11 @@ class ResendCodeAssertions:
             f"expected the resend to succeed, got "
             f"{type(self.thrown_exception).__name__}: {self.thrown_exception}"
         )
-        assert len(self.verification_code_repository.saved_codes) == self.codes_before_resend + 1, (
+        assert (
+            len(self._verification_code_repository.saved_codes) == self.codes_before_resend + 1
+        ), (
             f"expected exactly one NEW code to be persisted by the resend, saved_codes went from "
-            f"{self.codes_before_resend} to {len(self.verification_code_repository.saved_codes)}"
+            f"{self.codes_before_resend} to {len(self._verification_code_repository.saved_codes)}"
         )
         assert self.new_code is not None and len(self.new_code) == 6 and self.new_code.isdigit(), (
             f"expected a fresh 6-digit code, got {self.new_code!r}"
@@ -94,7 +96,7 @@ class ResendCodeAssertions:
         # execute must return the SAME object it handed to save(), not a second
         # generate() nor the old registration code. Identity is exact here: the
         # usecase persists one object and (post-green) returns that same instance.
-        persisted = self.verification_code_repository.saved_codes[-1]
+        persisted = self._verification_code_repository.saved_codes[-1]
         assert self.returned_code is persisted, (
             f"expected execute to return the persisted code, got {self.returned_code!r}"
         )

@@ -27,20 +27,20 @@ class RenameAccountStatements(ProfileStatementsBase):
         await self.rename_to(None)
 
     def given_the_update_fails(self) -> None:
-        self.account_repository.raise_on_update_name = self.write_failure
+        self._account_repository.raise_on_update_name = self.write_failure
 
     def given_the_commit_fails(self) -> None:
-        self.unit_of_work.raise_on_commit = self.write_failure
+        self._unit_of_work.raise_on_commit = self.write_failure
 
     def _usecase(self) -> RenameAccount:
         return RenameAccount(
-            account_repository=self.account_repository, unit_of_work=self.unit_of_work
+            account_repository=self._account_repository, unit_of_work=self._unit_of_work
         )
 
     def assert_the_stored_name_is(self, expected: str | None) -> None:
-        assert self.account_repository.update_name_calls == [(self.account_id, expected)], (
+        assert self._account_repository.update_name_calls == [(self.account_id, expected)], (
             f"expected one single-column UPDATE writing {expected!r}, got "
-            f"{self.account_repository.update_name_calls!r}"
+            f"{self._account_repository.update_name_calls!r}"
         )
 
     def assert_the_returned_profile_reports(self, expected: str | None) -> None:
@@ -51,7 +51,7 @@ class RenameAccountStatements(ProfileStatementsBase):
     def assert_the_account_was_never_read(self) -> None:
         """A malformed name costs zero queries, so it cannot be timed against a
         well-formed one on a missing account."""
-        assert self.account_repository.update_name_calls == []
+        assert self._account_repository.update_name_calls == []
 
     def assert_refused_as_an_invalid_name(self) -> None:
         assert isinstance(self.thrown_exception, ValidationException), (
@@ -66,8 +66,8 @@ class RenameAccountStatements(ProfileStatementsBase):
         )
 
     def assert_the_work_was_rolled_back(self) -> None:
-        assert self.unit_of_work.rollback_call_count == 1, (
-            f"expected exactly one rollback, got {self.unit_of_work.rollback_call_count}"
+        assert self._unit_of_work.rollback_call_count == 1, (
+            f"expected exactly one rollback, got {self._unit_of_work.rollback_call_count}"
         )
 
     def assert_the_entity_still_carries_its_old_name(self, expected: str | None) -> None:

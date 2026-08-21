@@ -104,7 +104,9 @@ describe('HistoryPage', () => {
     await waitFor(() => expect(screen.getAllByTestId('history-document-row')).toHaveLength(2))
     // The page size is left to the client's own default (which is the server's): this component
     // has no opinion about it, and stating 20 here made a third copy of one number.
-    expect(historyApi.listDocuments).toHaveBeenNthCalledWith(2, undefined, 'cur-1')
+    // The empty filter travels with the cursor: the next page must be fetched under the SAME
+    // narrowing as the first, or «показать ещё» silently widens the list the user is paging.
+    expect(historyApi.listDocuments).toHaveBeenNthCalledWith(2, undefined, 'cur-1', {})
     // The cursor is null now, so the control must be gone — not merely disabled. Asserting the
     // row count alone would pass on a list that keeps offering a page that does not exist.
     expect(screen.queryByTestId('history-documents-more')).not.toBeInTheDocument()

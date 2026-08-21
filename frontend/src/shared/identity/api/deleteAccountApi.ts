@@ -9,10 +9,12 @@
 // The response is 204 with no body. There is nothing to map, and a client that expected a profile
 // back would be waiting for a row that no longer exists.
 import { isHttpError } from '../../api/httpClient'
-import { authorizedRequest } from '../../../features/auth/api/authorizedRequest'
+import { authorizedRequest } from '../../session/authorizedRequest'
 import { DeletionRejectedError } from './profileErrors'
 import type { Profile } from './profileWire'
 import { API } from '../../../shared/api/endpoints'
+import { forgetAttribution } from '../../analytics/attribution'
+import { forgetVisitor } from '../../analytics/visitorId'
 
 const DELETION_PATH = API.identity.deletion
 
@@ -49,6 +51,16 @@ export async function requestAccountDeletion(confirmation: DeletionConfirmation)
       : { confirm_email: confirmation.email }
   try {
     await authorizedRequest<unknown>(DELETION_PATH, { method: 'POST', body })
+    // The account is gone, so the browser's analytics identity and its frozen campaign go with
+    // it. Only AFTER the server confirmed: clearing first and then failing would leave a live
+    // account whose next events arrive as a brand-new visitor.
+    //
+    // The two analytics keys and nothing else -- theme, and every other preference in this
+    // browser, belong to the person at the keyboard rather than to the account they just deleted.
+    // The next registration from this browser is a new visitor with no campaign, which is what
+    // makes it impossible to attribute to the deleted account's link.
+    forgetVisitor()
+    forgetAttribution()
   } catch (error) {
     const rejected = deletionRejection(error)
     if (rejected !== null) throw rejected

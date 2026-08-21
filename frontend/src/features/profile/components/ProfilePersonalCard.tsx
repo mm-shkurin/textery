@@ -3,6 +3,8 @@ import type { Profile } from '../../../shared/identity/api/profileApi'
 import { ProfileAvatarField } from './ProfileAvatarField'
 import { ProfileIdentityCard } from './ProfileIdentityCard'
 import { ProfileNameForm } from './ProfileNameForm'
+import profilePageStyles from './ProfilePage.module.css'
+import profileButtonsStyles from './ProfileButtons.module.css'
 
 interface ProfilePersonalCardProps {
   profile: Profile
@@ -20,11 +22,13 @@ interface ProfilePersonalCardProps {
 // to save one click.
 export function ProfilePersonalCard({ profile, markDirty, markClean }: ProfilePersonalCardProps) {
   return (
-    <section className="profile-card">
-      <h2 className="profile-card-title">Личные данные</h2>
+    <section className={profilePageStyles['profile-card']}>
+      <h2 className={profilePageStyles['profile-card-title']}>Личные данные</h2>
 
-      <div className="profile-row profile-row-divided">
-        <div className="profile-identity">
+      <div
+        className={`${profileButtonsStyles['profile-row']} ${profilePageStyles['profile-row']} ${profilePageStyles['profile-row-divided']}`}
+      >
+        <div className={profilePageStyles['profile-identity']}>
           <ProfileAvatar identity={{ status: 'ready', profile }} size="card" />
           <ProfileIdentityCard profile={profile} />
         </div>

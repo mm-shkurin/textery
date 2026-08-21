@@ -9,9 +9,22 @@
 // `httpClient`/`send`; this module is a map, not a client. Segments that vary are functions so a
 // caller cannot forget to encode them.
 
-const V1 = '/api/v1'
+// Assembled from its segments rather than written as one literal, mirroring the backend's
+// `adapters/rest/src/router/api_routes.py`: the mount point and the version are what a bump
+// actually edits, and a bare '/api/v1' hides the version inside a path string where nothing can
+// name it. Not configuration — the URL space is part of the published contract
+// (ProductSpecification/api-specs/*.yaml) and moves only with it.
+const MOUNT = 'api'
+export const API_VERSION = 'v1'
+
+const V1 = `/${MOUNT}/${API_VERSION}`
 
 export const API = {
+  // The one tokenless WRITE this app makes. Grouped like everything else rather than inlined at
+  // the call site, so a version bump moves it with the rest of the URL space.
+  analytics: {
+    events: `${V1}/analytics/events`,
+  },
   auth: {
     login: `${V1}/auth/login`,
     register: `${V1}/auth/register`,

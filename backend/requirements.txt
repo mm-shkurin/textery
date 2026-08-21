@@ -23,9 +23,13 @@ PyJWT==2.13.0
 # bleach is archived/EOL since Jan 2023 and its own README points here.
 nh3==0.3.6
 # HTML -> PDF renderer for document export (story 17). Needs native Pango/cairo
-# libs, installed in infra/docker/backend.Dockerfile; cannot import on a host
-# without them, so its adapter tests run in-container.
-weasyprint==63.1
+# libs, installed in the backend image; cannot import on a host without them, so
+# its adapter tests run in-container and on CI, never on a bare dev host.
+# 69.0 rather than the 63.1 this shipped on: 63.1 carried PYSEC-2026-2034 and
+# PYSEC-2026-3412, and 68.0 -- the fix version the first advisory names -- still
+# carries the second. The renderer touches only `HTML(string=, url_fetcher=)`
+# and `write_pdf(stylesheets=[CSS(string=)])`, unchanged across those releases.
+weasyprint==69.0
 # HTML -> DOCX renderer for document export (story 17, Sc 2.2). Both pure-Python
 # (no native OS libs), so unlike weasyprint they need no apt packages in CI or
 # the backend image -- adding them to this file is enough. htmldocx parses the

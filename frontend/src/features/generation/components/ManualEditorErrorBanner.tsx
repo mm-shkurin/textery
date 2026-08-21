@@ -1,4 +1,5 @@
 import { PlaceholderImage } from '../../../shared/components/PlaceholderImage'
+import manualEditorStyles from './ManualEditor.module.css'
 
 interface ManualEditorErrorBannerProps {
   // Which failure this banner speaks for — the two callers say different things (an init failure
@@ -18,8 +19,8 @@ interface ManualEditorErrorBannerProps {
 // would buy nothing.
 export function ManualEditorErrorBanner({ testId, message }: ManualEditorErrorBannerProps) {
   return (
-    <div className="me-error-banner" role="alert" data-testid={testId}>
-      <PlaceholderImage className="me-error-banner-icon" />
+    <div className={manualEditorStyles['me-error-banner']} role="alert" data-testid={testId}>
+      <PlaceholderImage className={manualEditorStyles['me-error-banner-icon']} />
       {message}
     </div>
   )

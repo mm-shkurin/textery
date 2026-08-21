@@ -1,11 +1,15 @@
 import { memo } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
-import { documentTypeFromWire, type DocumentType } from '../../../shared/documentTypes'
+import { documentTypeFromWire, type DocumentType } from '../../../shared/domain/documentTypes'
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
-import { formatCardDate } from '../../../shared/formatCardDate'
+import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import { projectKey } from '../utils/projectKey'
-import './ProjectCard.css'
+import styles from './ProjectCard.module.css'
+import projectsPageStyles from './ProjectsPage.module.css'
+import projectsScreenStyles from './ProjectsScreen.module.css'
+import { ProjectRetryControls } from './ProjectRetryControls'
+import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectCardProps {
   project: ProjectSummary
@@ -13,7 +17,7 @@ interface ProjectCardProps {
   // same row without two elements answering to the same identity lookup.
   testIdPrefix?: string
   onOpen?: (project: ProjectSummary) => void
-  onRetry?: (generationId: string) => void
+  onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retrying?: boolean
   retryError?: string | null
 }
@@ -38,7 +42,7 @@ const ACCENT_BY_TYPE: Record<DocumentType, string> = {
 // transparent badge, which reads as a broken card rather than an unfamiliar one.
 function accentClass(wireDocumentType: string): string {
   const appType = documentTypeFromWire(wireDocumentType)
-  return `project-card-accent-${appType ? ACCENT_BY_TYPE[appType] : 'blue'}`
+  return projectsPageStyles[`project-card-accent-${appType ? ACCENT_BY_TYPE[appType] : 'blue'}`]
 }
 
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
@@ -61,20 +65,27 @@ function ProjectCardComponent({
   const label = project.title ?? project.preview ?? documentTypeLabelFromWire(project.documentType)
   return (
     <div
-      className={`project-card ${accentClass(project.documentType)}${openable ? ' project-card-openable' : ''}`}
+      className={`${projectsPageStyles['project-card']} ${projectsScreenStyles['project-card']} ${accentClass(project.documentType)}${
+        openable ? ' ' + styles['project-card-openable'] : ''
+      }`}
       data-testid={namespaced('project-card')}
     >
-      <div className="project-card-thumb">
-        <ProjectFolderIcon className="project-card-folder" />
+      <div
+        className={`${projectsPageStyles['project-card-thumb']} ${projectsScreenStyles['project-card-thumb']}`}
+      >
+        <ProjectFolderIcon className={projectsPageStyles['project-card-folder']} />
       </div>
       <div
-        className="project-card-body"
+        className={`${projectsPageStyles['project-card-body']} ${projectsScreenStyles['project-card-body']}`}
         data-testid={namespaced(`project-card-${projectKey(project)}`)}
       >
         {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
             the history list shipped the raw field once and named one document two ways
             depending on which screen you looked at. */}
-        <div className="project-card-type" data-testid={namespaced('project-card-type')}>
+        <div
+          className={projectsPageStyles['project-card-type']}
+          data-testid={namespaced('project-card-type')}
+        >
           {documentTypeLabelFromWire(project.documentType)}
         </div>
         {/* The whole card is the click target — that is what the ::after overlay on
@@ -82,37 +93,42 @@ function ProjectCardComponent({
             accessible name is a real <button> around the title. A <div role="button"> would have
             to re-implement Enter and Space by hand, and a card without a title would announce
             itself as an unnamed button. */}
-        <div className="project-card-title" data-testid={namespaced('project-card-title')}>
+        <div
+          className={`${projectsPageStyles['project-card-title']} ${projectsScreenStyles['project-card-title']}`}
+          data-testid={namespaced('project-card-title')}
+        >
           {openable ? (
-            <button type="button" className="project-card-open" onClick={() => onOpen!(project)}>
+            <button
+              type="button"
+              className={styles['project-card-open']}
+              onClick={() => onOpen!(project)}
+            >
               {label}
             </button>
           ) : (
             label
           )}
         </div>
-        <div className="project-card-date" data-testid={namespaced('project-card-date')}>
+        <div
+          className={projectsPageStyles['project-card-date']}
+          data-testid={namespaced('project-card-date')}
+        >
           {formatCardDate(project.updatedAt)}
         </div>
         {/* `retryable` is read as the server sent it and never recomputed from `status`: a client
             deriving it from an enum it may not fully know would offer the button on a status it
             does not recognise, which is fail-open on a paid operation. */}
         {project.retryable && onRetry !== undefined && (
-          <button
-            type="button"
-            className="project-card-retry"
-            data-testid={namespaced('project-card-retry')}
-            // Disabled while its own request is in flight — the guard against a double-click is
-            // in the hook, but a button that stays live through the wait invites one.
-            disabled={retrying}
-            onClick={() => onRetry(project.id)}
-          >
-            {retrying ? 'Повторяем…' : 'Повторить'}
-          </button>
+          <ProjectRetryControls
+            generationId={project.id}
+            retrying={retrying}
+            onRetry={onRetry}
+            namespaced={namespaced}
+          />
         )}
         {retryError !== null && (
           <p
-            className="project-card-retry-error"
+            className={styles['project-card-retry-error']}
             data-testid={namespaced('project-card-retry-error')}
             role="alert"
           >

@@ -20,6 +20,7 @@ from container import (
     create_create_document_from_generation,
     create_delete_account,
     create_delete_avatar,
+    create_delete_document,
     create_exchange_handoff_code,
     create_export_document,
     create_frontend_callback_url,
@@ -32,6 +33,8 @@ from container import (
     create_list_generations,
     create_list_projects,
     create_login_user,
+    create_record_analytics_event,
+    create_record_registration_context,
     create_refresh_access_token,
     create_register_user,
     create_rename_account,
@@ -44,8 +47,10 @@ from container import (
     create_update_avatar,
     create_verify_account,
 )
+from router.analytics.analytics_router import get_record_analytics_event_usecase
 from router.auth.auth_router import (
     get_login_user_usecase,
+    get_record_registration_context_usecase,
     get_refresh_access_token_usecase,
     get_register_user_usecase,
     get_resend_code_usecase,
@@ -67,6 +72,7 @@ from router.auth.profile_router import (
     get_get_profile_usecase,
     get_rename_account_usecase,
 )
+from router.document.document_deletion_router import get_delete_document_usecase
 from router.document.document_router import (
     get_create_document_from_generation_usecase,
     get_create_document_usecase,
@@ -88,11 +94,36 @@ from security.current_owner import get_account_existence, get_token_service
 
 
 def install_dependency_overrides(app: FastAPI) -> None:
+    """Replace every router stub with its composition-root factory.
+
+    Grouped by router family only so no single function outgrows the 30-line
+    limit as endpoints are added; the order within a group, and between groups,
+    is the order the bindings were declared in.
+    """
+    _override_generation(app)
+    _override_auth(app)
+    _override_documents(app)
+    _override_platform(app)
+    _override_oauth(app)
+    _override_analytics(app)
+
+
+def _override_analytics(app: FastAPI) -> None:
+    app.dependency_overrides[get_record_analytics_event_usecase] = create_record_analytics_event
+    app.dependency_overrides[get_record_registration_context_usecase] = (
+        create_record_registration_context
+    )
+
+
+def _override_generation(app: FastAPI) -> None:
     app.dependency_overrides[get_request_generation_usecase] = create_request_generation
     app.dependency_overrides[get_get_generation_usecase] = create_get_generation
     app.dependency_overrides[get_list_generations_usecase] = create_list_generations
     app.dependency_overrides[get_retry_generation_usecase] = create_retry_generation
     app.dependency_overrides[get_generate_document_usecase] = create_generate_document
+
+
+def _override_auth(app: FastAPI) -> None:
     app.dependency_overrides[get_register_user_usecase] = create_register_user
     app.dependency_overrides[get_verify_account_usecase] = create_verify_account
     app.dependency_overrides[get_resend_code_usecase] = create_resend_code
@@ -104,6 +135,9 @@ def install_dependency_overrides(app: FastAPI) -> None:
     app.dependency_overrides[get_get_avatar_usecase] = create_get_avatar
     app.dependency_overrides[get_delete_account_usecase] = create_delete_account
     app.dependency_overrides[get_refresh_access_token_usecase] = create_refresh_access_token
+
+
+def _override_documents(app: FastAPI) -> None:
     app.dependency_overrides[get_create_document_usecase] = create_create_document
     app.dependency_overrides[get_get_document_usecase] = create_get_document
     app.dependency_overrides[get_export_document_usecase] = create_export_document
@@ -111,11 +145,18 @@ def install_dependency_overrides(app: FastAPI) -> None:
         create_create_document_from_generation
     )
     app.dependency_overrides[get_list_documents_usecase] = create_list_documents
+    app.dependency_overrides[get_delete_document_usecase] = create_delete_document
     app.dependency_overrides[get_save_document_usecase] = create_save_document
+
+
+def _override_platform(app: FastAPI) -> None:
     app.dependency_overrides[get_token_service] = create_token_service
     app.dependency_overrides[get_account_existence] = create_account_existence
     app.dependency_overrides[get_check_health_usecase] = create_check_health
     app.dependency_overrides[get_list_projects_usecase] = create_list_projects
+
+
+def _override_oauth(app: FastAPI) -> None:
     app.dependency_overrides[get_start_oauth_usecase] = create_start_oauth
     app.dependency_overrides[get_complete_oauth_callback_usecase] = create_complete_oauth_callback
     app.dependency_overrides[get_exchange_handoff_code_usecase] = create_exchange_handoff_code

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
-import { SessionExpiredError } from '../../../auth/api/authorizedRequest'
+import { SessionExpiredError } from '../../../../shared/session/authorizedRequest'
 import * as documentApi from '../../api/documentApi'
 import {
   RETRY_WINDOW_MS,

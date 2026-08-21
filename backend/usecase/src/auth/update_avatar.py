@@ -33,13 +33,13 @@ class UpdateAvatar:
         clock: Clock | None = None,
         unit_of_work: UnitOfWork | None = None,
     ) -> None:
-        self.account_repository = account_repository
-        self.avatar_repository = avatar_repository
-        self.clock = clock or SystemClock()
+        self._account_repository = account_repository
+        self._avatar_repository = avatar_repository
+        self._clock = clock or SystemClock()
         # A real UnitOfWork on the repository's own session is required in
         # production: NullUnitOfWork.commit() is a silent no-op, so a mis-wired
         # usecase answers 200 with a fresh avatar_updated_at and stores nothing.
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, account_id: UUID, data: bytes) -> Account:
         # Validated BEFORE anything is read or written, so a refused upload costs
@@ -47,12 +47,12 @@ class UpdateAvatar:
         # "nothing was saved" half of the refusal contract true by construction
         # rather than by a rollback.
         avatar = Avatar(data)
-        account = await self.account_repository.find_by_id(account_id)
+        account = await self._account_repository.find_by_id(account_id)
         if account is None:
             raise unauthorized()
-        updated_at = self.clock.now()
+        updated_at = self._clock.now()
         try:
-            await self.avatar_repository.update_avatar(
+            await self._avatar_repository.update_avatar(
                 account_id=account_id,
                 data=avatar.data,
                 # The type the DOMAIN read out of the magic bytes. The client's
@@ -61,10 +61,10 @@ class UpdateAvatar:
                 media_type=avatar.media_type,
                 updated_at=updated_at,
             )
-            await self.unit_of_work.commit()
+            await self._unit_of_work.commit()
         except Exception:
             logger.exception("failed to persist the uploaded avatar")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise
         # The entity was read before the UPDATE and still carries the old
         # timestamp; applying it here is what makes the returned profile the state

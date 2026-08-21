@@ -19,9 +19,9 @@ class TestCreateResendCodeSharesOneSession:
 
     async def test_should_back_all_collaborators_with_the_same_session(self):
         async with wired_on_one_session(create_resend_code) as (resend, sentinel_session):
-            account_session = resend.account_repository._session
-            code_session = resend.verification_code_repository._session
-            unit_of_work_session = resend.unit_of_work._session
+            account_session = resend._account_repository._session
+            code_session = resend._verification_code_repository._session
+            unit_of_work_session = resend._unit_of_work._session
 
             assert account_session is sentinel_session, (
                 "expected the account repository to be backed by the wiring's "

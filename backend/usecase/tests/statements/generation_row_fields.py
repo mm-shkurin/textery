@@ -44,6 +44,12 @@ INVARIANT_FIELD_NAMES = (
     # once — which is exactly the decision this tripwire exists to force.
     "idempotency_key",
     "source_generation_id",
+    # Arrived with the style picker (MVP+ «выбрать стиль текста») and is decided
+    # invariant here for the same reason as the two above: `GenerateDocument`
+    # READS the style — it is interpolated into the prompt — and never writes it.
+    # A failure path that rewrote it would change what a retry of this row asks
+    # the model for, silently, without the user having chosen anything.
+    "text_style",
 )
 
 # The three the usecase legitimately writes. Named here rather than left implicit so

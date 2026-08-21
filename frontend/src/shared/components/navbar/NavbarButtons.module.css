@@ -1,0 +1,79 @@
+/* The top bar's action buttons.
+
+   Measured off the bars the product's own screens place — `Buttons/Main` and `Buttons/Secondary`
+   inside node 1134:12269 — not off the 1.3333x-drawn UI-kit component the landing header was read
+   from. Both are 43 tall with a 12px radius, 12/32 padding and a 16/600 label, and they are the
+   same two buttons the profile and generation screens use inside their cards. Reading the kit for
+   one screen and the frames for the others is what left the same control at three sizes.
+
+   Class names are kept because three landing actions (Войти / Мои работы / Выйти) already use
+   them. Sizes step down below the design's own width together with the bar around them. */
+
+.btn-ghost,
+.btn-light {
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 43px;
+}
+
+/* `Component 20` — the secondary action: white fill, black label.
+   The fill is `--bg-surface`, NOT the `--neutral-000` swatch it used to name: a raw swatch has no
+   light/dark opinion, so in the dark theme this button kept its white fill while the label
+   followed `--text-primary` to near-white — white on white, on the one control a returning user
+   needs to find. Every panel in the product uses this token for "a surface above the page". */
+.btn-ghost {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 0 32px;
+}
+
+.btn-ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* `Component 19` — the primary CTA. Its Variant2 (hover) state inverts to a `blue-50` fill with a
+   `blue-700` label rather than darkening the blue. */
+.btn-light {
+  background: var(--accent);
+  color: var(--text-inverse);
+  padding: 0 32px;
+}
+
+.btn-light:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* No step up above 1920, for the same reason as the bar: the frame already divides to a laptop. */
+
+@media (max-width: 1000px) {
+  .btn-ghost,
+  .btn-light {
+    height: 40px;
+    font-size: 15px;
+  }
+
+  .btn-ghost,
+  .btn-light {
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Signing out is the only way to end a session, and a phone is exactly where a borrowed device
+     gets left signed in. Signing in is how every returning user gets back to their work — hiding
+     it on mobile leaves them with "start over" as the only visible action. Shrink both, hide
+     neither. */
+  .btn-ghost,
+  .btn-light {
+    height: 36px;
+    font-size: 14px;
+    padding: 0 16px;
+  }
+}

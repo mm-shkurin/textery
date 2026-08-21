@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDocumentFromGeneration } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // Story 18, scenario 2.1 — the WIRE half of "a completed generation opens itself in the editor".
 // `POST /api/v1/documents/from-generation` (documents_from_generation.yaml) is the only new

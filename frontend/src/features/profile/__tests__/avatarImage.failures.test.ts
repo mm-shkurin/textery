@@ -119,9 +119,11 @@ describe('when the browser cannot finish the job', () => {
   it('reports an encoder that handed back nothing', async () => {
     // `toBlob` yields null when the encoder fails or the type is unsupported; uploading that
     // would put the string "null" on the wire.
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(partialDouble<CanvasRenderingContext2D>({
-      drawImage: vi.fn(),
-    }))
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      partialDouble<CanvasRenderingContext2D>({
+        drawImage: vi.fn(),
+      }),
+    )
     vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback: BlobCallback) => {
       callback(null)
     })

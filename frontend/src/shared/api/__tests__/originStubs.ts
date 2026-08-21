@@ -4,7 +4,7 @@
 // `vi.stubGlobal('fetch', vi.fn(() => new Response(JSON.stringify(body), { status: 500 })))`, and
 // a fixture copied four times is a fixture that drifts in three of them.
 import { vi, type Mock } from 'vitest'
-import { clearSession, saveSession } from '../../../features/auth/utils/authSession'
+import { clearSession, saveSession } from '../../session/authSession'
 
 // One definition of the seeded session, so the `Authorization` header a suite ASSERTS is the same
 // literal the session was SEEDED with — a drifting copy makes the header assertion vacuous. Only

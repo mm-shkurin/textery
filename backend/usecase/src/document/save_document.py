@@ -1,11 +1,14 @@
 from uuid import UUID
 
+from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorder
+from analytics.event_names import DOCUMENT_SAVED
 from document.document import Document
 from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
 from document.title_update import TitleUpdate
 from shared.clock import Clock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
@@ -29,11 +32,15 @@ class SaveDocument:
         html_sanitizer: HtmlSanitizer,
         clock: Clock,
         unit_of_work: UnitOfWork | None = None,
+        analytics_recorder: AnalyticsRecorder | None = None,
     ) -> None:
-        self.document_repository = document_repository
-        self.html_sanitizer = html_sanitizer
-        self.clock = clock
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._document_repository = document_repository
+        self._html_sanitizer = html_sanitizer
+        self._clock = clock
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
+        # Null by default, fail-open at use: a save that persisted must answer
+        # 200 whatever analytics does.
+        self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(
         self,
@@ -48,24 +55,33 @@ class SaveDocument:
         title: TitleUpdate | str | None = None,
     ) -> Document:
         self._validate_version(version)
-        # Length is checked here, before sanitizing: sanitizing first would make the
-        # parser chew through an adversarial payload before we decline it, and the
-        # cap is a contract about what the client sent, not about what survived
-        # cleaning. DocumentContent caps the raw string, NFC-normalizes, then re-caps.
-        normalized = self._validate_content(content)
-        sanitized = self.html_sanitizer.sanitize(normalized)
+        sanitized = self._html_sanitizer.sanitize(self._validate_content(content))
 
-        saved = await self.document_repository.save_content_if_version_matches(
+        saved = await self._document_repository.save_content_if_version_matches(
             document_id=document_id,
             owner_id=owner_id,
             content=sanitized,
             expected_version=version,
-            updated_at=self.clock.now(),
+            updated_at=self._clock.now(),
             title=self._title_intent(title),
         )
         if saved is None:
+            # A save that persisted NOTHING records nothing (§9.7): the miss
+            # branch either raises or resolves an idempotent replay, and neither
+            # is a save the funnel should count.
             return await self._explain_miss(document_id, owner_id, sanitized, version)
-        await self.unit_of_work.commit()
+        return await self._committed(saved, owner_id)
+
+    async def _committed(self, saved: Document, owner_id: UUID) -> Document:
+        """Close the transaction, then report it -- in that order.
+
+        An event recorded first and a commit that then failed is a save in the
+        analytics data that never happened in the product (§12.4).
+        """
+        await self._unit_of_work.commit()
+        await self._analytics_recorder.record(
+            event_name=DOCUMENT_SAVED, visitor_id=None, user_id=owner_id
+        )
         return saved
 
     @staticmethod
@@ -98,15 +114,22 @@ class SaveDocument:
         # sail through a bare isinstance(version, int) check and act as version 1.
         if isinstance(version, bool) or not isinstance(version, int) or version < MIN_VERSION:
             raise ValidationException(
-                error_code="INVALID_VERSION", message=self.INVALID_VERSION_MESSAGE
+                error_code=ErrorCode.INVALID_VERSION, message=self.INVALID_VERSION_MESSAGE
             )
 
     def _validate_content(self, content: str) -> str:
+        """The content, proven within the cap and NFC-normalized.
+
+        Called BEFORE sanitizing: sanitizing first would make the parser chew
+        through an adversarial payload before we decline it, and the cap is a
+        contract about what the client sent, not about what survived cleaning.
+        DocumentContent caps the raw string, NFC-normalizes, then re-caps.
+        """
         try:
             return DocumentContent(content).value
         except ValueError as error:
             raise ValidationException(
-                error_code="CONTENT_TOO_LONG", message=self.CONTENT_TOO_LONG_MESSAGE
+                error_code=ErrorCode.CONTENT_TOO_LONG, message=self.CONTENT_TOO_LONG_MESSAGE
             ) from error
 
     async def _explain_miss(
@@ -124,7 +147,7 @@ class SaveDocument:
         6.7) two concurrent saves carrying *different* content cannot both pass:
         the loser's content will not match what landed.
         """
-        current = await self.document_repository.find_by_id_and_owner(document_id, owner_id)
+        current = await self._document_repository.find_by_id_and_owner(document_id, owner_id)
         if current is None:
             # Absent and foreign are one answer, always. A distinct response for
             # "exists but not yours" would confirm the id -- and a 409 here would

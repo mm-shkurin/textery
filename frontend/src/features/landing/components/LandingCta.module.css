@@ -1,0 +1,31 @@
+/* The closing block, `CTA` (node 1290:11260). Its heading is the hero's size — 44/53 — rather than
+   the 36 the sections between them use: it is the page asking a second time, and the design gives
+   it the same weight as the first ask. */
+.landing-cta {
+  text-align: center;
+}
+
+.landing-cta-title {
+  max-width: 900px;
+  font-size: 44px;
+  line-height: 53px;
+  font-weight: 600;
+  color: var(--text-hero);
+}
+
+.landing-cta-accent {
+  color: var(--accent-hero);
+}
+
+.landing-cta-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .landing-cta-title {
+    font-size: 30px;
+    line-height: 36px;
+  }
+}

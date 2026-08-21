@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { OAuthCallback } from '../OAuthCallback'
+import { screen } from '@testing-library/react'
 import * as oauthExchangeApi from '../../api/oauthExchangeApi'
+import { navigate, neverResolves, renderCallbackAt } from './oauthCallbackTestSupport'
 
 // Scenario 4.5 — the visitor lands on /auth/callback with an UNRECOGNIZED `?error=<weird_code>`
 // (a value the app has no specific copy for) and no provider hint. The callback must fall back to
@@ -20,7 +19,6 @@ import * as oauthExchangeApi from '../../api/oauthExchangeApi'
 const GENERIC_ERROR_MESSAGE = 'Не удалось войти через провайдера. Попробуйте снова.'
 const RAW_ERROR_CODE = 'totally_unknown_xyz'
 
-const navigate = vi.fn()
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>()
   return { ...actual, useNavigate: () => navigate }
@@ -31,16 +29,8 @@ vi.mock('../../api/oauthExchangeApi', async (importOriginal) => {
   return { ...actual, oauthExchange: vi.fn() }
 })
 
-function neverResolves<T>() {
-  return new Promise<T>(() => {})
-}
-
 function renderAtCallback(query: string) {
-  return render(
-    <MemoryRouter initialEntries={[`/auth/callback${query}`]}>
-      <OAuthCallback />
-    </MemoryRouter>,
-  )
+  return renderCallbackAt(`${query}`)
 }
 
 describe('OAuthCallback unrecognized error code fallback', () => {

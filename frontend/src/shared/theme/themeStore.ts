@@ -18,6 +18,7 @@ import {
   type Theme,
   type ThemePreference,
 } from './theme'
+import { listenerSet } from '../lib/listeners'
 
 // Seeded from the attribute the boot script already set, NOT re-resolved. Re-resolving here would
 // be a second, later answer to a question already answered before paint, and the two would differ
@@ -29,7 +30,7 @@ let state: Theme = currentTheme()
 // would jump off «Системная» the moment it was chosen.
 let preference: ThemePreference = readStoredPreference()
 
-const listeners = new Set<() => void>()
+const listeners = listenerSet()
 
 // A string, so it is referentially stable by construction. `useSyncExternalStore` re-renders on
 // `Object.is` inequality; a snapshot that allocated would loop forever.
@@ -38,14 +39,11 @@ export function themeSnapshot(): Theme {
 }
 
 export function subscribeTheme(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
+  return listeners.subscribe(listener)
 }
 
 function notify(): void {
-  for (const listener of [...listeners]) listener()
+  listeners.notify()
 }
 
 export function setTheme(next: Theme): void {

@@ -10,6 +10,16 @@ paths:
       operationId: registerUser
       tags:
         - auth
+      parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          description: >
+            Source of the account's stored device language (story 14). The highest-q tag
+            wins; stored lower-cased and canonical, so ru-RU / ru-ru / RU-RU are one
+            value. Absent or unparseable → stored NULL, never a guessed default.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -25,7 +35,10 @@ paths:
             body are silently ignored, never bound onto the created account — no 422,
             no error (scenario 1.5, hazard-scan group 5 mass-assignment guard; the
             request schema doesn't declare these fields at all, so they're dropped at
-            parse time).
+            parse time). Story 14 extends that list rather than weakening it: `ip`,
+            `country`, `device_type` and `os` are ALSO server-derived and equally
+            undeclared here — the body's writable allow-list is the three credential
+            fields plus the five `utm_*` below, and nothing else.
           content:
             application/json:
               schema:
@@ -35,6 +48,12 @@ paths:
             Validation error — malformed email, email over 255 chars, password failing
             policy (min 8/max 128 chars, digit+upper+lower+special), or password/
             confirm_password mismatch.
+            UNCHANGED BY STORY 14, and deliberately so: this list is exactly the set of
+            reasons registration could fail before analytics existed. No utm_*, no
+            Accept-Language, no User-Agent and no GeoIP outcome can produce a 400 here.
+            An earlier draft of story 14 added an over-bound-utm refusal to this list;
+            the developer decision of 2026-08-19 removed it (see the story's Governing
+            Decision and endpoints.md § "Attribution is fail-open on both auth routes").
         '409':
           description: Email already registered (verified or pending) — duplicate.
         '500':
@@ -63,6 +82,38 @@ components:
             NFC-normalized before hashing (hazard-scan group 1 guard).
         confirm_password:
           type: string
+        utm_source:
+          $ref: '#/components/schemas/UtmValue'
+        utm_medium:
+          $ref: '#/components/schemas/UtmValue'
+        utm_campaign:
+          $ref: '#/components/schemas/UtmValue'
+        utm_content:
+          $ref: '#/components/schemas/UtmValue'
+        utm_term:
+          $ref: '#/components/schemas/UtmValue'
+    UtmValue:
+      type: string
+      nullable: true
+      maxLength: 200
+      description: >
+        First-touch marketing attribution (story 14), frozen in the browser on the first
+        visit that carried any UTM parameter and never overwritten afterwards — so this is
+        the campaign that ORIGINALLY brought the visitor, not the one they arrived on today.
+        OPTIONAL, and FAIL-OPEN: these five are analytics metadata, and NOTHING about them
+        can change this endpoint's answer. NFC-normalized, then bounded. A value over the
+        bound — or one that is undecodable, or carries text the store cannot hold (NUL, a
+        lone surrogate) — makes the WHOLE five-value set unstorable: all five are stored
+        NULL and registration proceeds and answers exactly as it would have without them.
+        Never truncated (a cut can land mid-grapheme, and a truncated campaign name is a
+        wrong campaign name), never a 400, never a new error_code. The five are stored as a
+        set so an account's attribution is always a faithful copy of one real link rather
+        than a mixture no link produced. Absent or empty → that value NULL and the others
+        kept, so "no attribution" has exactly one stored representation. Stored verbatim
+        after normalization: CSV-formula and HTML escaping belong at Story 15's sinks, and
+        encoding it here would defeat the escape there.
+        `maxLength` counts UTF-16 units in OpenAPI and code points in the domain; the two
+        diverge on astral-plane input, as `auth_me_update.yaml` already records.
     RegisterResponse:
       type: object
       properties:

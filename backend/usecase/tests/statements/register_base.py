@@ -29,19 +29,19 @@ class RegisterStatementsBase:
 
     def __init__(self) -> None:
         self.thrown_exception: Exception | None = None
-        self.account_repository = FakeAccountRepository()
-        self.password_hasher = FakePasswordHasher()
-        self.clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
-        self.verification_code_repository = FakeVerificationCodeRepository()
-        self.unit_of_work = FakeUnitOfWork()
+        self._account_repository = FakeAccountRepository()
+        self._password_hasher = FakePasswordHasher()
+        self._clock = FakeClock(fixed_now=self.FIXED_CLOCK_NOW)
+        self._verification_code_repository = FakeVerificationCodeRepository()
+        self._unit_of_work = FakeUnitOfWork()
 
     def _build_usecase(self) -> RegisterUser:
         return RegisterUser(
-            password_hasher=self.password_hasher,
-            account_repository=self.account_repository,
-            clock=self.clock,
-            verification_code_repository=self.verification_code_repository,
-            unit_of_work=self.unit_of_work,
+            password_hasher=self._password_hasher,
+            account_repository=self._account_repository,
+            clock=self._clock,
+            verification_code_repository=self._verification_code_repository,
+            unit_of_work=self._unit_of_work,
         )
 
     async def _run_register(self, scope: RegisterRequestScope):

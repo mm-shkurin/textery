@@ -1,0 +1,50 @@
+# Where GigaChat lives, how long we wait for it, and which trust store proves it.
+#
+# Data, not code: an endpoint move, a new region or a longer read budget is a
+# configuration change, and a configuration change must not be a source edit that
+# has to pass lint, types and a test run before it can be deployed. Every value
+# here is overridable by the environment variable named beside it, which is what
+# a deployment actually uses; this file is the checked-in default so a developer
+# clone works with nothing exported.
+[endpoints]
+# GIGACHAT_TOKEN_URL
+token = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+# GIGACHAT_COMPLETIONS_URL
+completions = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
+# GIGACHAT_SCOPE — the personal-use scope; corporate contracts use another.
+scope = "GIGACHAT_API_PERS"
+# GIGACHAT_MODEL
+model = "GigaChat"
+
+[tls]
+# GIGACHAT_CA_BUNDLE. GigaChat's certificate chains to the Russian Minsvyaz trust
+# CA, which is in no default trust store, so the bundle travels with the adapter.
+# Relative to this package's root — an absolute path in the environment wins.
+ca_bundle = "certs/russiantrustedca.pem"
+
+# Connect and read want very different numbers. Failing to reach the host is
+# answered in seconds and retrying is cheap; a completion for a multi-page
+# document is the model composing text and legitimately takes minutes. One
+# 30-second scalar for both made a slow-but-working generation indistinguishable
+# from an outage — three attempts, three timeouts, a row written `failed` for a
+# provider that was answering the whole time.
+[timeouts]
+# GIGACHAT_CONNECT_TIMEOUT_SECONDS
+connect = 10.0
+# GIGACHAT_READ_TIMEOUT_SECONDS
+read = 180.0
+# GIGACHAT_WRITE_TIMEOUT_SECONDS
+write = 30.0
+# GIGACHAT_POOL_TIMEOUT_SECONDS
+pool = 10.0
+# GIGACHAT_TOKEN_READ_TIMEOUT_SECONDS — the token exchange is a small, fast call
+# and gets its own budget: waiting three minutes on an OAuth handshake only
+# delays the real failure.
+token_read = 15.0
+
+[token_cache]
+# GIGACHAT_TOKEN_TTL_SECONDS — GigaChat's OAuth tokens last about half an hour.
+ttl = 1800
+# GIGACHAT_TOKEN_EXPIRY_MARGIN_SECONDS — subtracted so our copy expires before
+# the server's does.
+expiry_margin = 60

@@ -1,0 +1,83 @@
+.history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.history-search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.history-search-field,
+.history-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-dates {
+  display: flex;
+  gap: 12px;
+}
+
+.history-toolbar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.history-toolbar-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+
+.history-toolbar-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.history-toolbar-reset {
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.history-toolbar-reset:hover {
+  background: var(--bg-subtle);
+}
+
+.history-result-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding-bottom: 9px;
+}
+
+/* The dates stack under the search below the mobile breakpoint: three controls side by side make
+   each one narrower than the native date picker it opens. */
+@media (max-width: 560px) {
+  .history-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-dates {
+    width: 100%;
+  }
+
+  .history-date-field {
+    flex: 1;
+  }
+}

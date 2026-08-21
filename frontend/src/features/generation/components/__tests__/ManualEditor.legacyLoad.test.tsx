@@ -64,7 +64,7 @@ describe('ManualEditor legacy inline-only load (E1.2 back-compat guard)', () => 
         '<h3>Heading</h3><blockquote>Quoted</blockquote>Outro',
     )
     await waitFor(() => {
-      expect(contentArea.querySelector('h3')).not.toBeNull()
+      expect(contentArea.querySelector('h3')).toBeInstanceOf(HTMLHeadingElement)
     })
     // Whole-document no-data-loss, pinned to exact structure: every authored run survives
     // in order, each retired-mark form lands on its node, and the legacy centered <div>

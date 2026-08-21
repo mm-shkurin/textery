@@ -7,7 +7,7 @@ describe('LandingHero', () => {
     render(<LandingHero />)
 
     expect(screen.getByTestId('hero-heading')).toHaveTextContent(
-      'Textery — самая быстрая нейросеть для докладов',
+      'Textery — самая быстрая нейросеть для учебных текстов',
     )
   })
 
@@ -41,11 +41,14 @@ describe('LandingHero', () => {
   it('hides its decorative glass ornaments from assistive technology', () => {
     const { container } = render(<LandingHero />)
 
-    const images = container.querySelectorAll('.hero-glass img')
+    const images = container.querySelectorAll('[aria-hidden="true"] img')
     expect(images).toHaveLength(4)
     images.forEach((image) => {
       expect(image).toHaveAttribute('alt', '')
-      expect(image.closest('[aria-hidden="true"]')).not.toBeNull()
     })
+    // The count is the assertion that carries weight: every image in the hero is inside a hidden
+    // wrapper. Asserting `closest('[aria-hidden]')` on elements selected BY that ancestor is
+    // true by construction and would stay green if a fifth, exposed image were added.
+    expect(container.querySelectorAll('img')).toHaveLength(4)
   })
 })

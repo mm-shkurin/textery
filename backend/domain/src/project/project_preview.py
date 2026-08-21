@@ -1,15 +1,15 @@
 import re
 import unicodedata
 
-# Unicode code points, matching `preview` in api-specs/projects_list.yaml.
-PREVIEW_MAX_CODE_POINTS = 200
+from shared import limits
 
+# Unicode code points, matching `preview` in api-specs/projects_list.yaml.
+PREVIEW_MAX_CODE_POINTS = limits.PREVIEW_MAX_CODE_POINTS
 # How much stored content the projection needs in hand to produce that preview.
 # Markup and collapsed whitespace shrink the text, so the bounded prefix the
 # storage adapter reads must be larger than the output -- but it must still be
 # *bounded*, or the bytes a page reads grow with stored document size.
-PREVIEW_SOURCE_MAX_CHARS = 4000
-
+PREVIEW_SOURCE_MAX_CHARS = limits.PREVIEW_SOURCE_MAX_CHARS
 _TAG = re.compile(r"<[^>]*>")
 _WHITESPACE = re.compile(r"\s+")
 

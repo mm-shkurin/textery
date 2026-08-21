@@ -1,6 +1,6 @@
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { TypeModal } from '../features/generation/components/TypeModal'
-import { type DocumentType } from '../shared/documentTypes'
+import { type DocumentType } from '../shared/domain/documentTypes'
 
 interface FlowLandingProps {
   step: 'landing' | 'type'

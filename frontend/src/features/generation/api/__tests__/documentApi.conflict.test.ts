@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveDocument } from '../documentApi'
-import { clearSession, saveSession } from '../../../auth/utils/authSession'
+import { clearSession, saveSession } from '../../../../shared/session/authSession'
 
 // The 409 lost-update protocol, split out of documentApi.test.ts on the 200-line limit. It is a
 // coherent concern of its own: every test here is about what happens AFTER the server refuses a

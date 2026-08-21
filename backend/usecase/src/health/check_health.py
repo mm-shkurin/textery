@@ -40,11 +40,11 @@ class CheckHealth:
     """
 
     def __init__(self, database_probe: HealthProbe) -> None:
-        self.database_probe = database_probe
+        self._database_probe = database_probe
 
     async def execute(self) -> HealthReport:
         try:
-            await self.database_probe.ping()
+            await self._database_probe.ping()
         except Exception as error:
             # Broad, and it has to be: the probe crosses a driver boundary that can
             # fail as OSError, asyncpg's own errors, or a timeout, and a probe that

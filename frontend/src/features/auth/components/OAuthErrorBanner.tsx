@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { isUsableMessage } from '../utils/authMessages'
 // This component's own styles (.auth-oauth-error*) live in AuthStatus.css — import it directly so the
 // banner is self-styling wherever it mounts, rather than relying on a parent to pull the shared shell.
-import './AuthStatus.css'
+import authStatusStyles from './AuthStatus.module.css'
 
 // Surfaces the provider-aware message the /auth/callback error path stashes in router state
 // (`location.state.oauthError`) as a DISTINCT banner: its own class + testid + role="alert",
@@ -41,11 +41,15 @@ export function OAuthErrorBanner() {
     return null
   }
   return (
-    <div className="auth-oauth-error" data-testid="login-oauth-error" role="alert">
+    <div
+      className={authStatusStyles['auth-oauth-error']}
+      data-testid="login-oauth-error"
+      role="alert"
+    >
       {/* Leading alert-circle (lucide glyph, inline so no icon dependency); aria-hidden and
           text-free so the banner's textContent stays exactly the message the tests pin. */}
       <svg
-        className="auth-oauth-error-icon"
+        className={authStatusStyles['auth-oauth-error-icon']}
         width="16"
         height="16"
         viewBox="0 0 24 24"

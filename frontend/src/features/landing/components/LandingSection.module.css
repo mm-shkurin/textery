@@ -1,0 +1,83 @@
+/* The chrome every marketing section on the landing shares — Figma `Desktop` (node 90:880), where
+   `Advantages`, `Process`, `Comparison` and `CTA` are all built from the same three parts: a small
+   eyebrow with a dot, a two-line 36/44 title, and one line of 18/22 description under it, centred
+   in a 1640 column with 80px of air above and below.
+
+   One file rather than four copies: the four sections differ in what they put UNDER this block,
+   never in the block itself, and four copies is four places for a heading size to drift. */
+
+.landing-section {
+  /* 140 either side of a 1640 column on a 1920 page — the same column the app's own screens use. */
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+  padding: 80px 0;
+}
+
+.landing-section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+/* The eyebrow: a 12px dot and one 16/400 word, naming the section before the title says it at
+   length. The frame draws an icon here; a dot in the brand blue carries the same weight without
+   inventing an illustration the design does not have art for. */
+.landing-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  line-height: 19px;
+  color: var(--text-hero);
+}
+
+.landing-eyebrow::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.landing-section-title {
+  max-width: 900px;
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 600;
+  color: var(--text-hero);
+}
+
+.landing-section-lead {
+  max-width: 703px;
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--text-divider);
+}
+
+/* Every section's body sits 40 under its heading block — the sections' own `gap` in the frame. */
+.landing-section-body {
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .landing-section {
+    width: min(1640px, 100% - 32px);
+    padding: 56px 0;
+  }
+
+  .landing-section-title {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .landing-section-lead {
+    font-size: 16px;
+  }
+
+  .landing-section-body {
+    margin-top: 28px;
+  }
+}

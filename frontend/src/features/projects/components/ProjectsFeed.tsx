@@ -2,6 +2,9 @@ import type { ProjectSummary } from '../api/projectsApi'
 import type { ProjectView } from '../hooks/useProjectView'
 import { ProjectCard } from './ProjectCard'
 import { projectKey } from '../utils/projectKey'
+import type { RetryOverrides } from '../api/retryGenerationApi'
+import projectsPageStyles from './ProjectsPage.module.css'
+import projectsScreenStyles from './ProjectsScreen.module.css'
 
 interface ProjectsFeedProps {
   items: ProjectSummary[]
@@ -11,7 +14,7 @@ interface ProjectsFeedProps {
   // does, and two elements answering to `project-card-document-1` make an identity lookup
   // ambiguous — the one thing that testid exists to prevent.
   testIdPrefix?: string
-  onRetry?: (generationId: string) => void
+  onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retryingId?: string | null
   retryError?: { id: string; message: string } | null
 }
@@ -34,7 +37,9 @@ export function ProjectsFeed({
 }: ProjectsFeedProps) {
   return (
     <div
-      className={`projects-page projects-view-${view}`}
+      className={`${projectsPageStyles['projects-page']} ${
+        projectsScreenStyles[`projects-view-${view}`] ?? ''
+      }`}
       data-testid={testIdPrefix ? `${testIdPrefix}-projects-page` : 'projects-page'}
     >
       {items.map((project) => (

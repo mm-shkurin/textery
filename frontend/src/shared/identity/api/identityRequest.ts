@@ -20,12 +20,8 @@
 // 2026-07-17, see refreshApi.ts). If the backend ever gains real rotation, this must join the
 // shared single-flight — WITHOUT inheriting its clearSession.
 import { isHttpError, request, type RequestOptions } from '../../api/httpClient'
-import {
-  getAccessToken,
-  getRefreshToken,
-  saveSession,
-} from '../../../features/auth/utils/authSession'
-import { refresh } from '../../../features/auth/api/refreshApi'
+import { getAccessToken, getRefreshToken, saveSession } from '../../session/authSession'
+import { refresh } from '../../session/refreshApi'
 
 function withBearer(options: RequestOptions, token: string): RequestOptions {
   return { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}` } }

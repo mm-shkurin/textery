@@ -1,8 +1,11 @@
 name: backend-ci
 
+# No branch filter, matching frontend-ci.yml. The gates existed but ran on `main`
+# and `dev` only, while this project lands commits straight on a working branch
+# and uses no pull requests -- so nothing checked the commits as they were made,
+# and a red tip was discovered days later by a manual run.
 on:
   push:
-    branches: [main, dev]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
@@ -15,7 +18,131 @@ defaults:
   run:
     working-directory: backend
 
+# The gates below are the same five the published repository's own workflow
+# (backend/.github/workflows/ci.yml) runs. They were missing here, and THIS is the
+# workflow that triggers on monorepo pushes -- so a tip that was red on file size
+# and on mypy went green for weeks. Keep the two files in step: the split repo is
+# built from its copy, this one from the monorepo, and only one of them is what a
+# developer sees fail.
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install ruff
+        run: pip install "$(grep -E '^ruff==' requirements-dev.txt)"
+
+      - name: Check lint rules
+        run: ruff check --output-format=github .
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      # In `lint` rather than a job of its own: it needs nothing installed, not
+      # even ruff, so a separate runner would spend more time starting than
+      # checking. Added because this was the one rule in
+      # .claude/rules/coding-rules.md with no gate behind it -- and it had eight
+      # violations, which is what an ungated rule reliably collects.
+      - name: Check file sizes
+        run: python scripts/check_file_size.py
+
+      # The test cases in `docs/testing/` are copies; the source of truth lives in
+      # the monorepo's ProductSpecification. The sync was documented as a
+      # pre-release step and gated by nothing, so the sprint's own story shipped
+      # with no cases in the published repository at all. In that published
+      # repository the source directory is absent and the script says so and
+      # exits 0 -- it only ever fails where it can actually be fixed.
+      - name: Check test-case copies are current
+        run: python scripts/sync_test_cases.py --check
+
+  # Its own job, and not folded into `lint`: mypy needs the runtime dependencies
+  # installed to see FastAPI's and SQLAlchemy's own type information, which the
+  # ruff-only job deliberately skips to stay fast. It still needs no database.
+  types:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      # requirements-dev.txt pulls in requirements.txt itself: the suite imports
+      # the application, and mypy needs FastAPI's and SQLAlchemy's own type
+      # information before it can check anything useful.
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Check types
+        run: mypy
+
+      # Production code only, and a second invocation rather than a setting in
+      # pyproject.toml, because the flag cannot be scoped there. Per-module
+      # overrides match module names, and the layer roots are separate sys.path
+      # entries -- `usecase/src/auth/...` and `usecase/tests/auth/...` are both
+      # `auth.*`, so no pattern selects one without the other. Paths do separate
+      # them, and this is the only place paths can be given.
+      #
+      # What it catches: a signature annotated in part. `def _validate_state(self,
+      # state, provider_name, now) -> None` passes the default settings, because
+      # the return arrow alone makes it a typed function -- the body is then
+      # checked with every parameter an implicit Any, which propagates and hides
+      # the errors inside. Seven production functions were in that state, three of
+      # them in the OAuth callback.
+      - name: Check production signatures are fully annotated
+        run: >
+          mypy --disallow-incomplete-defs
+          domain/src usecase/src
+          adapters/rest/src adapters/db/src adapters/security/src
+          adapters/rendering/src adapters/generation_provider/src
+          adapters/oauth_provider/src
+          application/src
+
+  # Blocking, not advisory. Every dependency here is pinned to an exact version,
+  # which is what makes the build reproducible -- and also what makes a known
+  # vulnerability sit in the lockfile until somebody looks. Nobody was looking.
+  # It runs on the requirements file rather than the installed environment, so it
+  # answers for what deploys, not for whatever the runner happens to have.
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install pip-audit
+        run: pip install pip-audit==2.9.0
+
+      # requirements.txt, not requirements-dev.txt: this job answers "is what we
+      # deploy vulnerable". A CVE in pytest or ruff is worth knowing about but is
+      # not a production exposure, and mixing the two makes a red result
+      # ambiguous about which it is.
+      - name: Check dependencies for known vulnerabilities
+        run: pip-audit -r requirements.txt --progress-spinner=off
+
+
   test:
     runs-on: ubuntu-latest
 
@@ -99,7 +226,7 @@ jobs:
         run: alembic upgrade head
 
       - name: Run tests with coverage
-        run: pytest --cov --cov-report=xml:coverage.xml
+        run: pytest --cov --cov-report=xml:coverage.xml --cov-fail-under=90
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4

@@ -32,7 +32,7 @@ class TestStartOAuthSuccess:
 
         url = await usecase.execute("yandex")
 
-        minted = next(iter(states._by_value.values()))
+        minted = states.stored[0]
         assert provider.authorization_url_calls == [minted.value]
         assert f"state={minted.value}" in url
 
@@ -41,8 +41,8 @@ class TestStartOAuthSuccess:
 
         await usecase.execute("yandex")
 
-        assert len(states._by_value) == 1
-        assert next(iter(states._by_value.values())).provider == "yandex"
+        assert len(states.stored) == 1
+        assert states.stored[0].provider == "yandex"
 
     async def test_commits_the_minted_state(self):
         usecase, _, _, uow = _make()
@@ -62,4 +62,4 @@ class TestStartOAuthUnknownProvider:
             await usecase.execute("vk")
 
         assert caught.value.error_code == "UNKNOWN_OAUTH_PROVIDER"
-        assert states._by_value == {}
+        assert states.stored == []

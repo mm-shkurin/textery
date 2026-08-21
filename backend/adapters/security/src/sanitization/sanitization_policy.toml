@@ -1,0 +1,80 @@
+# What stored HTML is allowed to contain. Policy as data, not as code.
+#
+# This list changes whenever the editor grows a control — quotes, code blocks,
+# tables and the alignment button each arrived with the list unchanged, and a tag
+# the editor can produce but the sanitizer strips is not a hardened boundary: it
+# is silent data loss the user discovers on reload. Keeping it here means adding
+# a tag is a data change, reviewable as one, instead of a Python edit.
+#
+# It is an ALLOW list in both directions. Nothing is denied by name; anything not
+# named is removed.
+
+# Matches what the editor can produce. Tiptap emits <strong>/<em>; the story's own
+# fixtures pin <b>/<i>. Both are kept — an allowlist narrower than the editor
+# deletes users' formatting on save.
+#
+# The block half (blockquote/pre/code/hr/s) belongs to the StarterKit BLOCK
+# schema story 5 migrated to: Цитата, Блок кода, горизонтальная линейка,
+# зачёркивание. The same tags are what markdown-to-HTML conversion emits, so that
+# path depends on this list too.
+#
+# The table half arrived with «вставить таблицу». Every tag Tiptap's Table
+# extension can emit is listed: a table whose <tbody> is stripped is not a
+# degraded table, it is a pile of unwrapped cell text.
+#
+# `img` is deliberately absent, and its absence is a decision. Both export
+# renderers refuse outbound fetches on purpose (the document HTML is
+# user-controlled, so resolving a src is an SSRF vector), so an allowed <img>
+# would render in the editor and vanish from every PDF and DOCX the user
+# downloads — worse than not offering it, because the loss is invisible until the
+# file is opened somewhere else.
+tags = [
+  "h1", "h2", "h3", "p", "ul", "ol", "li",
+  "strong", "em", "b", "i", "u", "s",
+  "a", "br", "blockquote", "pre", "code", "hr",
+  "table", "thead", "tbody", "tfoot", "tr", "th", "td",
+]
+
+# Removed WITH their contents, not merely unwrapped: dropping only the tag would
+# leave `alert(1)` sitting in the document as text — technically stripped, still
+# the payload.
+strip_with_contents = ["script", "style"]
+
+# Deliberately the same set the client's Link extension permits (see
+# 05-manual-mode/decisions/link-url-input-decision.md, which records Tiptap's
+# allowlist). A server list narrower than the client's is a data-loss bug that
+# only shows on reload: the user creates a link, sees it render, saves, comes
+# back, and it is gone. `javascript:` is in neither list.
+url_schemes = [
+  "http", "https", "mailto", "tel", "ftp", "ftps", "callto", "sms", "cid", "xmpp",
+]
+
+# `style` on the block nodes carries text alignment, which TextAlign renders as
+# `style="text-align: …"`. Without it the centre-align button is another
+# silent-loss control. nh3 has no CSS property filter, so the value is constrained
+# separately — see [style] below.
+#
+# On cells: merged cells and nothing else. `colwidth`, which Tiptap writes when a
+# column is resized, is deliberately absent — it is a comma-separated pixel list
+# this filter would have to parse to trust, and losing a column width is cosmetic
+# where losing a merge corrupts the table's shape.
+[attributes]
+a = ["href", "title"]
+th = ["colspan", "rowspan"]
+td = ["colspan", "rowspan"]
+p = ["style"]
+h1 = ["style"]
+h2 = ["style"]
+h3 = ["style"]
+
+# The ONLY declaration a stored style attribute may carry. nh3 filters tags,
+# attributes and URL schemes but does not parse CSS, so allowing `style` through
+# unexamined would hand an attacker the whole property space: a `position: fixed`
+# overlay covering the page (clickjacking), `url(...)` fetching a tracker on open,
+# or a legacy `expression()`. The editor produces exactly one declaration, so this
+# is an allowlist of one property with an allowlist of four values rather than an
+# attempt to sanitize CSS in general.
+[style]
+attribute = "style"
+property = "text-align"
+values = ["left", "right", "center", "justify"]

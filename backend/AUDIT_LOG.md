@@ -293,3 +293,74 @@ the previous fix had not actually run.
   irreversible operation.
 - Single-author history (388 vs 3) with no PR gate; six live `features/*`
   branches across three remotes against two merge commits.
+
+## Iteration 13 — Score: 2.5 / 3.0 — 2026-08-20 — 30aee5f1
+### Fixed Issues:
+- `check_file_size.py` was red at HEAD: the retry-route suite reached 216 lines
+  when the volume override landed. Split by concern into
+  `test_generation_retry_router.py` (what the body may carry) and
+  `test_generation_retry_enqueue_router.py` (whether the run is started), with
+  the shared builder in `generation_retry_fixtures.py`.
+- `mypy` was red at HEAD: `test_document_delete_router.py` imported `OWNER_ID`
+  from `conftest`, which `pyproject.toml` excludes by configuration and mypy
+  therefore cannot resolve. Uses the `owner_id` fixture the conftest already
+  publishes.
+- The root `.github/workflows/backend-ci.yml` — the workflow that actually runs
+  on monorepo pushes — carried neither gate, nor `audit`, nor a coverage floor.
+  The three missing jobs and `--cov-fail-under=90` added from the layer
+  workflow, which is why both failures above went unseen.
+- The image ran as root; a non-root `app` user now owns `/app` and runs uvicorn.
+- `docker-compose.yml` published postgres on every interface; bound to the
+  loopback address, since only the backend service uses it and it does so by
+  service name.
+
+### Outstanding Blockers:
+- The release ref `gitverse-backend/main` is behind HEAD by the whole sprint.
+  Nothing above is graded until it is pushed.
+- Single-author history (412 vs 3) with two merge commits and no review gate on
+  the change path.
+- `pyproject.toml` declares `version = "0.1.0"` while `CHANGELOG.md` has never
+  moved off `[Unreleased]` — no release has been cut, so the version says nothing.
+- Disputed, not fixed: the auditor reported the README missing the test-suite
+  run and `TEST_DATABASE_URL`. Both are documented — `README.md:170` and the
+  «База для тестов `adapters/db`» section at `README.md:200`.
+
+## Iteration 14 — Score: 2.5 / 3.0 — 2026-08-21 — cb95c37a
+### Fixed Issues:
+- (none — audit iteration; findings carried into iteration 15's fixes)
+### Outstanding Blockers:
+- `README.md:62-63` claims `--app-dir` is required because `main.py` patches
+  `sys.path`; `51885681` removed that and the documented command uses
+  `PYTHONPATH`.
+- Three auth-router test files still carry RED-phase
+  `pytest.importorskip("router.auth.auth_router")` guards for a module that ships.
+- `analytics_router._parsed` catches bare `Exception`, collapsing a DTO
+  programming error into the client-facing `INVALID_PAYLOAD`.
+- Broad `except Exception` at 24 production sites in the storage adapters.
+- `eb35cafa` lands 2072 insertions across 48 files spanning five layers.
+- Single-author history (441 vs 8) with no review gate on the change path.
+- Release ref `gitverse-backend/main` is 449 backend commits behind HEAD.
+
+## Iteration 15 — Score: 2.5 / 3.0 (confirmation, held) — 2026-08-21 — bc6ffbfc
+### Fixed Issues:
+- `mypy` was red at HEAD: `domain/src/analytics/attribution.py:53` assigned an
+  `object`-typed sentinel result into `dict[str, str | None]`. A sentinel with
+  its own `_Unusable` class narrows on `isinstance` (`6fa73f0c`).
+- `analytics_router._parsed` names the four reachable failures instead of
+  swallowing every `Exception` (`9695e826`).
+- The three dead RED-phase `importorskip` guards removed (`84368ac5`).
+- `README.md` run instructions rewritten to match the `PYTHONPATH` entry point
+  (`b237493a`).
+- The published repo's `ci.yml` filtered `push` to `[main, dev]` while every
+  sprint commit lands on a working branch — the filter is gone, matching the
+  root workflow (`bc6ffbfc`).
+### Outstanding Blockers:
+- Release ref `gitverse-backend/main` is 449 backend commits behind HEAD.
+  Nothing above is graded until it is pushed.
+- Single-author history (441 vs 8), no PR gate, commit messages are the only
+  review surface.
+- `eb35cafa` (48 files, five layers) breaks the atomic-work-unit rule.
+- `check_file_size.py` gates `*.py` only, so `pyproject.toml` (231) and
+  `ci.yml` (216) exceed the project's own 200-line rule undetected.
+- Broad `except Exception` at ~24 storage-adapter sites — fail-open by design,
+  but indistinguishable from a programming error.

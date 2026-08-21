@@ -13,6 +13,7 @@ from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from shared.clock import Clock, SystemClock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ConflictException, RegistrationFailedException, ValidationException
 from shared.rollback import rollback_quietly
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -38,16 +39,16 @@ class RegisterUser:
         # defaulted repository would drop the entity and let register answer 201,
         # with a verification code, for an account that was never written. Both
         # failures pass every test that does not check storage.
-        self.password_hasher = password_hasher
-        self.account_repository = account_repository
-        self.verification_code_repository = verification_code_repository
-        self.clock = clock or SystemClock()
-        self.unit_of_work = unit_of_work or NullUnitOfWork()
+        self._password_hasher = password_hasher
+        self._account_repository = account_repository
+        self._verification_code_repository = verification_code_repository
+        self._clock = clock or SystemClock()
+        self._unit_of_work = unit_of_work or NullUnitOfWork()
 
     async def execute(self, email: str, password: str, confirm_password: str) -> RegistrationResult:
         email_value_object = validate_email(email)
         password_value_object = self._validate_password(password, confirm_password)
-        created_at = self.clock.now()
+        created_at = self._clock.now()
         account = await self._create_and_save_account(
             email_value_object, password_value_object, created_at
         )
@@ -64,12 +65,12 @@ class RegisterUser:
             password_value_object = Password(password)
         except ValueError as error:
             raise ValidationException(
-                error_code="INVALID_PASSWORD",
+                error_code=ErrorCode.INVALID_PASSWORD,
                 message="The password does not meet the password policy.",
             ) from error
         if password_value_object.value != unicodedata.normalize("NFC", confirm_password):
             raise ValidationException(
-                error_code="PASSWORD_MISMATCH",
+                error_code=ErrorCode.PASSWORD_MISMATCH,
                 message="The password confirmation does not match.",
             )
         return password_value_object
@@ -80,15 +81,15 @@ class RegisterUser:
         account = Account.create(
             id=uuid4(),
             email=email_value_object.value,
-            password_hash=self.password_hasher.hash(password_value_object.value),
+            password_hash=self._password_hasher.hash(password_value_object.value),
             created_at=created_at,
         )
         try:
-            await self.account_repository.save(account)
+            await self._account_repository.save(account)
         except ConflictException as error:
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise ValidationException(
-                error_code="EMAIL_ALREADY_REGISTERED",
+                error_code=ErrorCode.EMAIL_ALREADY_REGISTERED,
                 message="An account with this email address already exists.",
             ) from error
         except Exception as error:
@@ -98,15 +99,15 @@ class RegisterUser:
             # would be indistinguishable from a genuine storage outage, and both
             # would be invisible.
             logger.exception("registration failed while saving the account")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise RegistrationFailedException(message=self.REGISTRATION_FAILED_MESSAGE) from error
         return account
 
     async def _save_verification_code_and_commit(self, verification_code: VerificationCode) -> None:
         try:
-            await self.verification_code_repository.save(verification_code)
-            await self.unit_of_work.commit()
+            await self._verification_code_repository.save(verification_code)
+            await self._unit_of_work.commit()
         except Exception as error:
             logger.exception("registration failed while saving the verification code")
-            await rollback_quietly(self.unit_of_work)
+            await rollback_quietly(self._unit_of_work)
             raise RegistrationFailedException(message=self.REGISTRATION_FAILED_MESSAGE) from error

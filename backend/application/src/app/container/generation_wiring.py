@@ -3,7 +3,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.analytics.generation_visitor_storage import SqlAlchemyGenerationVisitorLog
 from access.generation.generation_storage import SqlAlchemyGenerationStorage
+from container.analytics_wiring import create_analytics_recorder
 from container.runtime import provider, request_scoped, session_factory, stale_after_minutes
 from generation.document_generator import DocumentGenerator
 from generation.generate_document import GenerateDocument
@@ -29,7 +31,12 @@ class NoOpGenerationQueue:
 @request_scoped
 def create_request_generation(session: AsyncSession) -> RequestGeneration:
     return RequestGeneration(
-        storage=SqlAlchemyGenerationStorage(session), queue=NoOpGenerationQueue()
+        storage=SqlAlchemyGenerationStorage(session),
+        queue=NoOpGenerationQueue(),
+        analytics_recorder=create_analytics_recorder(),
+        # The requesting browser is remembered HERE and read back when the
+        # generation completes, minutes later and possibly on another instance.
+        generation_visitor_log=SqlAlchemyGenerationVisitorLog(session_factory),
     )
 
 
@@ -51,7 +58,12 @@ class _BackgroundGenerateDocument:
         session = session_factory()
         try:
             storage = SqlAlchemyGenerationStorage(session)
-            usecase = GenerateDocument(storage=storage, provider=provider)
+            usecase = GenerateDocument(
+                storage=storage,
+                provider=provider,
+                analytics_recorder=create_analytics_recorder(),
+                generation_visitor_log=SqlAlchemyGenerationVisitorLog(session_factory),
+            )
             await usecase.execute(generation_id, owner_id)
         finally:
             await session.close()
