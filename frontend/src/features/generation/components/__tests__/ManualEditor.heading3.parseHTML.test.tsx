@@ -29,7 +29,7 @@ describe('ManualEditor heading 3 parseHTML', () => {
     )
 
     await waitFor(() => {
-      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99')
+      expect(documentApi.getDocument).toHaveBeenCalledWith('doc-99', expect.any(AbortSignal))
     })
 
     // Block schema: top-level inline text auto-wraps into paragraphs, and the

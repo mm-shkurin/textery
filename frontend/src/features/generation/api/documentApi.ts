@@ -162,10 +162,13 @@ export async function exportDocument(documentId: string, format: ExportFormat): 
   )
 }
 
-export async function getDocument(documentId: string): Promise<GetDocumentResult> {
+export async function getDocument(
+  documentId: string,
+  signal?: AbortSignal,
+): Promise<GetDocumentResult> {
   const data = await send<DocumentWire>(
     API.documents.one(documentId),
-    {},
+    { signal },
     'Не удалось загрузить документ',
   )
   return {

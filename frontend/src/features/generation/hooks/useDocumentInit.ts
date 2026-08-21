@@ -66,10 +66,16 @@ export function useDocumentInit({
   }
 
   useEffect(() => {
+    // The READ is aborted on unmount, so an abandoned editor's GET leaves the wire instead of
+    // answering into a component nobody is looking at. The CREATE below is not: aborting a
+    // mutating POST leaves its outcome unknown — the server may well have made the document — and
+    // an unknown write is worse than a wasted response. It keeps the flag, which is why both
+    // exist rather than one replacing the other.
+    const reading = new AbortController()
     let cancelled = false
     if (fromGeneration) return
     if (existingDocumentId) {
-      getDocument(existingDocumentId)
+      getDocument(existingDocumentId, reading.signal)
         .then((result) => {
           if (cancelled) return
           setDocumentId(result.documentId)
@@ -78,7 +84,9 @@ export function useDocumentInit({
           onError(null)
         })
         .catch((error) => {
-          if (cancelled) return
+          // An abort is this effect's own doing, not a failure to report: the component is gone
+          // and `onError` would be writing to a screen that no longer exists.
+          if (cancelled || reading.signal.aborted) return
           // `describeFailure`, not `error.message`: since `send` stopped flattening 5xx, a server
           // error arrives as a bare `HttpError` OBJECT (httpClient.ts:141), which is not an
           // `Error` and carries no `.message` — reading one would have silently discarded the
@@ -106,6 +114,7 @@ export function useDocumentInit({
     }
     return () => {
       cancelled = true
+      reading.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentType, existingDocumentId, fromGeneration])
