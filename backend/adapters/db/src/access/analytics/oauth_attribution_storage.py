@@ -8,17 +8,15 @@ row's only purpose is spent the moment the callback reads it -- and a delete tha
 returns what it removed cannot be raced into reading the same campaign twice.
 """
 
-import logging
 from collections.abc import Callable
 
 from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.analytics.fail_open import in_own_session
 from analytics.attribution import FIELD_NAMES
 from model.analytics.oauth_attribution_model import OAuthAttributionModel
-
-logger = logging.getLogger(__name__)
 
 
 class SqlAlchemyOAuthAttributionParking:
@@ -31,22 +29,19 @@ class SqlAlchemyOAuthAttributionParking:
             # Nothing to carry. Writing a row of five NULLs would cost the handshake
             # an INSERT to tell the callback what it already assumes.
             return
-        session = self._session_factory()
-        try:
+
+        async def write(session: AsyncSession) -> None:
             await session.execute(
                 pg_insert(OAuthAttributionModel)
                 .values(state_value=state_value, **parked)
                 .on_conflict_do_nothing(index_elements=["state_value"])
             )
             await session.commit()
-        except Exception as error:
-            logger.warning("oauth attribution was not parked: %s", type(error).__name__)
-        finally:
-            await session.close()
+
+        await in_own_session(self._session_factory, "oauth attribution was not parked", write, None)
 
     async def take(self, state_value: str) -> dict[str, str | None]:
-        session = self._session_factory()
-        try:
+        async def take_row(session: AsyncSession) -> dict[str, str | None]:
             result = await session.execute(
                 delete(OAuthAttributionModel)
                 .where(OAuthAttributionModel.state_value == state_value)
@@ -55,8 +50,7 @@ class SqlAlchemyOAuthAttributionParking:
             row = result.first()
             await session.commit()
             return dict(zip(FIELD_NAMES, row, strict=True)) if row is not None else {}
-        except Exception as error:
-            logger.warning("oauth attribution was not read back: %s", type(error).__name__)
-            return {}
-        finally:
-            await session.close()
+
+        return await in_own_session(
+            self._session_factory, "oauth attribution was not read back", take_row, {}
+        )

@@ -15,16 +15,14 @@ critical path:
   metadata, and one log line says so.
 """
 
-import logging
 from collections.abc import Callable
 from uuid import UUID
 
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access.analytics.fail_open import in_own_session
 from model.auth.account_model import AccountModel
-
-logger = logging.getLogger(__name__)
 
 # The only columns this writer is allowed to touch. An allowlist rather than
 # "whatever the caller passed": the values arrive from request headers and query
@@ -56,15 +54,16 @@ class SqlAlchemyRegistrationContextWriter:
         writable = {name: value for name, value in values.items() if name in WRITABLE_COLUMNS}
         if not writable:
             return
-        session = self._session_factory()
-        try:
+
+        async def write(session: AsyncSession) -> None:
             await session.execute(
                 update(AccountModel).where(AccountModel.id == account_id).values(**writable)
             )
             await session.commit()
-        except Exception as error:
-            logger.warning(
-                "registration context was not stored for one account: %s", type(error).__name__
-            )
-        finally:
-            await session.close()
+
+        await in_own_session(
+            self._session_factory,
+            "registration context was not stored for one account",
+            write,
+            None,
+        )
