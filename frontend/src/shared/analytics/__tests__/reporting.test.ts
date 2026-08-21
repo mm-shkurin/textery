@@ -10,9 +10,8 @@ import { forgetVisitor } from '../visitorId'
 type FetchCall = [string, RequestInit]
 
 function fetchMock(response: Partial<Response> | Error) {
-  const mock = vi.fn(
-    (..._call: FetchCall): Promise<Response> =>
-      response instanceof Error ? Promise.reject(response) : Promise.resolve(response as Response),
+  const mock = vi.fn((..._call: FetchCall): Promise<Response> =>
+    response instanceof Error ? Promise.reject(response) : Promise.resolve(response as Response),
   )
   vi.stubGlobal('fetch', mock)
   return mock
