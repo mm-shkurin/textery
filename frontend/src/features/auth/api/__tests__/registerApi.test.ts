@@ -96,9 +96,18 @@ describe('register', () => {
     })
   })
 
-  it('falls back to the generic message when the transport itself fails', async () => {
+  it('rethrows a transport failure untouched, carrying no body a form could display', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 
-    await expect(register('someone@example.ru', 'Passw0rd!', 'Passw0rd!')).rejects.toBeDefined()
+    // The generic copy is the FORM's decision (`useRegisterSubmit.applyRegisterError`), not this
+    // module's: a bodyless rejection has no `error_code` to map, and inventing an AuthApiError
+    // here would put the browser's own English text one `isUsableMessage` away from the screen.
+    // So what this layer guarantees is the shape — untouched, and nothing display-ready on it.
+    const rejection = await register('someone@example.ru', 'Passw0rd!', 'Passw0rd!').catch(
+      (error: unknown) => error,
+    )
+    expect(rejection).toBeInstanceOf(TypeError)
+    expect(rejection).not.toHaveProperty('errorCode')
+    expect(rejection).not.toHaveProperty('message', GENERIC_REGISTER_FAILURE_MESSAGE)
   })
 })

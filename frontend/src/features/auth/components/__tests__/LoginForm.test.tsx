@@ -56,7 +56,7 @@ describe('LoginForm', () => {
   it('prevents native form navigation on submit (Enter-key or button)', () => {
     renderWithRouter(<LoginForm />)
     const form = screen.getByTestId('login-submit-button').closest('form')
-    expect(form).not.toBeNull()
+    expect(form).toBeInstanceOf(HTMLFormElement)
 
     const submitEvent = fireEvent.submit(form as HTMLFormElement)
 

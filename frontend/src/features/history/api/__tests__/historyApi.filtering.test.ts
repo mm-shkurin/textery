@@ -119,6 +119,6 @@ describe('historyApi — filtering and deletion', () => {
     // A 404 is not folded into success. The server refuses a second delete on purpose, and a
     // client reporting «удалено» for a row that was never there would hide a delete aimed at the
     // wrong id — the one mistake on this path the user cannot undo.
-    await expect(deleteDocument('doc-1')).rejects.toBeTruthy()
+    await expect(deleteDocument('doc-1')).rejects.toThrow('document not found')
   })
 })

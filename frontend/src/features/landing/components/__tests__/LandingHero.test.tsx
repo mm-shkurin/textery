@@ -45,7 +45,10 @@ describe('LandingHero', () => {
     expect(images).toHaveLength(4)
     images.forEach((image) => {
       expect(image).toHaveAttribute('alt', '')
-      expect(image.closest('[aria-hidden="true"]')).not.toBeNull()
     })
+    // The count is the assertion that carries weight: every image in the hero is inside a hidden
+    // wrapper. Asserting `closest('[aria-hidden]')` on elements selected BY that ancestor is
+    // true by construction and would stay green if a fifth, exposed image were added.
+    expect(container.querySelectorAll('img')).toHaveLength(4)
   })
 })
