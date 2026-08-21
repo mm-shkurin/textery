@@ -109,7 +109,7 @@ FRONTEND_PORT=3000 docker compose up # другой порт
 
 ```bash
 docker build -t textery-frontend .
-docker run -p 8080:80 -e API_UPSTREAM=http://127.0.0.1:8100 textery-frontend
+docker run -p 8080:80 -e API_UPSTREAM=http://host.docker.internal:8100 textery-frontend
 ```
 
 | Файл | Что делает |
@@ -149,6 +149,7 @@ docker run -p 8080:80 -e API_UPSTREAM=http://127.0.0.1:8100 textery-frontend
 
 ```bash
 npm install
+cp .env.example .env  # и вписать VITE_API_PROXY_TARGET: grep BACKEND_PORT ../infra/.env
 npm run dev           # запуск dev-сервера (проксирует /api на бэкенд)
 npm run build         # проверка типов + production-сборка
 npm run format        # prettier --write
@@ -257,10 +258,11 @@ production-адвизори, кроме тех, что перечислены в
 
 - `VITE_API_BASE_URL` — базовый URL для API генерации. По умолчанию `''`,
   что направляет запросы через прокси `/api` dev-сервера Vite (см. `vite.config.ts`).
-- `VITE_API_PROXY_TARGET` — куда dev-сервер пересылает `/api`. Значение по умолчанию
-  (`http://127.0.0.1:8100`) верно не для всех: параллельные чекауты публикуют бэкенд на
-  разных портах хоста, поэтому берите его из своего `infra/.env` (`grep BACKEND_PORT ../infra/.env`),
-  а не отсюда. Никогда `8000` — этот порт на хосте занят другим сервисом, и запросы
+- `VITE_API_PROXY_TARGET` — куда dev-сервер пересылает `/api`. **Обязательная, значения по
+  умолчанию нет**: параллельные чекауты публикуют бэкенд на разных портах хоста, поэтому
+  ни одно число здесь не было бы верным для всех. Возьмите своё из `infra/.env`
+  (`grep BACKEND_PORT ../infra/.env`); без неё dev-сервер не стартует и печатает ту же команду
+  в тексте ошибки. Никогда `8000` — этот порт на хосте занят другим сервисом, и запросы
   молча уйдут в чужое приложение вместо того, чтобы упасть. Переменная была описана только
   в `.env.example`, из-за чего читатель README её просто не видел.
 - `FRONTEND_PORT` — порт, на котором слушает dev-сервер (по умолчанию `5173`).
