@@ -1,17 +1,10 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
 from auth.account import Account
 from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from shared.exceptions import ValidationException
-
-pytest.importorskip(
-    "router.auth.auth_router",
-    reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)",
-)
 
 
 class TestRegisterPostRouterMalformedEmail:

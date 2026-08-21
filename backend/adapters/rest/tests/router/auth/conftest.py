@@ -3,12 +3,9 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from error_handling.exception_handlers import validation_exception_handler
+from router.auth import auth_router as auth_router_module
 from shared.exceptions import ValidationException
 
-auth_router_module = pytest.importorskip(
-    "router.auth.auth_router",
-    reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)",
-)
 auth_router = auth_router_module.router
 
 

@@ -1,10 +1,6 @@
 import pytest
 
-auth_router_module = pytest.importorskip(
-    "router.auth.auth_router",
-    reason="RED: router.auth.auth_router module does not exist (ModuleNotFoundError)",
-)
-get_register_user_usecase = auth_router_module.get_register_user_usecase
+from router.auth.auth_router import get_register_user_usecase
 
 
 class TestGetRegisterUserUsecaseDependencyStub:
