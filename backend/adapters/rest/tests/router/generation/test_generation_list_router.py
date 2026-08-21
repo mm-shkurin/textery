@@ -116,3 +116,47 @@ class TestListGenerationsRequiresBearer:
         assert response.status_code == 401, f"got {response.status_code}: {response.text}"
         assert response.json()["error_code"] == "UNAUTHORIZED"
         usecase.execute.assert_not_awaited(), "no history may be read without a token"
+
+
+class TestListGenerationsRefusesInTheProductsEnvelope:
+    """A bad `?limit=` answers `{error_code, message}`, whatever kind of bad it is.
+
+    `?limit=999` and `?limit=abc` are both "the caller asked for a page size we
+    will not serve". They used to answer differently -- the first through the
+    domain's `INVALID_LIMIT`, the second through Pydantic's `{"detail": ...}` 422,
+    because the route declared `limit: int` and Pydantic refused the value before
+    the domain ever saw it. A client cannot branch on an envelope that changes
+    with the shape of the mistake.
+    """
+
+    async def test_should_refuse_a_non_numeric_limit_in_the_canonical_envelope(
+        self, mocker, list_client
+    ):
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock()
+
+        async with list_client(usecase) as client:
+            response = await client.get("/api/v1/generations?limit=abc")
+
+        assert response.status_code == 400, f"got {response.status_code}: {response.text}"
+        assert response.json()["error_code"] == "INVALID_LIMIT", (
+            f"unexpected body {response.json()}"
+        )
+        usecase.execute.assert_not_awaited(), "an unreadable limit must not reach the usecase"
+
+    async def test_should_hand_a_readable_limit_on_as_an_integer(
+        self, mocker, list_client, owner_id
+    ):
+        """Parsing at the boundary must not turn the value into text downstream.
+
+        The range check itself stays in the domain's `PageRequest`, which is why
+        `?limit=999` is refused by the usecase rather than here -- but it can only
+        do that if what arrives is an `int`.
+        """
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock(return_value=Page(items=[], next_cursor=None))
+
+        async with list_client(usecase) as client:
+            await client.get("/api/v1/generations?limit=7")
+
+        usecase.execute.assert_awaited_once_with(owner_id=owner_id, limit=7, cursor=None)

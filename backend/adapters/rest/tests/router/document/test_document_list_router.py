@@ -173,3 +173,28 @@ class TestListDocumentsRequiresBearer:
         assert response.status_code == 401, f"got {response.status_code}: {response.text}"
         assert response.json()["error_code"] == "UNAUTHORIZED"
         usecase.execute.assert_not_awaited(), "no history may be read without a token"
+
+
+class TestListDocumentsRefusesInTheProductsEnvelope:
+    """A bad `?limit=` answers `{error_code, message}`, whatever kind of bad it is.
+
+    The history list and the projects feed take the same parameter and must
+    refuse it the same way. Declaring `limit: int` on the route handed that
+    refusal to Pydantic, whose 422 carries `{"detail": ...}` and echoes the
+    rejected value.
+    """
+
+    async def test_should_refuse_a_non_numeric_limit_in_the_canonical_envelope(
+        self, mocker, list_client
+    ):
+        usecase = mocker.Mock()
+        usecase.execute = mocker.AsyncMock()
+
+        async with list_client(usecase) as client:
+            response = await client.get("/api/v1/documents?limit=abc")
+
+        assert response.status_code == 400, f"got {response.status_code}: {response.text}"
+        assert response.json()["error_code"] == "INVALID_LIMIT", (
+            f"unexpected body {response.json()}"
+        )
+        usecase.execute.assert_not_awaited(), "an unreadable limit must not reach the usecase"

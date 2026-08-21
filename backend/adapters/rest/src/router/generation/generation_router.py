@@ -30,6 +30,7 @@ from dto.generation.generation_response_dto import (
     GenerationSummaryDto,
 )
 from dto.shared.page_dto import PageDto
+from dto.shared.query_int import exact_int
 from generation.document_generator import DocumentGenerator
 from generation.get_generation import GetGeneration
 from generation.list_generations import ListGenerations
@@ -65,19 +66,24 @@ def get_retry_generation_usecase() -> RetryGeneration:
 
 @router.get("", response_model=PageDto[GenerationSummaryDto])
 async def list_generations(
-    limit: int = DEFAULT_LIMIT,
+    limit: str | None = None,
     cursor: str | None = None,
     owner_id: UUID = Depends(get_current_owner_id),
     usecase: ListGenerations = Depends(get_list_generations_usecase),
 ) -> PageDto[GenerationSummaryDto]:
     """The caller's own generation history, newest first.
 
-    `limit`/`cursor` are plain parameters, not Query(ge=..., le=...): the bounds
-    live in the domain's PageRequest so a violation answers this project's
-    {error_code, message} rather than Pydantic's envelope -- the same reason
-    IdempotencyKey is not a Header constraint.
+    `limit` arrives as raw text and `cursor` as-is, not as Query(ge=..., le=...):
+    a Pydantic annotation refuses a bad value in ITS envelope, and this contract's
+    400s are {error_code, message} -- the same reason IdempotencyKey is not a
+    Header constraint. Parsing is transport work and happens here; the bounds stay
+    in the domain's PageRequest, shared by every history list.
     """
-    page = await usecase.execute(owner_id=owner_id, limit=limit, cursor=cursor)
+    page = await usecase.execute(
+        owner_id=owner_id,
+        limit=exact_int(limit, DEFAULT_LIMIT, "INVALID_LIMIT", "limit"),
+        cursor=cursor,
+    )
     return PageDto[GenerationSummaryDto](
         items=[GenerationSummaryDto.from_domain(generation) for generation in page.items],
         next_cursor=page.next_cursor,
