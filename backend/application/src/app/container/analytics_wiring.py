@@ -18,7 +18,6 @@ the coupling this story's governing decision forbids
 """
 
 import logging
-import os
 
 from geolocation.http_geolocation import create_geolocation
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,38 +29,12 @@ from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
 from analytics.record_analytics_event import RecordAnalyticsEvent
 from analytics.record_registration_context import RecordRegistrationContext
 from analytics.registration_context import Geolocation, NullGeolocation
+from analytics.transport_settings import event_rate_limit, event_rate_window_seconds
 from container.runtime import request_scoped, session_factory
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
 
 logger = logging.getLogger(__name__)
-
-EVENT_RATE_LIMIT_ENV_VAR = "ANALYTICS_EVENT_RATE_LIMIT"
-EVENT_RATE_WINDOW_ENV_VAR = "ANALYTICS_EVENT_RATE_WINDOW_SECONDS"
-# 120 per 60 s, the bound `endpoints.md` names. A named default rather than a
-# required variable: every deployment declares it (Infra §3.2, §3.4), and a
-# deployment that forgets still runs with the documented number instead of
-# unbounded.
-DEFAULT_EVENT_RATE_LIMIT = 120
-DEFAULT_EVENT_RATE_WINDOW_SECONDS = 60
-
-
-def event_rate_limit() -> int:
-    return _positive_int(EVENT_RATE_LIMIT_ENV_VAR, DEFAULT_EVENT_RATE_LIMIT)
-
-
-def event_rate_window_seconds() -> int:
-    return _positive_int(EVENT_RATE_WINDOW_ENV_VAR, DEFAULT_EVENT_RATE_WINDOW_SECONDS)
-
-
-def _positive_int(variable: str, default: int) -> int:
-    try:
-        value = int(os.environ.get(variable, default))
-    except ValueError:
-        value = default
-    # A zero or negative bound would refuse every event, which reads in
-    # production as "analytics is broken" rather than as "the value is wrong".
-    return value if value > 0 else default
 
 
 # Built once at import, like `engine` and `token_service`: the client holds a

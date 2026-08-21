@@ -17,10 +17,9 @@ marketing report rather than by a user.
 import unicodedata
 from dataclasses import dataclass
 
-# Code points after NFC, not bytes. The bound guards how much of a marketing
-# link is worth keeping, which is a text question; the byte caps in this story
-# all sit at transport boundaries, where the unit is what was actually read.
-MAX_VALUE_CODE_POINTS = 200
+from shared import limits
+
+MAX_VALUE_CODE_POINTS = limits.MAX_ATTRIBUTION_VALUE_CODE_POINTS
 
 FIELD_NAMES = ("utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term")
 

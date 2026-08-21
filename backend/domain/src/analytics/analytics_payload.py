@@ -20,9 +20,10 @@ tokenless route, so its errors reach anyone (Security §3.3).
 import json
 from typing import Any
 
+from shared import limits
 from shared.exceptions import ValidationException
 
-MAX_SERIALIZED_BYTES = 4096
+MAX_SERIALIZED_BYTES = limits.MAX_PAYLOAD_SERIALIZED_BYTES
 MAX_DEPTH = 8
 MAX_KEYS = 64
 

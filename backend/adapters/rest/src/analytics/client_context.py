@@ -14,34 +14,19 @@ address by padding the header; too low and the address stored is our own proxy's
 Infra §2.5 asserts the configured number against the deployment's actual chain.
 """
 
-import os
 from uuid import UUID
 
 from fastapi import Request
 
-TRUSTED_PROXY_HOPS_ENV_VAR = "TRUSTED_PROXY_HOPS"
-# One: the repo's compose files put a single nginx in front of the application.
-DEFAULT_TRUSTED_PROXY_HOPS = 1
+from analytics.transport_settings import max_forwarded_for_length, trusted_proxy_hops
 
 FORWARDED_FOR = "X-Forwarded-For"
-# The header is caller-controlled, so the parse is bounded before it is split.
-MAX_FORWARDED_FOR_LENGTH = 1024
-
-
-def trusted_proxy_hops() -> int:
-    try:
-        return max(0, int(os.environ.get(TRUSTED_PROXY_HOPS_ENV_VAR, DEFAULT_TRUSTED_PROXY_HOPS)))
-    except ValueError:
-        # A misconfigured value falls back to the documented default rather than
-        # failing the boot: this decides one analytics column and one rate-limit
-        # bucket, and neither is worth refusing to start over.
-        return DEFAULT_TRUSTED_PROXY_HOPS
 
 
 def client_ip_of(request: Request) -> str | None:
     """The caller's address as the last trusted hop reported it."""
     forwarded = request.headers.get(FORWARDED_FOR)
-    if forwarded and len(forwarded) <= MAX_FORWARDED_FOR_LENGTH:
+    if forwarded and len(forwarded) <= max_forwarded_for_length():
         candidate = _hop_from_the_right(forwarded, trusted_proxy_hops())
         if candidate:
             return candidate

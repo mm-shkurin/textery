@@ -59,3 +59,21 @@ preview_max_code_points = 200
 preview_source_max_chars = 4000
 # The feed's search box, same ceiling as the document filter's.
 query_max_code_points = 200
+
+[analytics]
+# The reported event's own payload, measured on the serialized JSON. A bound on
+# what is stored per event, so one caller cannot decide how large the analytics
+# table grows.
+max_payload_serialized_bytes = 4096
+# One `utm_*` member, in code points after NFC rather than bytes: how much of a
+# marketing link is worth keeping is a text question. The byte caps in this
+# story all sit at transport boundaries, where the unit is what was read.
+max_attribution_value_code_points = 200
+# `User-Agent`, as sent. Long enough for the longest real agent string plus
+# room; bounded because the value is caller-controlled and gets parsed.
+max_user_agent_length = 4096
+# `Accept-Language`, as sent. Every entry in it is split and parsed, so the
+# header is bounded on its whole length as well as on its entry count
+# (`05_Security_Tests.md` §4.3) -- otherwise a caller chooses how much work one
+# request costs.
+max_language_header_length = 512

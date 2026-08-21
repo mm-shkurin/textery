@@ -13,9 +13,12 @@ mode says `Macintosh`), and a dependency that ships a new database monthly would
 make this classification drift on its own.
 """
 
+from shared import limits
+
 MOBILE = "MOBILE"
 TABLET = "TABLET"
 DESKTOP = "DESKTOP"
+
 DEVICE_TYPES = (MOBILE, TABLET, DESKTOP)
 
 ANDROID = "ANDROID"
@@ -42,7 +45,7 @@ _OS_MARKERS = (
 _TABLET_MARKERS = ("ipad", "tablet", "kindle", "playbook")
 _MOBILE_MARKERS = ("iphone", "ipod", "windows phone", "mobile")
 
-MAX_USER_AGENT_LENGTH = 4096
+MAX_USER_AGENT_LENGTH = limits.MAX_USER_AGENT_LENGTH
 
 
 def device_type_of(user_agent: str | None) -> str | None:

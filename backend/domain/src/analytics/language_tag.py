@@ -12,10 +12,9 @@ into `tr-tr` with a dotless i and the same header would store two different tags
 depending on which host answered.
 """
 
-# The header is caller-controlled and every entry is split and parsed. Bounded
-# on both the whole header and the entry count, so a caller cannot choose how
-# much work one request costs (Security §4.3).
-MAX_HEADER_LENGTH = 512
+from shared import limits
+
+MAX_HEADER_LENGTH = limits.MAX_LANGUAGE_HEADER_LENGTH
 MAX_ENTRIES = 32
 
 _DEFAULT_QUALITY = 1.0

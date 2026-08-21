@@ -30,14 +30,13 @@ from analytics.analytics_error_codes import (
 from analytics.analytics_payload import INVALID_PAYLOAD
 from analytics.client_context import client_ip_of
 from analytics.record_analytics_event import RecordAnalyticsEvent
+from analytics.transport_settings import max_body_bytes
 from dto.analytics.record_event_request_dto import RecordEventRequestDto
 from router import api_routes
 from security.current_owner import get_optional_owner_id
 from shared.exceptions import ValidationException
 
 router = APIRouter(prefix=api_routes.ANALYTICS, tags=["analytics"])
-
-MAX_BODY_BYTES = 16384
 
 
 def get_record_analytics_event_usecase() -> RecordAnalyticsEvent:
@@ -77,7 +76,7 @@ async def _body_within_bounds(request: Request) -> bytes:
     body = bytearray()
     async for chunk in request.stream():
         body.extend(chunk)
-        if len(body) > MAX_BODY_BYTES:
+        if len(body) > max_body_bytes():
             raise ValidationException(
                 message=REQUEST_BODY_TOO_LARGE_MESSAGE, error_code=REQUEST_BODY_TOO_LARGE
             )
