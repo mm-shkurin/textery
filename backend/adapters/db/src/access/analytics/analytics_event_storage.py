@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,9 +41,16 @@ class SqlAlchemyAnalyticsEventRepository:
                 occurrence_key=event.occurrence_key,
                 user_id=event.user_id,
                 event_time=event.event_time,
-                # `payload` and `degraded` are deliberately not sent: the entity
-                # does not carry them yet, and the column defaults (`{}` / false)
-                # are the values their scenarios say an event without them has.
+                # Sent explicitly, NOT left to the column defaults. The defaults
+                # (`{}` / false) happen to be right for an event that carries
+                # neither, which is exactly what made their absence here
+                # invisible: every row stored `{}` and `false` and looked correct
+                # until a request actually carried a payload and the row still
+                # read empty. `validate_payload` has already reduced absent,
+                # explicit null and `{}` to one value, so there is nothing left
+                # for a default to decide.
+                payload=event.payload,
+                degraded=event.degraded,
             )
             # `index_where` is not decoration: the unique index is PARTIAL, and
             # Postgres refuses to infer a partial index unless the statement
@@ -58,25 +65,38 @@ class SqlAlchemyAnalyticsEventRepository:
         )
         inserted_id = (await self._session.execute(statement)).scalar_one_or_none()
         if inserted_id is None:
-            return self._what_the_conflicting_row_means()
+            return await self._what_the_conflicting_row_means(event)
         return SaveOutcome.STORED
 
-    def _what_the_conflicting_row_means(self) -> SaveOutcome:
+    async def _what_the_conflicting_row_means(self, event: AnalyticsEvent) -> SaveOutcome:
         """The single decision point for "the insert wrote no row".
 
         `DO NOTHING` returns nothing for BOTH remaining outcomes and does not say
         which: `ALREADY_RECORDED` (the same occurrence replayed under the same
         name) and `CONFLICTING_NAME` (the same key reused under a DIFFERENT name,
         which `endpoints.md` §2 answers `409 OCCURRENCE_KEY_CONFLICT`) are
-        indistinguishable from the statement alone. Telling them apart requires a
-        follow-up read of the stored row's `event_name` -- which is not written
-        here because no scenario yet drives it.
+        indistinguishable from the statement alone. Telling them apart takes one
+        follow-up read of the stored row's `event_name`.
 
-        That branch is OWNED BY `tests/extended/01_API_Tests_Extended.md` §3.1,
-        which is folded in when §5 goes green. It is deferred, not foreclosed:
-        this method is the one place the follow-up read lands, and it is code
-        rather than schema, so adding it later costs no migration on a hot table.
-        Until then every no-row result is reported as the replay, which is the
-        commoner of the two and the one scenario 1.1's neighbours assume.
+        The read is SAFE TO DO SECOND, which is why the insert still decides the
+        collapse on its own. It runs only on the conflict path -- never on the
+        common one -- and it cannot resurrect the read-then-insert race it
+        replaced: by the time it runs, the row it reads is already committed by
+        whoever won, so the answer it gives is stable.
+
+        A row that has vanished between the conflict and this read (an erasure
+        running concurrently) reads as the replay. That is the conservative
+        answer: reporting a conflict for a key nothing holds would refuse an
+        event on the strength of a row that no longer exists.
         """
+        stored_name = (
+            await self._session.execute(
+                select(AnalyticsEventModel.event_name).where(
+                    AnalyticsEventModel.visitor_id == event.visitor_id,
+                    AnalyticsEventModel.occurrence_key == event.occurrence_key,
+                )
+            )
+        ).scalar_one_or_none()
+        if stored_name is not None and stored_name != event.event_name:
+            return SaveOutcome.CONFLICTING_NAME
         return SaveOutcome.ALREADY_RECORDED

@@ -22,7 +22,7 @@ from session import create_engine, create_session_factory
 from statements.database_cleanup import truncate_all
 from statements.database_url import resolve_test_database_url
 
-_EXPECTED_FIXTURES = 10
+_EXPECTED_FIXTURES = 11
 
 
 async def _engine_scoped(build: Callable[..., object]) -> AsyncIterator[object]:
@@ -125,6 +125,18 @@ async def analytics_storage_statements():
     )
 
     async for statements in _engine_scoped(AnalyticsEventStorageStatements):
+        yield statements
+
+
+@pytest_asyncio.fixture
+async def analytics_payload_statements():
+    # Engine-scoped for the same reason as its sibling: the claim is what another
+    # connection reads back after the commit.
+    from statements.analytics_payload_storage_statements import (
+        AnalyticsPayloadStorageStatements,
+    )
+
+    async for statements in _engine_scoped(AnalyticsPayloadStorageStatements):
         yield statements
 
 
