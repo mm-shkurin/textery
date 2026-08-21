@@ -28,6 +28,7 @@ GATES: list[tuple[str, list[str]]] = [
     ("ruff check", [sys.executable, "-m", "ruff", "check", "."]),
     ("ruff format --check", [sys.executable, "-m", "ruff", "format", "--check", "."]),
     ("file sizes", [sys.executable, "scripts/check_file_size.py"]),
+    ("test-case copies", [sys.executable, "scripts/sync_test_cases.py", "--check"]),
     ("mypy", [sys.executable, "-m", "mypy"]),
     (
         "mypy --disallow-incomplete-defs",
