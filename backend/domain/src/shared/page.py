@@ -1,4 +1,5 @@
-from shared import error_codes, limits
+from shared import limits
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 from shared.keyset_cursor import INVALID_CURSOR_MESSAGE, KeysetCursor
 
@@ -38,11 +39,11 @@ class PageRequest:
         # as limit=1 rather than being rejected.
         if isinstance(limit, bool) or not isinstance(limit, int):
             raise ValidationException(
-                error_code=error_codes.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
+                error_code=ErrorCode.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
             )
         if limit < MIN_LIMIT or limit > MAX_LIMIT:
             raise ValidationException(
-                error_code=error_codes.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
+                error_code=ErrorCode.INVALID_LIMIT, message=INVALID_LIMIT_MESSAGE
             )
         return limit
 
@@ -54,7 +55,7 @@ class PageRequest:
             return KeysetCursor.decode(cursor)
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.INVALID_CURSOR, message=INVALID_CURSOR_MESSAGE
+                error_code=ErrorCode.INVALID_CURSOR, message=INVALID_CURSOR_MESSAGE
             ) from error
 
 

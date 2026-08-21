@@ -35,7 +35,7 @@ from uuid import UUID
 from fastapi import Depends, Header
 
 from auth.token_service import TokenService
-from shared import error_codes
+from shared.error_codes import ErrorCode
 from shared.exceptions import InvalidTokenException, ValidationException
 
 
@@ -105,7 +105,7 @@ def _subject_of(token: str, token_service: TokenService) -> UUID:
 def _unauthorized() -> ValidationException:
     # A ValidationException, so it lands in the canonical error shape through the
     # existing handler and its _ERROR_CODE_STATUS_MAP entry -- no new handler.
-    return ValidationException(error_code=error_codes.UNAUTHORIZED, message=UNAUTHORIZED_MESSAGE)
+    return ValidationException(error_code=ErrorCode.UNAUTHORIZED, message=UNAUTHORIZED_MESSAGE)
 
 
 async def get_optional_owner_id(

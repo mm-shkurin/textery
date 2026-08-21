@@ -9,8 +9,8 @@ from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
 from auth.verification_code_value import VerificationCodeValue
-from shared import error_codes
 from shared.clock import Clock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException, VerificationFailedException
 from shared.rollback import rollback_quietly
 from shared.unit_of_work import UnitOfWork
@@ -128,7 +128,7 @@ class VerifyAccount(AccountVerificationDependencies):
             return VerificationCodeValue(code)
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.INVALID_CODE,
+                error_code=ErrorCode.INVALID_CODE,
                 message="The verification code is not valid.",
             ) from error
 
@@ -141,7 +141,7 @@ class VerifyAccount(AccountVerificationDependencies):
         idempotent-success path above and never reaches here.
         """
         return ValidationException(
-            error_code=error_codes.ALREADY_VERIFIED,
+            error_code=ErrorCode.ALREADY_VERIFIED,
             message="The account is already verified.",
         )
 
@@ -162,6 +162,6 @@ class VerifyAccount(AccountVerificationDependencies):
         distinguishable by timing. Out of scope for this sprint.
         """
         return ValidationException(
-            error_code=error_codes.INVALID_OR_EXPIRED_CODE,
+            error_code=ErrorCode.INVALID_OR_EXPIRED_CODE,
             message="The verification code is invalid or has expired.",
         )

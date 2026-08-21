@@ -5,8 +5,8 @@ from document.document_creation_result import DocumentCreationResult
 from document.document_repository import DocumentRepository
 from document.document_type import DocumentType
 from document.idempotency_key import IdempotencyKey
-from shared import error_codes
 from shared.clock import Clock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ConflictException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
@@ -51,14 +51,14 @@ class CreateDocument:
             DocumentType(document_type)
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.INVALID_DOCUMENT_TYPE,
+                error_code=ErrorCode.INVALID_DOCUMENT_TYPE,
                 message=self.INVALID_DOCUMENT_TYPE_MESSAGE,
             ) from error
         try:
             IdempotencyKey(idempotency_key)
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.INVALID_IDEMPOTENCY_KEY,
+                error_code=ErrorCode.INVALID_IDEMPOTENCY_KEY,
                 message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE,
             ) from error
 
@@ -81,7 +81,7 @@ class CreateDocument:
             # to paper over: returning None here would 500 on a NoneType attribute
             # access with a traceback the client should never see.
             raise ValidationException(
-                error_code=error_codes.DOCUMENT_CREATION_FAILED,
+                error_code=ErrorCode.DOCUMENT_CREATION_FAILED,
                 message=self.CREATION_FAILED_MESSAGE,
             )
         return DocumentCreationResult(document=existing, is_replay=True)

@@ -10,7 +10,7 @@ generation created before this field existed has no style, and writing the
 scientific register into those rows on read would claim the user chose it.
 """
 
-from shared import error_codes
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 
 NAUCHNY = "научный"
@@ -53,7 +53,7 @@ def validate_text_style(text_style: str | None) -> str | None:
         return None
     if text_style not in SUPPORTED_TEXT_STYLES:
         raise ValidationException(
-            error_code=error_codes.INVALID_TEXT_STYLE,
+            error_code=ErrorCode.INVALID_TEXT_STYLE,
             message=INVALID_TEXT_STYLE_MESSAGE,
         )
     return text_style

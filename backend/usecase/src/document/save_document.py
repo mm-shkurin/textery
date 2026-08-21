@@ -7,8 +7,8 @@ from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
 from document.document_repository import DocumentRepository
 from document.html_sanitizer import HtmlSanitizer
 from document.title_update import TitleUpdate
-from shared import error_codes
 from shared.clock import Clock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ConflictException, NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
@@ -114,7 +114,7 @@ class SaveDocument:
         # sail through a bare isinstance(version, int) check and act as version 1.
         if isinstance(version, bool) or not isinstance(version, int) or version < MIN_VERSION:
             raise ValidationException(
-                error_code=error_codes.INVALID_VERSION, message=self.INVALID_VERSION_MESSAGE
+                error_code=ErrorCode.INVALID_VERSION, message=self.INVALID_VERSION_MESSAGE
             )
 
     def _validate_content(self, content: str) -> str:
@@ -129,7 +129,7 @@ class SaveDocument:
             return DocumentContent(content).value
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.CONTENT_TOO_LONG, message=self.CONTENT_TOO_LONG_MESSAGE
+                error_code=ErrorCode.CONTENT_TOO_LONG, message=self.CONTENT_TOO_LONG_MESSAGE
             ) from error
 
     async def _explain_miss(

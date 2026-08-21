@@ -10,7 +10,7 @@ from auth.email import Email
 from auth.password_hasher import PasswordHasher
 from auth.token_pair import TokenPair
 from auth.token_service import TokenService
-from shared import error_codes
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 from shared.rollback import rollback_quietly
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -81,7 +81,7 @@ class LoginUser:
         """
         if account.failed_attempt_count >= self.LOCKOUT_THRESHOLD:
             raise ValidationException(
-                error_code=error_codes.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
+                error_code=ErrorCode.ACCOUNT_LOCKED, message=self.ACCOUNT_LOCKED_MESSAGE
             )
         if not self._password_hasher.verify(
             self._normalized_password(password), account.password_hash
@@ -90,7 +90,7 @@ class LoginUser:
             raise self._invalid_credentials()
         if not account.is_verified:
             raise ValidationException(
-                error_code=error_codes.UNVERIFIED, message=self.UNVERIFIED_MESSAGE
+                error_code=ErrorCode.UNVERIFIED, message=self.UNVERIFIED_MESSAGE
             )
 
     async def _reset_failed_attempts(self, account_id: UUID) -> None:
@@ -146,6 +146,6 @@ class LoginUser:
         # One error for "no such account" and "wrong password": 5.2 requires them
         # to be indistinguishable, or the response enumerates registered emails.
         return ValidationException(
-            error_code=error_codes.INVALID_CREDENTIALS,
+            error_code=ErrorCode.INVALID_CREDENTIALS,
             message=self.INVALID_CREDENTIALS_MESSAGE,
         )

@@ -12,8 +12,8 @@ from auth.password_hasher import PasswordHasher
 from auth.registration_result import RegistrationResult
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
-from shared import error_codes
 from shared.clock import Clock, SystemClock
+from shared.error_codes import ErrorCode
 from shared.exceptions import ConflictException, RegistrationFailedException, ValidationException
 from shared.rollback import rollback_quietly
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
@@ -65,12 +65,12 @@ class RegisterUser:
             password_value_object = Password(password)
         except ValueError as error:
             raise ValidationException(
-                error_code=error_codes.INVALID_PASSWORD,
+                error_code=ErrorCode.INVALID_PASSWORD,
                 message="The password does not meet the password policy.",
             ) from error
         if password_value_object.value != unicodedata.normalize("NFC", confirm_password):
             raise ValidationException(
-                error_code=error_codes.PASSWORD_MISMATCH,
+                error_code=ErrorCode.PASSWORD_MISMATCH,
                 message="The password confirmation does not match.",
             )
         return password_value_object
@@ -89,7 +89,7 @@ class RegisterUser:
         except ConflictException as error:
             await rollback_quietly(self._unit_of_work)
             raise ValidationException(
-                error_code=error_codes.EMAIL_ALREADY_REGISTERED,
+                error_code=ErrorCode.EMAIL_ALREADY_REGISTERED,
                 message="An account with this email address already exists.",
             ) from error
         except Exception as error:

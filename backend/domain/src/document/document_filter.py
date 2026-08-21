@@ -22,7 +22,8 @@ feed.
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
 
-from shared import error_codes, limits
+from shared import limits
+from shared.error_codes import ErrorCode
 from shared.exceptions import ValidationException
 
 MAX_QUERY_LENGTH = limits.MAX_QUERY_LENGTH
@@ -105,7 +106,7 @@ class DocumentFilter:
         if q is not None:
             if len(q) > MAX_QUERY_LENGTH:
                 raise ValidationException(
-                    error_code=error_codes.INVALID_QUERY, message=QUERY_TOO_LONG_MESSAGE
+                    error_code=ErrorCode.INVALID_QUERY, message=QUERY_TOO_LONG_MESSAGE
                 )
             # Trimmed, then folded to absent when nothing visible remains: a query
             # of spaces is a user who has not typed anything yet, and matching
@@ -117,7 +118,7 @@ class DocumentFilter:
         end = _parse_boundary(created_to, "created_to", end_of_day=True)
         if start is not None and end is not None and start > end:
             raise ValidationException(
-                error_code=error_codes.INVALID_DATE_RANGE, message=INVERTED_WINDOW_MESSAGE
+                error_code=ErrorCode.INVALID_DATE_RANGE, message=INVERTED_WINDOW_MESSAGE
             )
         return cls(query=query, created_from=start, created_to=end)
 
