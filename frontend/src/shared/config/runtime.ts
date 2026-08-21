@@ -85,6 +85,12 @@ export const RUNTIME = {
   // Which image formats an avatar may be uploaded in. Policy, not logic: tightening or widening it
   // must not require a code change and a release.
   avatarTypes: csv(import.meta.env.VITE_AVATAR_TYPES, ['image/png', 'image/jpeg', 'image/webp']),
+
+  // How long an analytics report may stay on the wire. Deliberately far below the product's own
+  // 25s: that bound is sized for a document generation the user is waiting on, and nobody is
+  // waiting on a telemetry POST. What the short bound buys is the browser's per-host connection
+  // budget — a hung report holds one of the six, and the product's own calls queue behind it.
+  analyticsTimeoutMs: positiveInt(import.meta.env.VITE_ANALYTICS_TIMEOUT_MS, 5000, 500),
 } as const
 
 // Not env-driven: these are facts, not deployment choices.

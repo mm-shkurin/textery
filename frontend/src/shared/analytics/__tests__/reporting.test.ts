@@ -1,5 +1,6 @@
 // Reporting an event: what goes on the wire, and what a failure costs the visitor.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { RUNTIME } from '../../config/runtime'
 import { BROWSER_EVENTS, report, resetSendOutcomes, sendOutcomes } from '../analyticsClient'
 import { resetTrackers, trackSiteVisit } from '../trackers'
 import { forgetVisitor } from '../visitorId'
@@ -78,6 +79,26 @@ describe('reporting a browser event', () => {
     // look identical in the data, and only a local tally tells them apart.
     await vi.waitFor(() => expect(sendOutcomes().unreachable).toBe(1))
     expect(sendOutcomes().ok).toBe(0)
+  })
+
+  it('gives up on a report that never answers, instead of holding a connection open', async () => {
+    // The failure this prevents is not a lost event — those are expendable — but a hung report
+    // holding one of the browser's six per-host connections while the product's own calls queue
+    // behind it. The bound is the reason `report` can be fire-and-forget at all.
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => {})),
+    )
+
+    report(BROWSER_EVENTS.siteVisited)
+    await vi.advanceTimersByTimeAsync(RUNTIME.analyticsTimeoutMs + 1)
+
+    // Counted as unreachable, which is the honest family: a report that never got an answer is
+    // one we cannot say landed.
+    expect(sendOutcomes().unreachable).toBe(1)
+    expect(sendOutcomes().ok).toBe(0)
+    vi.useRealTimers()
   })
 
   it('reports exactly one site visit per page load', async () => {

@@ -8,15 +8,23 @@
 //     timeout are all the same outcome here — nothing. The one thing that is NOT swallowed is the
 //     counting of it: each failure family increments a local tally a developer can read, because
 //     "analytics is silently dead" is otherwise indistinguishable from "nobody visited".
-//   * `keepalive` is set, which is the whole reason `fetch` is used rather than a plain request:
-//     a visitor who lands and immediately closes the tab must still be counted, and a normal
-//     request in an unloading document is cancelled by the browser.
+//   * `keepalive` is set, which is the whole reason `fetch` is used rather than the app's own
+//     `request()`: a visitor who lands and immediately closes the tab must still be counted, and a
+//     normal request in an unloading document is cancelled by the browser. Going through the
+//     shared client would also put an analytics call inside the session's 401-renewal path, and a
+//     telemetry POST is never a reason to touch somebody's session.
+//   * It is BOUNDED anyway, by the same `withTimeout` the shared client uses. Fire-and-forget is
+//     not the same as unbounded: a hung report holds one of the browser's few per-host
+//     connections, and the product's own requests queue behind it. The bound is short (5s, and
+//     configurable) because nobody is waiting on this the way they wait on a generation.
 //
 // The occurrence key is minted PER CALL and is what makes the report idempotent server-side.
 // React StrictMode double-invokes effects and genuinely sends the second request — the app's own
 // `useGeneratedDocumentInit` records exactly that — so a caller cannot prevent the duplicate. It
 // carries the same key, and the server collapses it.
 import { API } from '../api/endpoints'
+import { withTimeout } from '../api/requestTimeout'
+import { RUNTIME } from '../config/runtime'
 import { getAccessToken } from '../session/authSession'
 import { mintUuid } from './uuid'
 import { visitorIdentity } from './visitorId'
@@ -55,9 +63,25 @@ export function report(eventName: BrowserEvent, payload?: Record<string, unknown
 
 async function deliver(eventName: BrowserEvent, payload?: Record<string, unknown>): Promise<void> {
   const identity = visitorIdentity()
-  const response = await fetch(API.analytics.events, {
+  // A timeout counts as `unreachable` through `report`'s own catch, which is the honest family: a
+  // report that never got an answer is a report we cannot say landed.
+  const response = await withTimeout(
+    (signal) => send(eventName, identity, payload, signal),
+    RUNTIME.analyticsTimeoutMs,
+  )
+  outcomes[response.ok ? 'ok' : 'refused'] += 1
+}
+
+function send(
+  eventName: BrowserEvent,
+  identity: ReturnType<typeof visitorIdentity>,
+  payload: Record<string, unknown> | undefined,
+  signal: AbortSignal,
+): Promise<Response> {
+  return fetch(API.analytics.events, {
     method: 'POST',
     headers: authorizationHeaders(),
+    signal,
     // `keepalive` outlives the document: this is how a visitor who leaves immediately is still
     // counted (`04` §4.4). It caps the body at 64 KiB, which these events are nowhere near.
     keepalive: true,
@@ -69,7 +93,6 @@ async function deliver(eventName: BrowserEvent, payload?: Record<string, unknown
       payload: payload ?? {},
     }),
   })
-  outcomes[response.ok ? 'ok' : 'refused'] += 1
 }
 
 function authorizationHeaders(): Record<string, string> {
