@@ -1,4 +1,5 @@
 import landingSectionStyles from './LandingSection.module.css'
+import { LandingSectionHead } from './LandingSectionHead'
 import styles from './LandingAdvantages.module.css'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
@@ -35,15 +36,11 @@ const ADVANTAGES = [
 export function LandingAdvantages({ onPrimaryCtaClick }: LandingAdvantagesProps) {
   return (
     <section className={landingSectionStyles['landing-section']} data-testid="landing-advantages">
-      <div className={landingSectionStyles['landing-section-head']}>
-        <span className={landingSectionStyles['landing-eyebrow']}>Возможности</span>
-        <h2 className={landingSectionStyles['landing-section-title']}>
-          Учебные тексты под ключ на одной платформе
-        </h2>
-        <p className={landingSectionStyles['landing-section-lead']}>
-          Закрываем все этапы работы с текстом: от постановки задачи до готового файла
-        </p>
-      </div>
+      <LandingSectionHead
+        eyebrow="Возможности"
+        title="Учебные тексты под ключ на одной платформе"
+        lead="Закрываем все этапы работы с текстом: от постановки задачи до готового файла"
+      />
 
       <div
         className={`${landingSectionStyles['landing-section-body']} ${styles['advantages-grid']}`}

@@ -1,4 +1,5 @@
 import landingSectionStyles from './LandingSection.module.css'
+import { LandingSectionHead } from './LandingSectionHead'
 import styles from './LandingProcess.module.css'
 
 // Figma `Desktop` → `Process` (node 1337:7098): three 462x397 cards in a row, each a white panel
@@ -22,15 +23,11 @@ const STEPS = [
 export function LandingProcess() {
   return (
     <section className={landingSectionStyles['landing-section']} data-testid="landing-process">
-      <div className={landingSectionStyles['landing-section-head']}>
-        <span className={landingSectionStyles['landing-eyebrow']}>Процесс</span>
-        <h2 className={landingSectionStyles['landing-section-title']}>
-          Простой рабочий процесс. Максимальная автоматизация и минимум усилий
-        </h2>
-        <p className={landingSectionStyles['landing-section-lead']}>
-          От темы до готового документа — три шага без лишних действий
-        </p>
-      </div>
+      <LandingSectionHead
+        eyebrow="Процесс"
+        title="Простой рабочий процесс. Максимальная автоматизация и минимум усилий"
+        lead="От темы до готового документа — три шага без лишних действий"
+      />
 
       <ol className={`${landingSectionStyles['landing-section-body']} ${styles['process-steps']}`}>
         {STEPS.map((step, index) => (

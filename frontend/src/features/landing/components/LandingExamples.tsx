@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import styles from './LandingExamples.module.css'
 import landingSectionStyles from './LandingSection.module.css'
+import { LandingSectionHead } from './LandingSectionHead'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 import { LANDING_EXAMPLES, type LandingExample } from '../utils/landingExamples'
 
@@ -34,13 +35,11 @@ export function LandingExamples({ onPrimaryCtaClick }: LandingExamplesProps) {
 
   return (
     <section className={landingSectionStyles['landing-section']} data-testid="landing-examples">
-      <div className={landingSectionStyles['landing-section-head']}>
-        <span className={landingSectionStyles['landing-eyebrow']}>Примеры</span>
-        <h2 className={landingSectionStyles['landing-section-title']}>Примеры готовых работ</h2>
-        <p className={landingSectionStyles['landing-section-lead']}>
-          Так выглядит результат: тема, объём и первые абзацы текста, который вы получите
-        </p>
-      </div>
+      <LandingSectionHead
+        eyebrow="Примеры"
+        title="Примеры готовых работ"
+        lead="Так выглядит результат: тема, объём и первые абзацы текста, который вы получите"
+      />
 
       <div className={`${landingSectionStyles['landing-section-body']} ${styles['examples-grid']}`}>
         {LANDING_EXAMPLES.map((example) => (

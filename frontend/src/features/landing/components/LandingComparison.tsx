@@ -1,4 +1,5 @@
 import landingSectionStyles from './LandingSection.module.css'
+import { LandingSectionHead } from './LandingSectionHead'
 import styles from './LandingComparison.module.css'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
@@ -23,23 +24,14 @@ export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps)
   return (
     <section className={styles.comparison} data-testid="landing-comparison">
       <div className={`${landingSectionStyles['landing-section']} ${styles['comparison-inner']}`}>
-        <div className={landingSectionStyles['landing-section-head']}>
-          <span
-            className={`${landingSectionStyles['landing-eyebrow']} ${styles['comparison-eyebrow']}`}
-          >
-            Сравните сами
-          </span>
-          <h2
-            className={`${landingSectionStyles['landing-section-title']} ${styles['comparison-title']}`}
-          >
-            Почему выбирают Textery AI
-          </h2>
-          <p
-            className={`${landingSectionStyles['landing-section-lead']} ${styles['comparison-lead']}`}
-          >
-            Честное сравнение с главными конкурентами на рынке AI-генерации текстов
-          </p>
-        </div>
+        <LandingSectionHead
+          eyebrow="Сравните сами"
+          title="Почему выбирают Textery AI"
+          lead="Честное сравнение с главными конкурентами на рынке AI-генерации текстов"
+          eyebrowClassName={styles['comparison-eyebrow']}
+          titleClassName={styles['comparison-title']}
+          leadClassName={styles['comparison-lead']}
+        />
 
         <table
           className={`${landingSectionStyles['landing-section-body']} ${styles['comparison-table']}`}

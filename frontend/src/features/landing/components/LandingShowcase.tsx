@@ -1,5 +1,6 @@
 import styles from './LandingShowcase.module.css'
 import landingSectionStyles from './LandingSection.module.css'
+import { LandingSectionHead } from './LandingSectionHead'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingShowcaseProps {
@@ -61,16 +62,11 @@ const SCORES = [
 export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
   return (
     <section className={landingSectionStyles['landing-section']} data-testid="landing-showcase">
-      <div className={landingSectionStyles['landing-section-head']}>
-        <span className={landingSectionStyles['landing-eyebrow']}>Преимущества</span>
-        <h2 className={landingSectionStyles['landing-section-title']}>
-          Лучшее качество на русском языке
-        </h2>
-        <p className={landingSectionStyles['landing-section-lead']}>
-          Нативная поддержка русского против автоперевода конкурентов. Сравнение генерации одного
-          промпта
-        </p>
-      </div>
+      <LandingSectionHead
+        eyebrow="Преимущества"
+        title="Лучшее качество на русском языке"
+        lead="Нативная поддержка русского против автоперевода конкурентов. Сравнение генерации одного промпта"
+      />
 
       <div
         className={`${landingSectionStyles['landing-section-body']} ${styles['showcase-panel']}`}
