@@ -1,16 +1,12 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
-import {
-  deleteAvatar,
-  fetchAvatarBytes,
-  uploadAvatar,
-} from '../../../shared/identity/api/avatarApi'
+import { uploadAvatar } from '../../../shared/identity/api/avatarApi'
 import { AvatarRejectedError } from '../../../shared/identity/api/profileErrors'
 import { resizeAvatar } from '../utils/avatarImage'
 import { resetIdentity } from '../../../shared/identity/identityStore'
 import type { Profile } from '../../../shared/identity/api/profileApi'
-import { stubObjectUrls } from './avatarTestSupport'
+import { aPicture, PROFILE, RESIZED, stubTheAvatarFetch } from './avatarUploadTestSupport'
 
 // Two failure channels that must never be confused. A file the CLIENT refuses never leaves the
 // browser: nothing happened, the message belongs beside the buttons, and «Повторить» would be a
@@ -26,28 +22,6 @@ vi.mock('../utils/avatarImage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../utils/avatarImage')>()),
   resizeAvatar: vi.fn(),
 }))
-
-const PROFILE: Profile = {
-  email: 'ada@example.ru',
-  name: null,
-  createdAt: '2025-02-03T09:26:53Z',
-  avatarUpdatedAt: '2026-08-14T12:00:00Z',
-  hasPassword: true,
-}
-
-const RESIZED = new Blob([new Uint8Array(2048)], { type: 'image/webp' })
-
-function aPicture(type = 'image/png', size = 1024): File {
-  return new File([new Uint8Array(size)], 'photo', { type })
-}
-
-// Applying a profile whose `avatarUpdatedAt` changed makes every mounted avatar fetch its bytes.
-// That fetch is mocked here, and it must RESOLVE a blob: a `vi.fn()` returning undefined throws
-// inside the store's subscriber, which would surface as a failed upload on the happy path.
-function stubTheAvatarFetch(): void {
-  stubObjectUrls()
-  vi.mocked(fetchAvatarBytes).mockResolvedValue(new Blob([new Uint8Array(8)]))
-}
 
 describe('uploading', () => {
   beforeEach(() => {
@@ -174,39 +148,5 @@ describe('uploading', () => {
 
     await waitFor(() => expect(result.current.busy).toBe(false))
     expect(uploadAvatar).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('removing', () => {
-  beforeEach(() => {
-    stubTheAvatarFetch()
-    vi.mocked(deleteAvatar).mockResolvedValue(PROFILE)
-  })
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllGlobals()
-    resetIdentity()
-  })
-
-  it('clears the picture and reports no failure', async () => {
-    const { result } = renderHook(() => useAvatarUpload())
-
-    await act(async () => await result.current.remove())
-
-    expect(deleteAvatar).toHaveBeenCalledTimes(1)
-    expect(result.current.failed).toBe(false)
-  })
-
-  it('offers a retry when the removal did not reach the server', async () => {
-    vi.mocked(deleteAvatar).mockRejectedValueOnce(new TypeError('Failed to fetch'))
-    const { result } = renderHook(() => useAvatarUpload())
-
-    await act(async () => await result.current.remove())
-    expect(result.current.failed).toBe(true)
-
-    await act(async () => await result.current.retry())
-
-    expect(deleteAvatar).toHaveBeenCalledTimes(2)
-    expect(result.current.failed).toBe(false)
   })
 })
