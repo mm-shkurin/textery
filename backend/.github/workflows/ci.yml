@@ -1,8 +1,11 @@
 name: backend-ci
 
+# No branch filter: this repository takes commits straight on the working
+# branch and uses no pull requests, so a `[main, dev]` filter meant the gates
+# below ran on none of the commits as they were made -- a red tip was found
+# days later by a manual run.
 on:
   push:
-    branches: [main, dev]
   pull_request:
 
 jobs:
