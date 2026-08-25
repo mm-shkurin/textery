@@ -1,0 +1,72 @@
+/* Процесс, возможности и карусель преимуществ. */
+.process__cards, .features__grid{display:flex; flex-direction:column; gap:16px; width:100%;}
+.process__card{padding:8px; background:var(--surface); border:1px solid var(--line); border-radius:16px;}
+.process__media{display:flex; align-items:center; justify-content:center; height:150px;
+  padding:12px; background:var(--surface-grey); border-radius:10px; overflow:hidden;}
+.process__media img{max-width:100%; max-height:126px; object-fit:contain;}
+.process__text{padding:16px 12px; text-align:center;}
+.process__name{font-size:17px; font-weight:600;}
+.process__desc{margin-top:8px; font-size:13px; line-height:18px; color:var(--muted);}
+
+.feature{position:relative; height:170px; background:var(--surface); border:1px solid var(--line);
+  border-radius:12px; overflow:hidden;}
+.feature__dots{position:absolute; left:14px; top:14px; display:grid;
+  grid-template-columns:repeat(2,7px); gap:3px;}
+.feature__dots i{width:7px; height:7px; border-radius:6px; background:var(--skeleton);}
+.feature__dots i.on{background:var(--blue);}
+.feature__text{position:absolute; left:14px; bottom:14px; width:250px;}
+.feature__name{font-size:15px; font-weight:600;}
+.feature__desc{margin-top:4px; font-size:11px; line-height:15px; color:var(--muted);}
+.feature__art{position:absolute; pointer-events:none;}
+.feature__art img{display:block; width:100%; height:100%; object-fit:contain;}
+.feature__skeleton{position:absolute; left:46px; top:16px; width:150px; display:flex;
+  flex-direction:column; gap:12px;}
+.feature__skeleton i{height:9px; border-radius:5px; background:var(--skeleton);}
+.feature__skeleton i:nth-child(2){width:78%;} .feature__skeleton i:nth-child(3){width:52%;}
+.feature__skeleton i:nth-child(4){width:36%;}
+.feature--ai .feature__art--splash{left:60px; top:-70px; width:150px; height:148px;}
+.feature--ai .feature__art--chart{left:150px; top:-60px; width:230px; height:210px;}
+.feature--ai .feature__art--dots{left:190px; top:36px; width:48px; height:48px;}
+.feature--editor .feature__art--star{right:-40px; top:10px; width:150px; height:150px;
+  color:#d6eaff; font-size:150px; line-height:150px;}
+.feature--editor .feature__art--letter{left:60px; top:8px; width:100px; height:100px;}
+.feature--pdf .feature__art--pdf{right:-6px; top:6px; width:120px; height:120px;}
+.feature--backup .feature__art--cloud{left:24px; top:-56px; width:190px; height:190px;
+  transform:scaleX(-1);}
+.feature--backup .feature__art--case{left:200px; top:-16px; width:120px; height:120px;}
+
+/* Три метрики качества не влезают в столбец, поэтому это карусель: один слайд — одна метрика
+   с обеими карточками, точки под ней переключают слайды (см. mobile.js). */
+.quality__carousel{width:100%; overflow:hidden;}
+.quality__track{display:flex; transition:transform .3s ease;}
+.quality__slide{flex:0 0 100%; display:flex; flex-direction:column; gap:12px;}
+.quality__card{padding:16px; border-radius:14px; background:var(--surface);
+  border:1px solid var(--line-soft);}
+.quality__card--rival{background:var(--surface-alt);}
+.chip{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px;
+  background:var(--surface-alt); border:1px solid rgba(70,69,81,.08); border-radius:8px;
+  font-size:13px; font-weight:600;}
+.chip img{height:16px; width:auto;}
+.chart{margin-top:16px; display:flex; flex-direction:column; gap:6px;}
+.chart__scale{display:flex; justify-content:space-between; font-size:11px; color:var(--muted);}
+.quality__card--rival .chart__scale{color:var(--grey);}
+.bar{position:relative; display:flex; align-items:center; gap:3px; height:34px;}
+.bar__fill{height:34px; border-radius:100px; background-size:100% 100%;}
+.bar__thumb{height:34px; border-radius:100px; background-size:100% 100%;}
+.bar--teal .bar__fill, .bar--teal .bar__thumb{
+  background-image:url('../../../../../../frontend/public/design/landing/quality-bar-teal.webp');}
+.bar--magenta .bar__fill, .bar--magenta .bar__thumb{
+  background-image:url('../../../../../../frontend/public/design/landing/quality-bar-magenta.webp');}
+.bar--violet .bar__fill, .bar--violet .bar__thumb{
+  background-image:url('../../../../../../frontend/public/design/landing/quality-bar-violet.webp');}
+.bar__marker{position:absolute; top:-8px; width:0; height:0; border-left:5px solid transparent;
+  border-right:5px solid transparent; border-top:5px solid var(--muted);}
+.metric__value{margin-top:16px; font-size:44px; font-weight:500; letter-spacing:-2px;}
+.metric__name{margin-top:6px; font-size:16px; font-weight:600;}
+.metric__desc{margin-top:6px; font-size:12px; line-height:17px; color:var(--muted);}
+.quality__card--rival .metric__value, .quality__card--rival .metric__name,
+.quality__card--rival .metric__desc{color:var(--grey);}
+.quality__dots{display:flex; justify-content:center; gap:6px; margin-top:16px;}
+.quality__dots button{width:7px; height:7px; padding:0; border:none; border-radius:50%;
+  background:#c9ccd4; cursor:pointer;}
+.quality__dots button[aria-current='true']{background:var(--ink);}

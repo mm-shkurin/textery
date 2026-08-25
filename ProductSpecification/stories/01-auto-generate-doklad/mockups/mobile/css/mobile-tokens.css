@@ -1,0 +1,117 @@
+/* Мобильный лэндинг, 360 CSS-px. Токены те же, что в десктопном мокапе
+   (../../desktop/css/landing-tokens.css) — расходятся только размеры и раскладка. */
+:root{
+  --blue:#004ee0; --blue-soft:#659bff; --sky:#e3f2ff; --glow:#1883ff;
+  --ink:#1f1f1f; --ink-strong:#000; --muted:#464551; --grey:#6b7280;
+  --line:#d9d9d9; --line-soft:#f0f0f0; --surface:#fff; --surface-alt:#f8f9fb;
+  --surface-grey:#f5f5f7; --dark:#161616; --green:#11c521; --red:#ff383c;
+  --radius:12px; --radius-l:16px; --pad-x:16px;
+  --page-bg:var(--sky); --veil-color:rgba(255,255,255,.6); --glow-opacity:.5;
+  --contrast-bg:var(--ink-strong); --contrast-fg:#fff; --skeleton:#ececee;
+}
+/* Тёмная тема — те же токены, что и в десктопном мокапе. */
+[data-theme="dark"]{
+  --sky:#0c0d10; --ink:#f5f5f7; --ink-strong:#fff; --muted:#9a9ba3; --grey:#82838c;
+  --line:rgba(255,255,255,.10); --line-soft:rgba(255,255,255,.07);
+  --surface:#17181c; --surface-alt:#1c1d21; --surface-grey:#212226;
+  --blue:#2f7bf6; --blue-soft:#5b9bff; --grey:#a5a6ae;
+  --veil-color:transparent; --glow-opacity:.3; --contrast-bg:#26272c; --skeleton:#2a2b30;
+  --glass-bg:rgba(255,255,255,.06);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{background:var(--page-bg); color:var(--ink); font-family:'Inter',sans-serif; line-height:1.25;
+  -webkit-font-smoothing:antialiased;}
+/* То же, что и на десктопном макете: канва 360 масштабируется под узкие экраны,
+   а на широких остаётся 1:1 по центру. */
+.page{position:relative; width:360px; margin:0 auto; overflow:hidden;}
+.glow{position:absolute; border-radius:50%; background:var(--glow); filter:blur(120px);
+  opacity:var(--glow-opacity); z-index:0;}
+.glow--a{left:-160px; top:-80px; width:400px; height:400px;}
+.glow--b{right:-180px; top:120px; width:380px; height:380px;}
+.glow--c{left:-140px; top:1900px; width:420px; height:420px;}
+.veil{position:absolute; left:-200px; top:520px; width:760px; height:520px;
+  background:var(--veil-color);
+  opacity:.6; border-radius:50%; z-index:0;}
+.page > section, .page > header, .page > footer{position:relative; z-index:1;}
+
+.section{display:flex; flex-direction:column; align-items:center; gap:24px;
+  padding:48px var(--pad-x);}
+.section__title{display:flex; flex-direction:column; align-items:center; gap:8px;
+  text-align:center;}
+.eyebrow{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink);}
+.eyebrow::before{content:'✦'; color:var(--blue);}
+.section__heading{font-size:22px; font-weight:600; line-height:28px;}
+.section__heading .accent{color:var(--blue);}
+.section__lead{font-size:13px; line-height:18px; color:var(--muted);}
+b{font-weight:600;}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px;
+  padding:0 20px; border:none; border-radius:var(--radius); font-family:inherit; font-size:14px;
+  font-weight:600; cursor:pointer;}
+.btn--primary{background:var(--blue); color:#fff;}
+.btn--dark{background:var(--ink); color:#fcfcfc;}
+.btn__spark::before{content:'✦';}
+
+/* Шапка: логотип, тумблер темы, «Вход» и синяя кнопка-иконка вместо длинной «Создать генерацию» —
+   на 360 px подпись в неё не влезает. */
+.topbar{display:flex; align-items:center; gap:8px; padding:14px var(--pad-x);}
+.topbar__logo{height:26px; width:auto;}
+.topbar__toggle{position:relative; margin-left:auto; width:44px; height:22px;
+  background:var(--blue); border-radius:11px; flex:none;}
+.topbar__toggle::before{content:''; position:absolute; left:-1px; top:-1px; width:24px;
+  height:24px; background:#fff; border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.topbar__login{height:34px; padding:0 16px; background:var(--surface);
+  color:var(--ink-strong); border:none;
+  border-radius:10px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;}
+.topbar__cta{display:flex; align-items:center; justify-content:center; width:34px; height:34px;
+  background:var(--blue); color:#fff; border:none; border-radius:10px; font-size:15px;
+  cursor:pointer;}
+
+.hero{padding:8px var(--pad-x) 0; text-align:center;}
+.hero__title{font-size:24px; font-weight:600; line-height:30px;}
+.hero__title .accent{color:var(--blue);}
+.hero__pill{display:inline-block; vertical-align:-4px; width:52px; height:24px;
+  background:linear-gradient(90deg,#7a3bff,#2ec5ff); border-radius:12px; position:relative;}
+.hero__pill::after{content:''; position:absolute; right:2px; top:2px; width:20px; height:20px;
+  background:#0b1220; border-radius:50%;}
+.hero__subtitle{margin-top:10px; font-size:13px; line-height:18px; color:var(--ink);}
+.hero__prompt{margin-top:20px; width:100%; height:48px; padding:0 16px;
+  background:var(--surface); color:var(--ink);
+  border:none; border-radius:var(--radius); font-family:inherit; font-size:14px;}
+.hero__prompt::placeholder{color:var(--muted);}
+.hero__generate{margin-top:10px; width:100%; height:48px; background:var(--contrast-bg);
+  color:var(--contrast-fg);
+  border:none; border-radius:var(--radius); font-family:inherit; font-size:15px; font-weight:600;}
+
+/* Плитки статистики: на десктопе три в ряд, здесь — стопка. */
+.stats{display:flex; flex-direction:column; gap:44px; padding:56px var(--pad-x) 0;}
+.stat{position:relative; padding:34px 18px 20px; border-radius:12px;
+  background:rgba(217,217,217,.20); backdrop-filter:blur(24px);}
+.stat__icons{position:absolute; top:-26px; left:18px; display:flex; align-items:center;}
+.stat__icons img, .stat__icons span{width:46px; height:46px; border-radius:50%;
+  border:2px solid #fff; object-fit:cover; margin-left:-22px;}
+.stat__icons > :first-child{margin-left:0;}
+.stat__icons .stat__badge{display:flex; align-items:center; justify-content:center;
+  background:#000; color:#fff; font-size:18px;}
+.stat__value{font-size:24px; font-weight:600; letter-spacing:-0.5px;}
+.stat__caption{margin-top:8px; font-size:13px; font-weight:500; line-height:17px; color:var(--ink);}
+
+.trusted{display:flex; flex-direction:column; align-items:center; gap:18px;
+  padding:40px var(--pad-x) 0;}
+.trusted__signature{position:relative; padding:8px 20px; font-size:13px; font-weight:500;
+  color:var(--grey);}
+.trusted__signature i{position:absolute; width:9px; height:9px; border:1.5px solid var(--blue);}
+.trusted__signature i:nth-child(1){left:0; top:0;} .trusted__signature i:nth-child(2){right:0; top:0;}
+.trusted__signature i:nth-child(3){left:0; bottom:0;} .trusted__signature i:nth-child(4){right:0; bottom:0;}
+.trusted__logos{display:flex; align-items:center; gap:18px;}
+.trusted__logo{display:flex; align-items:center; gap:4px; font-size:11px; font-weight:500;
+  white-space:nowrap;}
+.trusted__logo img{width:16px; height:16px; object-fit:contain;}
+
+/* Тёмная тема: логотип для тёмных поверхностей и ползунок вправо. */
+[data-theme="dark"] .topbar__logo{
+  content:url('../../../../../../frontend/public/design/logo-textery-dark.svg');}
+[data-theme="dark"] .topbar__toggle::before{left:auto; right:-2px;}
+[data-theme="dark"] .topbar__toggle::after{content:'☾'; right:auto; left:8px;}
+[data-theme="dark"] .btn--dark{background:var(--blue); color:#fff;}
+[data-theme="dark"] .hero__generate{background:#f5f5f7; color:#161616;}

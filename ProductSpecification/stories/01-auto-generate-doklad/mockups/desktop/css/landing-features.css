@@ -1,0 +1,44 @@
+/* Process (1337:7098) and features grid (1337:6860). */
+.process__cards{display:flex; gap:32px;}
+.process__card{width:462px; padding:12px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius-xl);}
+.process__media{display:flex; align-items:center; justify-content:center; height:240px;
+  padding:20px 0; background:var(--surface-grey); border-radius:var(--radius); overflow:hidden;}
+.process__media img{max-width:438px; max-height:200px; object-fit:contain;}
+.process__text{display:flex; flex-direction:column; gap:12px; padding:24px; text-align:center;}
+.process__name{font-size:24px; font-weight:600; line-height:29px; color:var(--ink);}
+.process__desc{font-size:18px; line-height:21.8px; color:var(--muted);}
+
+.features__grid{display:grid; grid-template-columns:repeat(2,598px); gap:40px 40px;
+  width:1236px;}
+.feature{position:relative; height:280px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); overflow:hidden;}
+.feature__dots{position:absolute; left:24px; top:24px; display:grid;
+  grid-template-columns:repeat(2,12px); gap:4px;}
+.feature__dots i{width:12px; height:12px; border-radius:10px; background:var(--skeleton);}
+.feature__dots i.on{background:var(--blue);}
+.feature__text{position:absolute; left:24px; bottom:24px; width:527px;
+  display:flex; flex-direction:column; gap:8px;}
+.feature__name{font-size:24px; font-weight:600; line-height:28px; color:var(--ink);}
+.feature__desc{font-size:18px; line-height:21.8px; color:var(--muted); max-width:453px;}
+.feature__art{position:absolute; pointer-events:none;}
+.feature__art img{display:block; width:100%; height:100%; object-fit:contain;}
+.feature__skeleton{position:absolute; left:95px; top:24px; width:252px;
+  display:flex; flex-direction:column; gap:24px;}
+.feature__skeleton i{height:15px; border-radius:8px; background:var(--skeleton);}
+.feature__skeleton i:nth-child(2){width:78%;}
+.feature__skeleton i:nth-child(3){width:52%;}
+.feature__skeleton i:nth-child(4){width:36%;}
+
+.feature--ai .feature__art--splash{left:105px; top:-148px; width:290px; height:286px;}
+.feature--ai .feature__art--chart{left:263px; top:-131px; width:457px; height:416px;}
+.feature--ai .feature__art--dots{left:337px; top:64px; width:91px; height:91px;}
+.feature--editor .feature__art--star{left:436px; top:2px; width:280px; height:280px;}
+/* SVG уже несёт рамку выделения и курсор — отдельные маркеры не нужны. */
+.feature--editor .feature__art--letter{left:110px; top:8px; width:165px; height:165px;}
+/* Курсор из макета: белая стрелка с чёрной обводкой у нижнего правого угла рамки. */
+.feature__cursor{position:absolute; right:-18px; bottom:-8px;}
+.feature--pdf .feature__art--pdf{left:380px; top:-21px; width:235px; height:235px;}
+.feature--backup .feature__art--cloud{left:30px; top:-129px; width:348px; height:348px;
+  transform:scaleX(-1);}
+.feature--backup .feature__art--case{left:354px; top:-44px; width:221px; height:221px;}
