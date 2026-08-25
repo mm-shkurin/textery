@@ -36,7 +36,15 @@ export const BUDGETS = [
     // Production ships hashed names only (`[hash:base64:6]`, see vite.config.ts), which already
     // took 1.5 kB back out; the rest is what scoping costs. Measured at 139.2 kB; 141 keeps the
     // same narrow margin.
-    maxGzipKb: 141,
+    //
+    // Raised again from 141 for the landing's redraw against the Figma frame: the export section
+    // and the «нам доверяют» row are new components, and the feature cards gained their
+    // illustrations. All of it is markup and copy for the first screen a visitor sees, so none of
+    // it can be moved behind the lazy boundary — the split exists to keep the EDITOR out of this
+    // chunk, and a landing that loads after the landing is not a landing. One section was deleted
+    // in the same pass («примеры готовых работ», which the redrawn frame replaces), which is why
+    // the net is under a kilobyte. Measured at 141.9 kB; 143 keeps the same narrow margin.
+    maxGzipKb: 143,
     why: 'the entry chunk is what a first visit blocks on',
   },
   {
@@ -53,7 +61,11 @@ export const BUDGETS = [
     // Raised from 12 with the same change: hashed module class names are longer than the
     // hand-written ones they replace, and there are more of them because a shared rule can no
     // longer be reused across slices by accident. Measured at 12.0 kB.
-    maxGzipKb: 13,
+    //
+    // Raised from 13 with the landing redraw above: three new stylesheets (export, trusted-by,
+    // card artwork) against one deleted, plus the frame's positioning for art that used to be an
+    // empty grey well. Measured at 13.5 kB; 14 keeps the margin.
+    maxGzipKb: 14,
     why: 'the global stylesheet is render-blocking',
   },
   {

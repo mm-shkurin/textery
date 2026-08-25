@@ -108,6 +108,8 @@
   /* #6b7280 measures 2.4:1 on the dark surface — a placeholder that reads as a disabled field.
      `--dark-300` is the same role re-lit, and is what every other muted text in dark resolves to. */
   --input-placeholder: var(--dark-300);
+  --hero-grid-line: rgba(255, 255, 255, 0.06);
+  --skeleton-line: var(--dark-700);
 
   /* Dark forms of the component-scoped colours above. */
   /* ProfileButtons */

@@ -125,6 +125,14 @@
      Distinct from `--input-placeholder-fg` above, which is the near-white used for a placeholder
      sitting ON a saturated field. */
   --input-placeholder: #6b7280;
+  /* The hairline of the grid the hero is drawn on (node 90:880, `Component 7`). Tinted with the
+     brand blue on the pale page and lifted to a white wash in dark, because a blue line on a
+     near-black background is invisible long before it is subtle. */
+  --hero-grid-line: rgba(0, 78, 224, 0.1);
+  /* The grey of a placeholder line inside an illustration — the «document being written» bars on
+     the feature cards and the unfilled dots of their progress cluster. Not `--border-*`: this is
+     a filled shape, and reusing a border colour for it made the bars vanish in dark. */
+  --skeleton-line: #ececee;
 
   --radius-sm: 8px;
   --radius-md: 10px;

@@ -21,6 +21,9 @@
 
 /* The engine's name, as the chip the frame puts at the top of each card. */
 .showcase-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   justify-self: start;
   padding: 11px 19px;
   border-radius: 7px;
@@ -31,9 +34,18 @@
   color: var(--text-hero);
 }
 
-.showcase-chip-ours {
-  background: var(--accent-soft);
-  color: var(--accent);
+.showcase-chip {
+  border: 1px solid var(--border-hairline);
+}
+
+.showcase-chip-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
+:root[data-theme='dark'] .showcase-chip-logo {
+  content: url('/design/logo-textery-dark.svg');
 }
 
 .showcase-scale {
@@ -47,6 +59,9 @@
 /* `<progress>` is styled per engine rather than left to the UA: Chrome, Firefox and Safari each
    draw a different control, and this bar is the section's main visual. Both pseudo-elements are
    needed — WebKit fills through `-webkit-progress-value`, Firefox through `-moz-progress-bar`. */
+/* The bar is one gradient render seen twice: the filled part shows it at full strength, the track
+   the same image dimmed, which is how the frame draws the remainder — a darker continuation of the
+   same colour rather than a neutral groove. `--bar-art` is set per metric at the call site. */
 .showcase-bar {
   appearance: none;
   width: 100%;
@@ -54,22 +69,35 @@
   margin-top: 10px;
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--bg-sunken);
+  /* No filter on the element itself: it would dim the value pseudo-element with the track, and
+     the whole point of the pair is that they differ. */
+  background-color: var(--bg-sunken);
   overflow: hidden;
 }
 
 .showcase-bar::-webkit-progress-bar {
-  background: var(--bg-sunken);
+  background-image: var(--bar-art);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.55) saturate(0.8);
   border-radius: var(--radius-pill);
 }
 
+/* The value undoes the track's dimming rather than declaring its own brightness, so the two halves
+   of a bar can never drift to different colours. */
 .showcase-bar::-webkit-progress-value {
-  background: var(--accent);
+  background-image: var(--bar-art);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(1.6) saturate(1.2);
   border-radius: var(--radius-pill);
 }
 
 .showcase-bar::-moz-progress-bar {
-  background: var(--accent);
+  background-image: var(--bar-art);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(1.6) saturate(1.2);
   border-radius: var(--radius-pill);
 }
 

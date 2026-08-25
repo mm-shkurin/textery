@@ -23,6 +23,10 @@ interface LandingComparisonProps {
 export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps) {
   return (
     <section className={styles.comparison} data-testid="landing-comparison">
+      <span className={styles['comparison-bg']} aria-hidden="true">
+        <span className={`${styles['comparison-glow']} ${styles['comparison-glow-left']}`} />
+        <span className={`${styles['comparison-glow']} ${styles['comparison-glow-right']}`} />
+      </span>
       <div className={`${landingSectionStyles['landing-section']} ${styles['comparison-inner']}`}>
         <LandingSectionHead
           eyebrow="Сравните сами"

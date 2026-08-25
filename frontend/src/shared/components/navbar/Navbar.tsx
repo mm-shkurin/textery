@@ -68,8 +68,12 @@ function NavbarLogo() {
 // theme row, and two controls for one setting in one bar is a bug report waiting to happen. Signed
 // out, the switch is the only way to reach the setting at all: the menu is behind the avatar,
 // which is behind the auth gate.
-function NavbarAccount({ profileMenu }: Pick<NavbarProps, 'profileMenu'>) {
-  if (profileMenu === undefined) return <ThemeSwitch />
+function NavbarAccount({
+  profileMenu,
+  position,
+}: Pick<NavbarProps, 'profileMenu'> & { position: 'before' | 'after' }) {
+  if (profileMenu === undefined) return position === 'before' ? <ThemeSwitch /> : null
+  if (position === 'before') return null
   return (
     <ProfileMenu
       onLogoutClick={profileMenu.onLogoutClick}
@@ -92,9 +96,16 @@ export function Navbar({
   return (
     <Element className={classes} data-testid={testId}>
       <NavbarLogo />
+      {/* The theme switch sits BEFORE the actions and the account menu AFTER them, which is the
+          landing frame's order (90:880: wordmark, switch, «Вход», the blue CTA) and the signed-in
+          bar's at the same time. They are two different objects that happened to share a slot:
+          the switch is a setting, the menu is the account, and the design puts the setting next
+          to the mark and the account at the far edge. Rendering both through one component in one
+          position forced the switch to the far right on every signed-out screen. */}
       <div className={styles['navbar-actions']}>
+        <NavbarAccount profileMenu={profileMenu} position="before" />
         {actions}
-        <NavbarAccount profileMenu={profileMenu} />
+        <NavbarAccount profileMenu={profileMenu} position="after" />
       </div>
     </Element>
   )
