@@ -36,20 +36,23 @@
   align-items: center;
 }
 
+/* The frame steps the discs 30 apart so each covers half the one behind it, and rings them in the
+   page colour so the overlap reads as depth rather than as one blob. The first is the largest —
+   80 against 61 — which is what makes the cluster look stacked rather than tiled. */
 .stat-chip {
   width: 59px;
   height: 59px;
   border-radius: var(--radius-pill);
   margin-left: -29px;
+  object-fit: cover;
+  border: 2px solid var(--bg-page);
+  display: block;
 }
 
-.stat-chip-back {
+.stat-chips > :first-child {
   margin-left: 0;
-  background: var(--blue-200);
-}
-
-.stat-chip-mid {
-  background: var(--blue-500);
+  width: 72px;
+  height: 72px;
 }
 
 .stat-chip-front {
@@ -62,16 +65,24 @@
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .stat-text {
-  margin-top: 8px;
-  font-size: 15px;
+  margin-top: 12px;
+  font-size: 16px;
   font-weight: 500;
+  line-height: 21px;
+  letter-spacing: -0.3px;
   color: var(--text-primary);
+}
+
+/* The frame bolds the leading phrase of each caption — «Профессиональных Word документов»,
+   «Среднее время», «Экспорт в Word и PDF» — so the eye lands on the claim before the qualifier. */
+.stat-text strong {
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
@@ -79,5 +90,36 @@
     grid-template-columns: 1fr;
     gap: 48px;
     margin-top: 64px;
+  }
+}
+
+/* The two four-pointed sparkles the frame scatters between the cards (`Layer 15/16`, node
+   1362:8224 — one small one over the gap between the first and second card, one large one under
+   the gap between the second and third). Decorative, so they are hidden from assistive tech, and
+   they go away once the cards stack: they mark the gaps BETWEEN cards, and a single column has
+   none. */
+.stat-sparkle {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.stat-sparkle-left {
+  left: 30%;
+  top: -34px;
+  width: 62px;
+  height: 62px;
+}
+
+.stat-sparkle-right {
+  left: 62%;
+  bottom: -72px;
+  width: 96px;
+  height: 96px;
+}
+
+@media (max-width: 900px) {
+  .stat-sparkle {
+    display: none;
   }
 }

@@ -1,26 +1,55 @@
+/* `FAQ` (node 1097:12035): a heading block, then six cards in TWO columns of three. The single
+   890px column this used to be made the section twice as tall as the frame draws it and left the
+   right half of the page empty between two full-width sections. */
 .faq {
-  max-width: 890px;
+  width: min(1700px, 100% - 40px);
   margin: 120px auto 0;
-  padding: 0 20px;
   text-align: center;
 }
 
-.faq-title {
-  font-size: 40px;
-  font-weight: 600;
-  color: var(--text-primary);
+.faq-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
 }
 
+.faq-title {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 600;
+  color: var(--text-hero);
+}
+
+.faq-lead {
+  max-width: 639px;
+  font-size: 24px;
+  line-height: 32px;
+  color: var(--text-divider);
+}
+
+.faq-lead strong {
+  font-weight: 700;
+}
+
+/* Two columns filled COLUMN-first, so the reading order down a column matches the order the
+   questions are written in — `grid-auto-flow: column` with a fixed row count, not a row-major
+   grid that would put question 2 beside question 1. */
 .faq-list {
-  margin-top: 40px;
+  margin-top: 60px;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, min-content);
+  grid-auto-flow: column;
+  align-items: start;
   gap: 15px;
   text-align: left;
 }
 
 .faq-item {
   background: var(--bg-surface);
-  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-hairline);
+  border-radius: var(--radius);
 }
 
 .faq-question {
@@ -28,10 +57,11 @@
   display: flex;
   align-items: center;
   min-height: 70px;
-  padding: 12px 60px 12px 20px;
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--text-primary);
+  padding: 24px 70px 24px 30px;
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 600;
+  color: var(--text-hero);
   cursor: pointer;
   list-style: none;
 }
@@ -44,17 +74,17 @@
    on open turns it into the minus the open state needs, with no second glyph to keep. */
 .faq-marker {
   position: absolute;
-  right: 22px;
+  right: 24px;
   width: 22px;
   height: 22px;
+  transition: transform 0.15s ease;
 }
 
 .faq-marker::before,
 .faq-marker::after {
   content: '';
   position: absolute;
-  background: var(--text-primary);
-  transition: opacity 0.15s ease;
+  background: var(--text-hero);
 }
 
 .faq-marker::before {
@@ -71,19 +101,34 @@
   height: 22px;
 }
 
-.faq-item[open] .faq-marker::after {
-  opacity: 0;
+/* The frame turns the plus into a ×, not into a minus: it rotates 45° and keeps both arms. */
+.faq-item[open] .faq-marker {
+  transform: rotate(45deg);
 }
 
 .faq-answer {
-  padding: 0 60px 20px 20px;
-  font-size: 16px;
-  color: var(--text-secondary);
+  padding: 0 70px 24px 30px;
+  font-size: 17px;
+  line-height: 25px;
+  color: var(--text-divider);
+}
+
+@media (max-width: 900px) {
+  .faq-list {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-auto-flow: row;
+  }
 }
 
 @media (max-width: 640px) {
   .faq {
     margin-top: 72px;
+  }
+
+  .faq-lead {
+    font-size: 16px;
+    line-height: 22px;
   }
 
   .faq-title {
@@ -92,5 +137,13 @@
 
   .faq-question {
     font-size: 16px;
+    line-height: 22px;
+    padding: 16px 52px 16px 18px;
+  }
+
+  .faq-answer {
+    padding: 0 52px 18px 18px;
+    font-size: 15px;
+    line-height: 21px;
   }
 }

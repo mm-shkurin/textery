@@ -18,6 +18,10 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
 
   return (
     <section className={styles.hero}>
+      {/* The faint 60px grid the frame lays under the hero, fading out toward the edges. Drawn in
+          CSS rather than shipped as artwork: it is two repeating gradients and a mask, and an
+          image of it would be another request on the first screen. */}
+      <div className={styles['hero-grid']} aria-hidden="true" />
       {/* Decorative only (aria-hidden), and they used to cost 6.5 MB of PNG — more than the rest
           of the page put together, on the one screen a first-time visitor sees before anything
           else. Re-encoded to WebP at twice the CSS box each one actually renders at (798, 714,
@@ -36,9 +40,13 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
         <img src="/design/glass-9.webp" alt="" decoding="async" />
       </div>
 
+      {/* The frame breaks the heading after «быстрая» and paints only the closing three words
+          blue — «нейросеть» stays in the ink colour. Painting the whole second line blue, as this
+          did, moved the emphasis from what the product is FOR onto the word «нейросеть», which
+          every competitor also says. */}
       <h1 className={styles['hero-title']} data-testid="hero-heading">
-        Textery — самая быстрая{' '}
-        <span className={styles['hero-title-accent']}>нейросеть для учебных текстов</span>
+        Textery — самая быстрая <br />
+        нейросеть <span className={styles['hero-title-accent']}>для учебных текстов</span>
       </h1>
 
       <p className={styles['hero-subtitle']}>

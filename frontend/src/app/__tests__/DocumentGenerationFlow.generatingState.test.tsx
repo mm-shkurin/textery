@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import * as projectsApi from '../../features/projects/api/projectsApi'
 import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
@@ -36,6 +37,7 @@ import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationPara
 // the behaviour ships today (see the bite verification in the recorded-failure comment below).
 vi.mock('../../features/generation/api/generationApi')
 vi.mock('../../features/generation/api/documentApi')
+vi.mock('../../features/projects/api/projectsApi')
 
 const TOPIC = 'Влияние ИИ на образование'
 
@@ -44,6 +46,8 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     // Never settles. This is the whole mechanism of the test, not a convenience stub.
     vi.mocked(api.createGeneration).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
+    // Подписанный пользователь приземляется на «Мои проекты» — лента висит, экран рисуется.
+    vi.mocked(projectsApi.listProjects).mockReturnValue(new Promise(() => {}))
     window.history.pushState({}, '', '/')
     saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })
@@ -76,7 +80,7 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
   it('shows the generating surface before the create request resolves', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('projects-toolbar-create'))
     fireEvent.click(screen.getByTestId('type-card-doklad'))
 
     // Control: the surface is not simply always there. Before the send the composer is up and the

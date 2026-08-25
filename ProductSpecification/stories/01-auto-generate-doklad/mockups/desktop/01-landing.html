@@ -2,66 +2,190 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=1400">
-<title>Textery — Word онлайн с генерацией через нейросеть</title>
+<meta name="viewport" content="width=1920">
+<title>Textery — самая быстрая нейросеть для учебных текстов</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<style>
-  :root{
-    --bg-page:#111214; --bg-surface:#1a1b1e; --bg-surface-raised:#232428;
-    --border-subtle:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
-    --text-primary:#f5f5f7; --text-secondary:#9a9ba3; --text-muted:#6b6c74;
-    --accent-start:#6366f1; --accent-end:#a855f7;
-    --accent-gradient:linear-gradient(135deg,var(--accent-start),var(--accent-end));
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  body{background:var(--bg-page); color:var(--text-primary); font-family:'Inter',sans-serif; line-height:1.5;}
-  .header{display:flex; align-items:center; justify-content:space-between; padding:20px 48px; border-bottom:1px solid var(--border-subtle);}
-  .logo{display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px;}
-  .logo-mark{width:32px; height:32px; border-radius:9px; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;}
-  .header-actions{display:flex; align-items:center; gap:12px;}
-  .btn{border:none; border-radius:10px; padding:12px 22px; font-family:inherit; font-weight:600; font-size:14px; cursor:pointer;}
-  .btn-secondary{background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle);}
-  .btn-primary{background:#f5f5f7; color:#111214;}
-  .hero{max-width:900px; margin:0 auto; padding:96px 24px 64px; text-align:center;}
-  .eyebrow{display:inline-flex; align-items:center; gap:8px; background:var(--bg-surface-raised); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:999px; font-size:13px; color:var(--text-secondary); margin-bottom:24px;}
-  h1{font-size:48px; font-weight:700; letter-spacing:-0.02em; margin-bottom:16px;}
-  .accent{background:var(--accent-gradient); -webkit-background-clip:text; background-clip:text; color:transparent;}
-  .subtitle{color:var(--text-secondary); font-size:18px; max-width:560px; margin:0 auto 40px;}
-  .cta-row{display:flex; justify-content:center; gap:12px;}
-  .btn-primary.large{padding:16px 32px; font-size:16px;}
-  .btn-secondary.large{padding:16px 32px; font-size:16px;}
-  .hero-preview{max-width:1100px; margin:64px auto 0; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:20px; padding:48px; display:flex; align-items:center; justify-content:center; gap:24px;}
-  .preview-card{width:200px; height:260px; background:var(--bg-surface-raised); border-radius:14px; border:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:center;}
-  .preview-card i{color:var(--text-muted); width:40px; height:40px;}
-  .preview-card.tall{height:320px; border:1px solid transparent; background-image:linear-gradient(var(--bg-surface-raised),var(--bg-surface-raised)), var(--accent-gradient); background-origin:border-box; background-clip:padding-box, border-box;}
-  .social-proof{text-align:center; margin-top:40px; color:var(--text-muted); font-size:13px;}
-</style>
+<link rel="stylesheet" href="css/landing-tokens.css">
+<link rel="stylesheet" href="css/landing-hero.css">
+<link rel="stylesheet" href="css/landing-features.css">
+<link rel="stylesheet" href="css/landing-quality.css">
+<link rel="stylesheet" href="css/landing-dark.css">
 </head>
 <body>
-  <div class="header">
-    <div class="logo"><div class="logo-mark">T</div>Textery</div>
-    <div class="header-actions">
-      <button class="btn btn-secondary">Вход</button>
-      <button class="btn btn-primary">Попробовать бесплатно</button>
+<div class="page">
+  <div class="glow glow--top-left"></div><div class="glow glow--top-right"></div>
+  <div class="glow glow--mid-left"></div><div class="glow glow--mid-right"></div>
+  <div class="veil"></div><div class="veil veil--low"></div>
+
+  <section class="hero">
+    <div class="hero__grid"></div>
+    <div class="hero__glass hero__glass--tl"><img src="../../../../../frontend/public/design/glass-16.webp" alt=""></div>
+    <div class="hero__glass hero__glass--bl"><img src="../../../../../frontend/public/design/glass-8.webp" alt=""></div>
+    <div class="hero__glass hero__glass--tr"><img src="../../../../../frontend/public/design/glass-24.webp" alt=""></div>
+    <div class="hero__glass hero__glass--br"><img src="../../../../../frontend/public/design/glass-9.webp" alt=""></div>
+
+    <header class="topbar">
+      <div class="logo"><img class="logo__img" src="../../../../../frontend/public/design/logo-textery.svg" alt="Textery"></div>
+      <div class="topbar__toggle" title="Тема"></div>
+      <button class="topbar__login">Вход</button>
+      <button class="topbar__cta">Создать генерацию</button>
+    </header>
+
+    <div class="hero__intro">
+      <div class="hero__headline">
+        <h1 class="hero__title">Textery — самая быстрая<br>нейросеть <span class="accent">для учебных текстов</span></h1>
+        <p class="hero__subtitle">Создавайте <b>профессиональные доклады, как&nbsp;в&nbsp;Word</b>, с&nbsp;помощью<br>искусственного интеллекта. Генерация докладов <b>за&nbsp;30 секунд</b></p>
+      </div>
+      <div class="hero__prompt">
+        <input placeholder="Опишите тему доклада, реферата, эссе, сочинения...">
+        <button class="hero__generate">✦ Сгенерировать</button>
+      </div>
     </div>
-  </div>
-  <div class="hero">
-    <div class="eyebrow"><i data-lucide="sparkles" style="width:14px;height:14px;"></i>Работает на Textery AI</div>
-    <h1>Word онлайн <span class="accent">с генерацией через нейросеть</span></h1>
-    <p class="subtitle">Доклады, эссе, сочинения и рефераты — опишите тему, получите готовый текст и доработайте его во встроенном редакторе.</p>
-    <div class="cta-row">
-      <button class="btn btn-primary large"><i data-lucide="sparkles" style="width:16px;height:16px;vertical-align:-3px;margin-right:8px;"></i>Попробовать бесплатно</button>
-      <button class="btn btn-secondary large">Как это работает</button>
+
+    <div class="hero__stats">
+      <div class="stat stat--1"><div class="stat__icons"><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-1.webp" alt=""><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-2.webp" alt=""><span class="stat__badge">🌐</span></div><div class="stat__value">1 млн+</div><p class="stat__caption"><b>Профессиональных Word документов</b> создано с помощью Textery AI</p></div>
+      <div class="stat stat--2"><div class="stat__icons"><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-3.webp" alt=""><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-2.webp" alt=""><span class="stat__badge">⏱</span></div><div class="stat__value">4 сек</div><p class="stat__caption"><b>Среднее время</b> генерации доклада, реферата, эссе, сочинения</p></div>
+      <div class="stat stat--3"><div class="stat__icons"><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-3.webp" alt=""><img src="../../../../../frontend/public/design/landing/hero-stat-avatar-4.webp" alt=""><span class="stat__badge">⤓</span></div><div class="stat__value">Word и PDF</div><p class="stat__caption"><b>Экспорт в Word и PDF</b> без сжатия и искажений</p></div>
+      <img class="stat__sparkle" style="left:359px;top:2px;width:79px;height:77px" src="../../../../../frontend/public/design/landing/hero-sparkle.webp" alt="">
+      <img class="stat__sparkle" style="left:730px;top:164px" src="../../../../../frontend/public/design/landing/hero-sparkle.webp" alt="">
     </div>
-    <div class="hero-preview">
-      <div class="preview-card"><i data-lucide="file-text"></i></div>
-      <div class="preview-card tall"><i data-lucide="presentation"></i></div>
-      <div class="preview-card"><i data-lucide="book-open"></i></div>
+
+    <div class="trusted">
+      <div class="trusted__signature"><span></span><span></span><span></span><span></span>нам доверяют</div>
+      <div class="trusted__logos"><div class="trusted__logo"><img src="../../../../../frontend/public/design/icon-yandex.svg" alt="">Яндекс</div><div class="trusted__logo"><img src="../../../../../frontend/public/design/icon-student-labs.svg" alt="">Student Labs</div><div class="trusted__logo"><img src="../../../../../frontend/public/design/icon-omgtu.svg" alt="">ОмГТУ</div></div>
     </div>
-    <div class="social-proof">Нам доверяют тысячи пользователей — присоединяйтесь!</div>
-  </div>
-  <script>lucide.createIcons();</script>
+  </section>
+
+  <section class="section process">
+    <div class="section__title"><div class="eyebrow">Процесс</div><h2 class="section__heading"><span class="accent">Простой рабочий процесс</span><br>Максимальная автоматизация и минимум усилий</h2><p class="section__lead">От темы до готового документа — три шага<br>без лишних действий</p></div>
+    <div class="process__cards">
+      <article class="process__card"><div class="process__media"><img src="../../../../../frontend/public/design/landing/process-step-1.png" alt=""></div><div class="process__text"><h3 class="process__name">Опишите задачу</h3><p class="process__desc">Укажите тему, тип работы,<br>объём и требования</p></div></article>
+      <article class="process__card"><div class="process__media"><img src="../../../../../frontend/public/design/landing/process-step-2.png" alt=""></div><div class="process__text"><h3 class="process__name">Получите готовый текст</h3><p class="process__desc">ИИ сгенерирует структурированный документ за 30 секунд</p></div></article>
+      <article class="process__card"><div class="process__media"><img src="../../../../../frontend/public/design/landing/process-step-3.png" alt=""></div><div class="process__text"><h3 class="process__name">Отредактируйте и скачайте</h3><p class="process__desc">Доработайте текст во встроенном редакторе и скачайте в Word или PDF</p></div></article>
+    </div>
+  </section>
+
+  <section class="section features">
+    <div class="section__title"><div class="eyebrow">Возможности</div><h2 class="section__heading"><span class="accent">Учебные текста под ключ</span><br>на одной платформе</h2><p class="section__lead">Закрываем <b>все этапы работы</b> с текстом: от постановки задачи<br>до готового файла</p></div>
+    <div class="features__grid">
+      <article class="feature feature--ai"> <div class="feature__dots"><i class="on"></i><i></i><i></i><i></i></div> <div class="feature__skeleton"><i></i><i></i><i></i><i></i></div> <div class="feature__art feature__art--chart"><img src="../../../../../frontend/public/design/landing/feature-ai-chart.webp" alt=""></div> <div class="feature__art feature__art--splash"><img src="../../../../../frontend/public/design/landing/feature-ai-splash.webp" alt=""></div> <div class="feature__art feature__art--dots"><img src="../../../../../frontend/public/design/landing/feature-ai-dots.webp" alt=""></div>
+        <div class="feature__text"><h3 class="feature__name">AI-генерация за&nbsp;30&nbsp;секунд</h3><p class="feature__desc"><b>Автоматическое создание</b> структуры и содержания текста из вашего описания</p></div>
+      </article>
+      <article class="feature feature--editor"> <div class="feature__dots"><i class="on"></i><i class="on"></i><i></i><i></i></div> <div class="feature__art feature__art--star"><img src="../../../../../frontend/public/design/landing/feature-editor-star.svg" alt=""></div> <div class="feature__art feature__art--letter"><img src="../../../../../frontend/public/design/landing/feature-editor-letter.svg" alt=""><svg class="feature__cursor" width="34" height="44" viewBox="0 0 24 30" fill="#fff" stroke="#1f1f1f" stroke-width="1.6" stroke-linejoin="round"><path d="M2 2 2 24 8 18.5 12 28 16.5 26 12.6 17 21 15.5Z"/></svg></div>
+        <div class="feature__text"><h3 class="feature__name">Онлайн-редактор</h3><p class="feature__desc"><b>Полноценное редактирование</b> текста <b>прямо в&nbsp;браузере</b> без&nbsp;установки Word</p></div>
+      </article>
+      <article class="feature feature--pdf"> <div class="feature__dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div> <div class="feature__skeleton"><i></i><i></i><i></i><i></i></div> <div class="feature__art feature__art--pdf"><img src="../../../../../frontend/public/design/landing/feature-pdf.webp" alt=""></div>
+        <div class="feature__text"><h3 class="feature__name">PDF высокого качества</h3><p class="feature__desc">Экспорт в&nbsp;PDF с&nbsp;<b>сохранением всех элементов</b> для&nbsp;печати и&nbsp;рассылки</p></div>
+      </article>
+      <article class="feature feature--backup"> <div class="feature__dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div> <div class="feature__art feature__art--cloud"><img src="../../../../../frontend/public/design/landing/feature-backup-cloud.webp" alt=""></div> <div class="feature__art feature__art--case"><img src="../../../../../frontend/public/design/landing/feature-backup-case.webp" alt=""></div>
+        <div class="feature__text"><h3 class="feature__name">Резервное копирование</h3><p class="feature__desc"><b>Автоматическое сохранение</b> изменений, ничего не потеряется при сбое</p></div>
+      </article>
+    </div>
+    <button class="btn btn--primary"><span class="btn__spark"></span>Попробовать бесплатно</button>
+  </section>
+
+  <section class="section quality">
+    <div class="section__title"><div class="eyebrow">Преимущества</div><h2 class="section__heading"><span class="accent">Лучшее качество</span><br>на&nbsp;русском языке</h2><p class="section__lead"><b>Нативная поддержка русского vs автоперевод</b> конкурентов.<br>Сравнение генерации одного промпта</p></div>
+    <div class="quality__cards">
+      <div class="quality__col quality__col--own">
+        <div class="chip"><img class="chip__logo" src="../../../../../frontend/public/design/logo-textery.svg" alt=""></div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--teal"><div class="bar__marker" style="left:501px"></div><div class="bar__fill" style="width:504px"></div><div class="bar__divider"></div><div class="bar__thumb"></div></div></div><div class="metric__info"><div class="metric__value">97%</div><div><h3 class="metric__name">Точность терминов</h3><p class="metric__desc">Использует корректную деловую лексику без&nbsp;англицизмов и&nbsp;дословных переводов</p></div></div></div>
+        <div class="quality__rule"></div>
+        <div class="chip"><img class="chip__logo" src="../../../../../frontend/public/design/logo-textery.svg" alt=""></div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--magenta"><div class="bar__marker" style="left:471px"></div><div class="bar__fill" style="width:474px"></div><div class="bar__divider"></div><div class="bar__thumb"></div></div></div><div class="metric__info"><div class="metric__value">92%</div><div><h3 class="metric__name">Естественный стиль речи</h3><p class="metric__desc">Textery AI изначально обучена понимать и&nbsp;генерировать на&nbsp;русском языке</p></div></div></div>
+        <div class="quality__rule"></div>
+        <div class="chip"><img class="chip__logo" src="../../../../../frontend/public/design/logo-textery.svg" alt=""></div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--violet"><div class="bar__marker" style="left:487px"></div><div class="bar__fill" style="width:490px"></div><div class="bar__divider"></div><div class="bar__thumb"></div></div></div><div class="metric__info"><div class="metric__value">94%</div><div><h3 class="metric__name">Сохранение контекста</h3><p class="metric__desc">Понимает сложные запросы и&nbsp;сохраняет логику, и&nbsp;нюансы даже&nbsp;в&nbsp;многосоставных заданиях</p></div></div></div>
+      </div>
+      <div class="quality__col quality__col--rival">
+        <div class="chip chip--rival">Другие ИИ</div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--teal"><div class="bar__marker" style="left:315px"></div><div class="bar__fill" style="width:318px"></div><div class="bar__divider"></div><div class="bar__thumb" style="width:245px;border-radius:238px"></div></div></div><div class="metric__info"><div class="metric__value">61%</div><div><h3 class="metric__name">Точность терминов</h3><p class="metric__desc">Не&nbsp;адаптируют лексику под&nbsp;русскоязычную аудиторию, подставля английские термины</p></div></div></div>
+        <div class="quality__rule"></div>
+        <div class="chip chip--rival">Другие ИИ</div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--magenta"><div class="bar__marker" style="left:290px"></div><div class="bar__fill" style="width:293px"></div><div class="bar__divider"></div><div class="bar__thumb" style="width:270px;border-radius:238px"></div></div></div><div class="metric__info"><div class="metric__value">56%</div><div><h3 class="metric__name">Естественный стиль речи</h3><p class="metric__desc">Обучены на&nbsp;английском языке и&nbsp;переводят русский текст, теряя смысл и контекст</p></div></div></div>
+        <div class="quality__rule"></div>
+        <div class="chip chip--rival">Другие ИИ</div>
+        <div class="metric"><div class="chart"><div class="chart__scale"><span>0%</span><span>100%</span></div><div class="bar bar--violet"><div class="bar__marker" style="left:243px"></div><div class="bar__fill" style="width:246px"></div><div class="bar__divider"></div><div class="bar__thumb" style="width:317px;border-radius:238px"></div></div></div><div class="metric__info"><div class="metric__value">47%</div><div><h3 class="metric__name">Сохранение контекста</h3><p class="metric__desc">Упрощают или&nbsp;искажают исходную задачу, теряя второстепенные и&nbsp;ключевые смыслы</p></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section export">
+    <div class="section__title"><div class="eyebrow">Без правок</div><h2 class="section__heading"><span class="accent">Идеальный экспорт</span><br>в&nbsp;Word и PDF</h2><p class="section__lead"><b>98% точность</b>&nbsp;— без&nbsp;потери форматирования, шрифтов</p></div>
+    <div class="export__cards">
+      <article class="export__card"><div class="export__head"><div class="export__chips"><span class="export__chip export__chip--brand">Textery AI</span><span class="export__chip export__chip--ok">Идеально</span></div><div class="export__score"><b>98%</b><span>точность</span></div></div><img class="export__shot" src="../../../../../frontend/public/design/landing/export-textery.png" alt=""></article>
+      <article class="export__card export__card--rival"><div class="export__head"><div class="export__chips"><span class="export__chip export__chip--plain">Word</span><span class="export__chip export__chip--bad">Сломано</span></div><div class="export__score"><b>72%</b><span>точность</span></div></div><img class="export__shot" src="../../../../../frontend/public/design/landing/export-word.png" alt=""></article>
+    </div>
+    <div class="export__add">
+      <div class="export__col"><div class="export__stat"><b>98%</b><span>Точность позиционирования текста</span></div><p class="export__note"><b>Экспорт без&nbsp;потерь.</b> Текстовый документ сохраняет исходную вёрстку, шрифты и&nbsp;другие элементы.</p></div>
+      <div class="export__col">
+        <div class="export__circles"><img src="../../../../../frontend/public/design/landing/export-circle-1.webp" alt=""><img src="../../../../../frontend/public/design/landing/export-circle-2.webp" alt=""><img src="../../../../../frontend/public/design/landing/quality-bar-teal.webp" alt=""><img src="../../../../../frontend/public/design/landing/export-circle-3.webp" alt=""><img src="../../../../../frontend/public/design/landing/export-circle-4.webp" alt=""><span class="export__badge"><b>↗</b></span></div>
+        <div class="export__stats-row"><div class="export__stat"><b>100%</b><span>Сохранение ваших шрифтов</span></div><div class="export__stat"><b>0</b><span>Потерянных элементов файла</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section compare">
+    <div class="compare__glow compare__glow--a"></div><div class="compare__glow compare__glow--b"></div><div class="compare__glow compare__glow--c"></div>
+    <div class="section__title"><div class="eyebrow">Сравните сами</div><h2 class="section__heading">Почему выбирают <span class="accent">Textery AI</span></h2><p class="section__lead"><b>Честное сравнение</b> с&nbsp;главными конкурентами<br>на&nbsp;рынке AI-презентаций</p></div>
+    <div class="compare__wrap">
+      <div class="compare__table">
+        <div class="compare__row compare__row--head"><div>Возможность</div><div><span class="compare__chip compare__chip--own">Textery AI</span></div><div><span class="compare__chip compare__chip--rival">Другие ИИ</span></div></div>
+        <div class="compare__row"><div class="compare__cell compare__cell--label">🚀 Скорость генерации</div><div class="compare__cell"><span class="compare__ok">✓</span>30 секунд</div><div class="compare__cell">~ 67&nbsp;секунд</div></div>
+        <div class="compare__row"><div class="compare__cell compare__cell--label">🇷🇺 Поддержка русского языка</div><div class="compare__cell"><span class="compare__ok">✓</span>Нативная</div><div class="compare__cell"><span class="compare__no">✕</span>Автоперевод</div></div>
+        <div class="compare__row"><div class="compare__cell compare__cell--label">🗂 Точность экспорта Word</div><div class="compare__cell"><span class="compare__ok">✓</span>98%</div><div class="compare__cell">~ 74%</div></div>
+        <div class="compare__row"><div class="compare__cell compare__cell--label">📍 Работа из&nbsp;России</div><div class="compare__cell"><span class="compare__ok">✓</span>Без VPN</div><div class="compare__cell"><span class="compare__no">✕</span>Нужен VPN</div></div>
+      </div>
+      <div class="compare__highlight"></div>
+    </div>
+    <button class="btn btn--primary"><span class="btn__spark"></span>Попробовать бесплатно</button>
+  </section>
+
+  <section class="section faq">
+    <div class="section__title"><div class="eyebrow">FAQ</div><h2 class="section__heading">Часто задаваемые вопросы</h2><p class="section__lead">Не&nbsp;тратьте время на&nbsp;поиск&nbsp;— мы&nbsp;собрали<br><b>всё&nbsp;самое важное</b> в&nbsp;одном месте</p></div>
+    <div class="faq__cards">
+      <div class="faq__col"><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Что&nbsp;такое Textery AI и&nbsp;как&nbsp;работает нейросеть для&nbsp;текстовых документов?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Textery AI — это нейросеть для&nbsp;автоматического создания текстового документа с&nbsp;помощью искусственного интеллекта. Вы описываете тему доклада, эссе, реферата или сочинения — и&nbsp;получаете готовый профессиональный Word или PDF файл за&nbsp;30 секунд. ИИ анализирует контент, создаёт структуру документа, генерирует текст, подбирает элементы оформления.</p></details><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Чем Textery AI отличается от Gamma, Beautiful.ai и других конкурентов?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Textery AI — единственная нейросеть, изначально обученная на&nbsp;русском языке. Конкуренты используют автоперевод, что&nbsp;приводит к&nbsp;ошибкам и&nbsp;неестественным формулировкам. Также мы&nbsp;в&nbsp;2 раза быстрее (30&nbsp;сек против ~67&nbsp;сек), точность экспорта в&nbsp;Word и&nbsp;PDF 98% против ~74% у&nbsp;конкурентов, оплата в&nbsp;рублях российскими картами, работа без&nbsp;VPN.</p></details><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Как долго создается текстовый файл в Textery AI?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Весь процесс создания документа занимает не&nbsp;больше 45 секунд. Описываете нужную вам тему доклада, реферата, эссе или сочинения и&nbsp;нажимаете кнопку «Сгенерировать». Нужный текстовый документ уже перед вами!</p></details></div>
+      <div class="faq__col"><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Можно ли редактировать сгенерированные текстовые документы?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Да, после генерации вы&nbsp;можете редактировать текстовый файл в&nbsp;онлайн-редакторе прямо в&nbsp;браузере или экспортировать в&nbsp;Word или PDF для&nbsp;дальнейшей работы. Меняйте тексты, цвета, шрифты, добавляйте свои изображения и&nbsp;диаграммы. Полный контроль над&nbsp;каждым элементом файла.</p></details><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Какие форматы поддерживает экспорт текстового документа?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Вы можете экспортировать текстовый файл в&nbsp;форматы Word или PDF, или получить веб-ссылку для&nbsp;онлайн-просмотра. При экспорте в&nbsp;Word и&nbsp;PDF сохраняется 98% форматирования — шрифты, цвета, позиции элементов остаются на&nbsp;своих местах.</p></details><details class="faq__card"><summary class="faq__card-head"><p class="faq__question">Из каких источников можно создавать файл?</p><span class="faq__toggle"></span></summary><p class="faq__answer">Textery AI создаёт текстовый файл из&nbsp;любых источников: просто текст или веб-страницы по&nbsp;URL. Нейросеть автоматически извлекает ключевую информацию и&nbsp;структурирует её в&nbsp;документ.</p></details></div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="cta__tiles">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-01.webp" style="left:851px;top:72px;width:220px;height:220px" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-02.webp" style="left:282px;top:292px;transform:rotate(42.4deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-03.webp" style="left:546px;top:129px;transform:rotate(21.2deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-04.webp" style="left:95px;top:539px;transform:rotate(63.5deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-05.webp" style="left:10px;top:837px;transform:rotate(84.7deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-06.webp" style="left:38px;top:1146px;transform:rotate(105.9deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-07.webp" style="left:1691px;top:839px;transform:rotate(-84.7deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-08.webp" style="left:1606px;top:541px;transform:rotate(-63.5deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-09.webp" style="left:1419px;top:293px;transform:rotate(-42.4deg)" alt="">
+      <img src="../../../../../frontend/public/design/landing/cta-tile-10.webp" style="left:1156px;top:129px;transform:rotate(-21.2deg)" alt="">
+    </div>
+    <div class="cta__floor"></div>
+    <img class="cta__letter cta__letter--t" src="../../../../../frontend/public/design/landing/cta-letter-t.webp" alt="">
+    <img class="cta__letter cta__letter--at" src="../../../../../frontend/public/design/landing/cta-letter-at.webp" alt="">
+    <div class="cta__info">
+      <div class="eyebrow">Передовой сервис</div>
+      <h2 class="cta__title">Создайте <span class="cta__pill"></span><br>первый текстовый документ<br><span class="accent">за&nbsp;30 секунд</span></h2>
+      <p class="cta__subtitle"><b>Без&nbsp;регистрации. Без&nbsp;кредитной карты.</b><br>Просто попробуйте прямо сейчас.</p>
+      <button class="btn btn--dark"><span class="btn__spark"></span>Попробовать бесплатно</button>
+    </div>
+  </section>
+  <footer class="footer">
+    <div class="footer__inner">
+      <div><img class="footer__logo" src="../../../../../frontend/public/design/logo-textery-dark.svg" alt="Textery"><p class="footer__note">По всем вопросам, связанным с работой сервиса, вы можете связаться с поддержкой</p></div>
+      <nav class="footer__columns">
+        <div class="footer__column"><h2>Продукт</h2><ul><li>Блог</li><li>Промпты</li></ul></div>
+        <div class="footer__column"><h2>Компания</h2><ul><li>О нас</li><li>Команда</li><li>Помощь</li><li>Контакты</li></ul></div>
+        <div class="footer__column"><h2>Решения</h2><ul><li>Школьникам</li><li>Студентам</li><li>Преподавателям</li><li>Консультантам</li></ul></div>
+        <div class="footer__column"><h2>Правовая информация</h2><ul><li>Юридическая информация</li><li>Правила использования</li><li>Политика cookie</li><li>Политика конфиденциальности</li><li>Условия использования</li></ul></div>
+      </nav>
+    </div>
+    <div class="footer__legal"><p>© 2026 Textery AI. Все права защищены</p><p class="footer__links"><span>Условия использования</span><span>Политика конфиденциальности</span><span>Поддержка</span></p></div>
+  </footer>
+</div>
+<script src="landing.js"></script>
 </body>
 </html>

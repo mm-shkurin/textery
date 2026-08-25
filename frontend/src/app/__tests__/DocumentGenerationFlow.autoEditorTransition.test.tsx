@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import * as projectsApi from '../../features/projects/api/projectsApi'
 import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
@@ -37,9 +38,16 @@ import {
 // failure below was observed live before the marker went on.
 vi.mock('../../features/generation/api/generationApi')
 vi.mock('../../features/generation/api/documentApi')
+vi.mock('../../features/projects/api/projectsApi')
 
 describe('DocumentGenerationFlow — a completed generation opens itself in the editor', () => {
-  beforeEach(armCompletedGeneration)
+  beforeEach(() => {
+    armCompletedGeneration()
+    // The signed-in home is «Мои проекты», so the flow now starts on a screen that asks the feed
+    // for rows. Left unmocked it reaches for `fetch`, and the run that follows this one inherits
+    // whatever that rejection did to the DOM.
+    vi.mocked(projectsApi.listProjects).mockReturnValue(new Promise(() => {}))
+  })
 
   afterEach(() => {
     clearSession()
@@ -69,7 +77,7 @@ describe('DocumentGenerationFlow — a completed generation opens itself in the 
   it('replaces the read-only result with the editor without a further gesture', async () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('projects-toolbar-create'))
     fireEvent.click(screen.getByTestId('type-card-doklad'))
     fireEvent.change(screen.getByTestId('topic-input'), { target: { value: TOPIC } })
 

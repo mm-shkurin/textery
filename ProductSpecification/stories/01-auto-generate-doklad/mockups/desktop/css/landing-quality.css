@@ -1,0 +1,79 @@
+/* Quality comparison bars (1346:7441) and export section (1097:10952). */
+.quality__cards{display:flex; width:1300px; background:var(--surface-alt);
+  border:1.19px solid var(--line-soft); border-radius:var(--radius-l);}
+.quality__col{display:flex; flex-direction:column; gap:57px; width:657px; padding:33.3px;
+  border-radius:14.3px;}
+.quality__col--own{background:var(--surface); border:1.19px solid var(--line-soft);}
+.quality__col--rival{width:643px;}
+.chip{display:inline-flex; align-items:center; gap:10px; height:55px; padding:12px 19px;
+  background:var(--surface-alt); border:1.19px solid rgba(70,69,81,.08); border-radius:7.1px;
+  font-size:19px; font-weight:600; color:var(--ink); width:max-content;}
+.chip__logo{height:24px; width:auto; display:block;}
+[data-theme="dark"] .chip__logo{
+  content:url('../../../../../../frontend/public/design/logo-textery-dark.svg');}
+.chip--rival{font-weight:500; height:47px;}
+.metric{display:flex; flex-direction:column; gap:57px;}
+.metric + .chip{margin-top:57px;}
+.quality__rule{height:1px; background:rgba(70,69,81,.08); border-radius:2.4px;}
+.chart{display:flex; flex-direction:column; gap:9.5px;}
+.chart__scale{display:flex; justify-content:space-between; font-size:19px; color:var(--muted);}
+.quality__col--rival .chart__scale{color:var(--grey);}
+.bar{position:relative; display:flex; align-items:center; gap:4.8px; height:76px;}
+.bar__fill{height:76px; border-radius:238px; background-size:cover;
+  background-position:left center;}
+.bar__divider{width:1px; height:66px; background:var(--muted);}
+.bar__thumb{width:76px; height:76px; border-radius:50%; background-size:cover;
+  background-position:center;}
+.bar--teal .bar__fill, .bar--teal .bar__thumb{background-image:url('../../../../../../frontend/public/design/landing/quality-bar-teal.webp');}
+.bar--magenta .bar__fill, .bar--magenta .bar__thumb{background-image:url('../../../../../../frontend/public/design/landing/quality-bar-magenta.webp');}
+.bar--violet .bar__fill, .bar--violet .bar__thumb{background-image:url('../../../../../../frontend/public/design/landing/quality-bar-violet.webp');}
+.bar__marker{position:absolute; top:-14px; width:0; height:0; border-left:8px solid transparent;
+  border-right:8px solid transparent; border-top:8px solid var(--muted);}
+.metric__info{display:flex; flex-direction:column; gap:24px;}
+.metric__value{font-size:95px; font-weight:500; line-height:95px; letter-spacing:-7.6px;}
+.quality__col--rival .metric__value{color:var(--grey);}
+.metric__name{font-size:28px; font-weight:600;}
+.metric__desc{font-size:18px; line-height:21.8px; color:var(--muted);}
+.quality__col--rival .metric__name, .quality__col--rival .metric__desc{color:var(--grey);}
+
+/* Тёмная секция накрывает низ эллипсом высотой 250px — оставляем ей место. */
+.export{padding-top:150px; padding-bottom:240px;}
+.export__cards{display:flex; gap:15px; align-items:center;}
+.export__card{width:862px; padding:42px; background:var(--surface); border:1.5px solid var(--line-soft);
+  border-radius:var(--radius-l);}
+.export__card--rival{background:var(--surface-alt);}
+.export__head{display:flex; align-items:flex-start; justify-content:space-between;}
+.export__chips{display:flex; gap:15px;}
+.export__chip{display:inline-flex; align-items:center; height:60px; padding:15px 24px;
+  border-radius:9px; font-size:24px; font-weight:500;}
+.export__chip--brand{background:var(--ink); color:var(--surface-alt);}
+.export__chip--ok{background:var(--green); color:#fff;}
+.export__chip--bad{background:var(--red); color:#fff;}
+.export__chip--plain{background:var(--surface); border:1.5px solid var(--line-soft); color:var(--ink);}
+.export__score{text-align:right;}
+.export__score b{display:block; font-size:60px; font-weight:600; line-height:60px;
+  letter-spacing:-3.6px;}
+.export__score span{font-size:27px; font-weight:600; line-height:36px;}
+.export__shot{margin-top:42px; width:778px; height:510px; object-fit:contain;}
+.export__add{display:flex; gap:15px; align-items:center; margin-top:120px;}
+.export__col{width:862px;}
+.export__stat b{display:block; font-size:120px; font-weight:500; line-height:120px;
+  letter-spacing:-9.6px;}
+.export__stat span{display:block; margin-top:18px; font-size:36px; font-weight:600;
+  line-height:42px; max-width:424px;}
+.export__note{margin-top:234px; font-size:27px; line-height:36px;}
+.export__circles{display:flex; align-items:center;}
+.export__circles > * + *{margin-left:-94px;}
+.export__circles img, .export__badge{width:222px; height:222px; border-radius:50%;
+  border:9px solid var(--page-bg); object-fit:cover;}
+.export__badge{display:flex; align-items:center; justify-content:center; background:var(--surface);
+  border:1.5px solid rgba(70,69,81,.08);}
+.export__badge{position:relative; flex:none;}
+.export__badge b{display:flex; align-items:center; justify-content:center; width:60px;
+  height:60px; background:var(--ink); color:#fff; border-radius:50%; font-size:24px;}
+.export__badge::before{content:'✦ попробовать бесплатно ✦ попробовать бесплатно';
+  position:absolute; inset:0; padding:12px; font-size:13px; font-weight:500;
+  letter-spacing:.6px; color:var(--ink); overflow:hidden; border-radius:50%; opacity:.9;
+  line-height:1.1; text-align:center;}
+.export__badge b{position:relative; z-index:1;}
+.export__stats-row{display:flex; gap:15px; margin-top:120px;}

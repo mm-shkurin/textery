@@ -3,13 +3,73 @@
    The slab and its white text do NOT flip with the theme, for the same reason the footer's do not:
    the section is dark in the design because that is the contrast it draws against the pale page
    above it, and inverting it in dark mode would make it the one light band on a dark page. */
+/* The band's top edge is a shallow dome, not a straight line: the frame caps it with a 2400x500
+   ellipse whose crown pokes 184px above where the section starts. Drawn as an over-wide
+   pseudo-element rather than with `border-radius` on the section — a percentage radius on a
+   1920-wide block gives a curve that changes shape with the viewport, and this one has to stay
+   the same shallow arc at every width. */
 .comparison {
+  position: relative;
+  /* The dome reaches 184px above the section, so the section starts that far down the page —
+     otherwise the curve is drawn over whatever the previous section ended with. */
+  margin-top: 200px;
   background: var(--bg-inverse);
   color: var(--text-inverse);
 }
 
+.comparison::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -184px;
+  width: 2400px;
+  margin-left: -1200px;
+  height: 500px;
+  border-radius: 50%;
+  background: var(--bg-inverse);
+}
+
+/* The glows are clipped by a wrapper rather than by the section, because the section must NOT
+   clip: its dome pokes above its own top edge, and `overflow: hidden` on the section cuts the
+   dome off flat — which is the straight line the dome exists to replace. */
+.comparison-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Two blue glows inside the band — the frame's `Dark Gradient 06`. They sit under the table and
+   above the slab, which is what keeps the black from reading as a flat rectangle. */
+.comparison-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(200px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.comparison-glow-left {
+  left: -10%;
+  bottom: 20px;
+  width: 72%;
+  height: 420px;
+  background: #120ecf;
+}
+
+.comparison-glow-right {
+  right: -6%;
+  bottom: 40px;
+  width: 42%;
+  height: 380px;
+  background: #0239fe;
+}
+
 .comparison-inner {
-  padding-bottom: 120px;
+  position: relative;
+  z-index: 1;
+  padding-top: 0;
+  padding-bottom: 150px;
 }
 
 .comparison-eyebrow,

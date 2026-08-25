@@ -1,0 +1,100 @@
+/* Header + hero — Figma nodes 1399:7321, 1362:8223, 1362:8224, 862:6410. */
+.hero{position:relative; height:1372px;}
+.hero__grid{position:absolute; left:149px; top:417px; width:1620px; height:666px;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px 60px),
+    repeating-linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px 60px);
+  -webkit-mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
+  mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
+}
+.hero__glass{position:absolute; z-index:1; pointer-events:none;}
+.hero__glass img{display:block; width:100%; height:100%; object-fit:contain;}
+.hero__glass--tl{left:-185px; top:160px; width:533px; height:544px;}
+.hero__glass--bl{left:-90px; top:649px; width:689px; height:589px;}
+.hero__glass--tr{left:1581px; top:131px; width:532px; height:521px;}
+.hero__glass--br{left:1385px; top:560px; width:817px; height:706px;}
+
+.topbar{position:absolute; left:376px; top:96px; width:1168px; height:67px; z-index:3;
+  display:flex; align-items:center;}
+.logo{display:flex; align-items:center; gap:17px; font-size:42.7px; font-weight:600;
+  letter-spacing:-0.85px; color:var(--ink-strong);}
+.logo__img{height:59px; width:auto; display:block;}
+/* В тёмной теме — экспорт логотипа для тёмных поверхностей. */
+[data-theme="dark"] .logo__img{
+  content:url('../../../../../../frontend/public/design/logo-textery-dark.svg');}
+.logo__mark{position:relative; width:46px; height:55px; background:var(--blue);
+  border-radius:7px; color:#fff; font-size:30px; font-weight:700; display:flex;
+  align-items:center; justify-content:center;}
+.logo__mark::after{content:'AI'; position:absolute; right:-14px; bottom:6px; width:25px;
+  height:31px; background:#000; border-radius:7px; color:#fff; font-size:10px;
+  font-weight:600; display:flex; align-items:center; justify-content:center;}
+.topbar__toggle{position:relative; margin-left:339px; width:87px; height:32px;
+  background:var(--blue); border-radius:19px;}
+.topbar__toggle::before{content:''; position:absolute; left:-2px; top:-2px; width:37px;
+  height:37px; background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.topbar__toggle::after{content:'☀'; position:absolute; right:9px; top:6px; color:#fff;
+  font-size:16px; line-height:1;}
+/* В тёмной теме ползунок уезжает вправо, а иконка меняется на луну. */
+[data-theme="dark"] .topbar__toggle::before{left:auto; right:-2px;}
+[data-theme="dark"] .topbar__toggle::after{content:'☾'; right:auto; left:11px;}
+/* На тёмном фоне чёрная кнопка исчезает — в макете она светлая с тёмной подписью. */
+[data-theme="dark"] .hero__generate{background:#f5f5f7; color:#161616;}
+.topbar__login{margin-left:19px; width:133px; height:66px; background:var(--surface);
+  color:var(--ink-strong);
+  border:none; border-radius:var(--radius); font-family:inherit; font-size:21.3px;
+  font-weight:700; letter-spacing:-0.43px; cursor:pointer;}
+.topbar__cta{margin-left:20px; width:333px; height:66px; background:var(--blue); color:#fff;
+  border:none; border-radius:var(--radius); font-family:inherit; font-size:21.3px;
+  font-weight:700; letter-spacing:-0.43px; cursor:pointer;}
+
+.hero__intro{position:absolute; left:561px; top:247px; width:797px; z-index:2;
+  display:flex; flex-direction:column; align-items:center; gap:32px;}
+.hero__headline{display:flex; flex-direction:column; align-items:center; gap:12px;}
+.hero__title{font-size:44px; font-weight:600; line-height:53.2px; text-align:center;
+  color:var(--ink);}
+.hero__title .accent{color:var(--blue);}
+.hero__subtitle{font-size:18px; line-height:24px; color:var(--ink); text-align:center;}
+.hero__prompt{display:flex; align-items:center; gap:28px; width:797px; height:96px;
+  padding:24px 28px; background:var(--surface); border-radius:var(--radius);}
+.hero__prompt input{flex:1; background:transparent; border:none; outline:none;
+  font-family:inherit; font-size:18px; line-height:21.8px; color:var(--ink);}
+.hero__prompt input::placeholder{color:var(--muted);}
+.hero__generate{display:flex; align-items:center; gap:10px; height:48px; padding:12px 20px;
+  background:var(--contrast-bg); color:var(--contrast-fg); border:none;
+  border-radius:var(--radius); font-family:inherit;
+  font-size:16px; font-weight:600; cursor:pointer;}
+
+.hero__stats{position:absolute; left:337px; top:624px; width:1246px; height:333px; z-index:2;}
+.stat{position:absolute; top:43px; width:386px; height:213px; padding:43px 29px 0;
+  border-radius:12.3px; background:var(--glass-bg, rgba(217,217,217,.20)); backdrop-filter:blur(24px);}
+.stat--2{left:413px; width:388px;}
+.stat--3{left:831px;}
+.stat__icons{position:absolute; top:-43px; left:19px; display:flex; align-items:center;}
+.stat__icons img, .stat__icons span{width:61px; height:61px; border-radius:50%;
+  border:2.45px solid var(--surface); object-fit:cover; margin-left:-30px;}
+.stat__icons > :first-child{margin-left:0; width:80px; height:80px;}
+.stat__icons .stat__badge{background:var(--contrast-bg); display:flex; align-items:center;
+  justify-content:center; color:var(--contrast-fg); font-size:24px;}
+.stat__value{font-size:29.4px; font-weight:500; line-height:35.6px; letter-spacing:-0.59px;}
+.stat--2 .stat__value{font-size:40px; font-weight:600; line-height:40px; letter-spacing:-2.4px;}
+.stat--3 .stat__value{font-weight:600;}
+.stat__caption{margin-top:16px; font-size:18.4px; font-weight:500; line-height:22.3px;
+  letter-spacing:-0.37px; color:var(--ink);}
+.stat__sparkle{position:absolute; width:169px; height:168px; pointer-events:none;}
+
+.trusted{position:absolute; left:380px; top:1145px; width:1155px; height:186px; z-index:2;}
+.trusted__signature{position:absolute; left:50%; transform:translateX(-50%); top:27px; width:239px; height:52px;
+  display:flex; align-items:center; justify-content:center; font-size:26.4px; font-weight:500;
+  color:var(--grey);}
+.trusted__signature span{position:absolute; width:13px; height:13px;
+  border:1.65px solid var(--blue);}
+.trusted__signature span:nth-child(1){left:0; top:0;}
+.trusted__signature span:nth-child(2){right:0; top:0;}
+.trusted__signature span:nth-child(3){left:0; bottom:0;}
+.trusted__signature span:nth-child(4){right:0; bottom:0;}
+.trusted__logos{position:absolute; left:50%; transform:translateX(-50%); top:114px;
+  display:flex; align-items:center; gap:90px;}
+.trusted__logo{display:flex; align-items:center; gap:6px; white-space:nowrap; font-size:27px; font-weight:500;
+  color:var(--ink);}
+.trusted__logo img{width:42px; height:42px; object-fit:contain;}
+.trusted__logo--pending{color:var(--ink);} /* TODO: иконки партнёров вырезать из Figma */

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
+import * as projectsApi from '../features/projects/api/projectsApi'
 import { App } from '../app/App'
 import * as api from '../features/generation/api/generationApi'
 import * as documentApi from '../features/generation/api/documentApi'
@@ -7,11 +8,12 @@ import { saveSession, clearSession, getAccessToken } from '../shared/session/aut
 
 vi.mock('../features/generation/api/generationApi')
 vi.mock('../features/generation/api/documentApi')
+vi.mock('../features/projects/api/projectsApi')
 
 // Story 18 unified the create flow: the CTA opens the type modal, and picking a type goes
 // STRAIGHT to the generation workspace — no mode-select modal in between.
 function pickDokladType() {
-  fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+  fireEvent.click(screen.getByTestId('projects-toolbar-create'))
   fireEvent.click(screen.getByTestId('type-card-doklad'))
   expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
 }
@@ -25,6 +27,8 @@ describe('App step transitions', () => {
   beforeEach(() => {
     vi.mocked(api.createGeneration).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
+    // Подписанный пользователь приземляется на «Мои проекты» — лента висит, экран рисуется.
+    vi.mocked(projectsApi.listProjects).mockReturnValue(new Promise(() => {}))
     // App renders its own BrowserRouter, and jsdom's location SURVIVES between tests in a
     // file — so the gate tests below, which navigate away, would otherwise leave every later
     // render starting there. Reset the URL, not just the session.
@@ -76,10 +80,10 @@ describe('App step transitions', () => {
     render(<App />)
 
     expect(screen.queryByTestId('header-login-button')).not.toBeInTheDocument()
-    expect(screen.getByTestId('header-profile-button')).toBeInTheDocument()
+    expect(screen.getByTestId('projects-profile-button')).toBeInTheDocument()
   })
 
-  it('walks landing -> type -> generation workspace, no mode modal in between', () => {
+  it('walks projects -> type -> generation workspace, no mode modal in between', () => {
     render(<App />)
 
     pickDokladType()
@@ -88,13 +92,15 @@ describe('App step transitions', () => {
     expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
   })
 
-  it('closing the type modal returns to landing', () => {
+  // Закрытие модалки возвращает туда, откуда её открыли, — а для сессии это «Мои проекты».
+  it('closing the type modal returns to the projects screen', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('projects-toolbar-create'))
     fireEvent.click(screen.getByLabelText('Закрыть'))
 
     expect(screen.queryByTestId('type-modal')).not.toBeInTheDocument()
+    expect(screen.getByTestId('projects-screen')).toBeInTheDocument()
   })
 
   // Story 18 removed the mode-select modal, and with it the manual-mode card that used to be the
