@@ -1,28 +1,17 @@
-.manual-editor-page {
+/* Редактор по фрейму заказчика (26 августа): две полосы сверху (документ + панель
+   форматирования) и один непрерывный лист на серой подложке. Мок, с которого это снято, —
+   ProductSpecification/stories/12-my-projects/mockups/live/10-editor-figma.html.
+
+   Страниц (разбиения листа на A4-блоки) здесь НЕТ намеренно: разбиения в продукте не
+   существует, и границы страниц обещали бы пагинацию, которой нет. Лист один и растёт. */
+
+.edf-page {
   min-height: 100vh;
+  background: var(--bg-sunken);
 }
 
-.me-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 96px;
-}
-
-.me-toolbar-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.me-editor-shell {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  overflow: hidden;
-}
-
+/* Баннеры ошибок стоят между панелью и листом — на всю ширину, потому что они про документ
+   целиком, а не про место в тексте. */
 .me-error-banner {
   display: flex;
   align-items: center;
@@ -40,121 +29,116 @@
   flex-shrink: 0;
 }
 
-.me-content-area {
-  padding: 48px 64px;
-  min-height: 420px;
+/* 725 — ширина листа на фрейме. Он центрирован в серой области и НЕ тянется: строка шире
+   ~90 знаков читается заметно хуже, а растянуть пришлось бы именно её. */
+.edf-sheet {
+  width: min(725px, 100% - 32px);
+  margin: 40px auto 64px;
+  padding: 56px 64px;
+  background: var(--bg-surface);
+  border: 1px solid var(--projects-edge);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  /* Пустой документ всё равно выглядит листом, а не полоской. */
+  min-height: 640px;
   position: relative;
 }
 
-/* The inline-only editor has no block node for Tiptap's stock Placeholder to
-   decorate, so InlinePlaceholder (inlinePlaceholder.ts) hangs is-editor-empty +
-   data-placeholder on the ProseMirror root while empty; this ::before paints the
-   attribute text as a non-interactive overlay on the empty first line. */
+/* --- Текст внутри листа --- */
+
+:global(.ProseMirror) {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.55;
+  outline: none;
+}
+
+/* H3 — единственный заголовок, который умеет панель, поэтому он же и раздел документа:
+   18/24 против 14 у абзаца. Второго уровня в редакторе нет, и правила для h1/h2 здесь нет
+   тоже — оно описывало бы разметку, которую нельзя ни поставить, ни получить. */
+:global(.ProseMirror) h3 {
+  margin: 28px 0 12px;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+:global(.ProseMirror) h3:first-child {
+  margin-top: 0;
+}
+
+:global(.ProseMirror) p {
+  margin: 0 0 12px;
+}
+
+:global(.ProseMirror) p:last-child {
+  margin-bottom: 0;
+}
+
+/* Маркер втянут в текстовую колонку, а не вынесен на поле: на фрейме пункты выровнены по
+   левому краю абзаца. */
+:global(.ProseMirror) ul,
+:global(.ProseMirror) ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+:global(.ProseMirror) li {
+  margin-bottom: 4px;
+}
+
+/* Цитата получает линию слева. Кнопка «Цитата» на панели была и раньше, а вида у блока не
+   было — нажатие ничего не меняло на экране, то есть действие выглядело сломанным. */
+:global(.ProseMirror) blockquote {
+  margin: 0 0 12px;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--projects-edge);
+  color: var(--text-divider);
+}
+
+:global(.ProseMirror) blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+:global(.ProseMirror) a {
+  color: var(--accent);
+}
+
+/* Пустой документ. Inline-редактор не даёт Tiptap-плейсхолдеру блочного узла, поэтому
+   InlinePlaceholder вешает is-editor-empty + data-placeholder на корень, а этот ::before
+   рисует текст поверх первой строки, не перехватывая клики. */
 :global(.ProseMirror.is-editor-empty)::before {
   content: attr(data-placeholder);
   color: var(--text-muted);
-  font-size: 17px;
+  font-size: 14px;
   pointer-events: none;
   position: absolute;
   height: 0;
 }
 
-@media (max-width: 768px) {
-  .me-container {
-    padding: 24px 16px 64px;
-  }
-
-  .me-content-area {
-    padding: 32px 20px;
-  }
-}
-
-/* Phones. 480 is the project's phone breakpoint (AuthForm.css, LoginForm.css) — the 768 block
-   above is the tablet step and stays; this one is what a 375px viewport actually gets.
-   The editor is the screen a generated доклад is read and corrected on, so it is the one
-   surface where "it technically fits" is not enough. */
-@media (max-width: 480px) {
-  /* The row is a breadcrumb (which already wraps at 768) beside the export control, held apart
-     by space-between. At 375px that puts a two-line breadcrumb next to a squeezed "Скачать" and
-     leaves the button a ~90px tap target pinned to the screen edge. Stacked, each gets the full
-     width and the export button becomes a real target instead of a corner. */
-  .me-toolbar-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .me-container {
-    padding: 16px 12px 48px;
-  }
-
-  /* The page's own gutter is 12px now, so 20px of card padding on top of it spends a sixth of a
-     375px viewport on margin before a word is drawn. min-height drops with it: 420px was sized
-     against a desktop viewport and left a tall empty card under a short document. */
-  .me-content-area {
-    padding: 20px 14px;
-    min-height: 320px;
-  }
-
-  /* Radius scales with the card: a 16px corner on a near-full-bleed panel reads as a rounding
-     error rather than a shape. */
-  .me-editor-shell {
-    border-radius: 12px;
-  }
-
-  .me-error-banner {
-    padding: 10px 14px;
-    /* Init and save failures are long sentences ("Не удалось создать документ. Проверьте
-       соединение…"). align-items: center is right for one line and wrong for four — the icon
-       floats to the middle of the paragraph. */
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .me-error-banner-icon {
-    /* Optical alignment with the first line of text now that the banner aligns to the start. */
-    margin-top: 2px;
-  }
-
-  /* 16px is not a taste choice: iOS Safari zooms the viewport when a focused editable's text is
-     below 16px, and it does not zoom back out. Below this, tapping into the document to fix one
-     word leaves the user scrolled sideways into a page they then have to pinch their way out of.
-     The placeholder is sized with it so the empty state does not jump on the first keystroke. */
-  .me-content-area,
-  :global(.ProseMirror.is-editor-empty)::before {
-    font-size: 16px;
-  }
-}
-
-/* Tables inserted from the toolbar. The editor renders no table chrome of its own, so without
-   these the cells have no borders and the grid is invisible while it is being filled in. */
+/* Таблицы из панели. Своего оформления редактор не рисует, поэтому без этих правил
+   вставленная таблица неотличима от абзацев. */
 :global(.ProseMirror) table {
   width: 100%;
+  margin: 0 0 16px;
   border-collapse: collapse;
-  margin: 16px 0;
-  table-layout: fixed;
-  overflow: hidden;
 }
 
 :global(.ProseMirror) th,
 :global(.ProseMirror) td {
-  border: 1px solid var(--border-subtle);
   padding: 8px 10px;
-  vertical-align: top;
-  /* A cell is a text container: without this a long unbroken token stretches the column past the
-     page and the fixed layout can no longer hold the grid together. */
-  word-break: break-word;
+  border: 1px solid var(--projects-edge);
+  text-align: left;
+  position: relative;
 }
 
 :global(.ProseMirror) th {
-  background: var(--bg-subtle);
+  background: var(--projects-well);
   font-weight: 600;
-  text-align: left;
 }
 
-/* ProseMirror's own class for a cell inside a multi-cell selection. Without a rule it is
-   indistinguishable from an unselected one, so "add a row after these two" gives no feedback
-   about which two. */
+/* Класс самого ProseMirror для ячейки внутри выделения. Без правила она неотличима от
+   невыделенной, и «добавить строку после этих двух» не показывает, каких двух. */
 :global(.ProseMirror) :global(.selectedCell)::after {
   content: '';
   position: absolute;
@@ -163,7 +147,11 @@
   pointer-events: none;
 }
 
-:global(.ProseMirror) td,
-:global(.ProseMirror) th {
-  position: relative;
+@media (max-width: 720px) {
+  .edf-sheet {
+    margin: 16px auto 32px;
+    padding: 24px 20px;
+    border-radius: 10px;
+    min-height: 420px;
+  }
 }

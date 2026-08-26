@@ -5,7 +5,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.composer_assertions import ComposerAssertionsMixin
 from statements.frontend.generation.generation_flow_actions import (
-    CHAT_PANEL,
+    GENERATION_FORM,
     GENERATIONS_PATH,
     GenerationFlowActionsMixin,
 )
@@ -62,11 +62,11 @@ class GenerateFlowStatements(
         never got here — and the URL is folded in to tell a collapse from a wrong route.
         """
         try:
-            self._wait_for_visible(driver, CHAT_PANEL)
+            self._wait_for_visible(driver, GENERATION_FORM)
         except TimeoutException:
             raise AssertionError(
                 "expected picking a document type to land on the generation workspace, but "
-                f"{CHAT_PANEL[1]} never rendered; current URL '{driver.current_url}' — either the "
+                f"{GENERATION_FORM[1]} never rendered; current URL '{driver.current_url}' — either the "
                 "flow collapsed back to the landing (dead/rejected session) or the type pick still "
                 "routes somewhere other than generation"
             ) from None

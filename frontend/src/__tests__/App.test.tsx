@@ -15,7 +15,7 @@ vi.mock('../features/projects/api/projectsApi')
 function pickDokladType() {
   fireEvent.click(screen.getByTestId('projects-toolbar-create'))
   fireEvent.click(screen.getByTestId('type-card-doklad'))
-  expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
+  expect(screen.getByTestId('generation-form')).toBeInTheDocument()
 }
 
 // Both destinations behind the landing — the generation workspace and the manual editor — are
@@ -88,7 +88,7 @@ describe('App step transitions', () => {
 
     pickDokladType()
 
-    expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('generation-form')).toBeInTheDocument()
     expect(screen.queryByTestId('mode-modal')).not.toBeInTheDocument()
   })
 
@@ -114,13 +114,13 @@ describe('App step transitions', () => {
   it('signing out from the workspace clears the session and returns to the landing', () => {
     render(<App />)
     pickDokladType()
-    expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('generation-form')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('workspace-profile-button'))
     fireEvent.click(screen.getByTestId('workspace-logout-button'))
 
     expect(getAccessToken()).toBeNull()
-    expect(screen.queryByTestId('chat-panel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('generation-form')).not.toBeInTheDocument()
     expect(screen.getByTestId('features-primary-cta-button')).toBeInTheDocument()
   })
 })

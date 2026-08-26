@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textery — Новая генерация (ввод темы)</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/theme-switch.css">
+  <link rel="stylesheet" href="css/profile-menu.css">
+  <link rel="stylesheet" href="css/chat-workspace.css">
+  <link rel="stylesheet" href="css/chat-workspace-doc.css">
+  <link rel="stylesheet" href="css/generation-heading.css">
+  <link rel="stylesheet" href="css/composer.css">
+  <link rel="stylesheet" href="css/topic-suggestions.css">
+  <link rel="stylesheet" href="css/chat-button.css">
+</head>
+<body>
+  <!-- Экран генерации в состоянии `idle`: тема ещё не отправлена. Слева композер
+       (ComposerPanel + Composer + ComposerParameters + ComposerStyle), справа пустая
+       область документа (DocArea, ветка по умолчанию). -->
+  <div class="chat-page">
+    <div data-mock="app-header"></div>
+
+    <div class="cw-container">
+      <div class="cw-breadcrumb">
+        <span class="cw-breadcrumb-chip">
+          <span class="cw-chip-icon">
+            <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="98" height="98" rx="10" stroke="currentColor" stroke-width="2" />
+              <circle cx="66" cy="34" r="9" stroke="currentColor" stroke-width="2" />
+              <path d="M1 72 L34 44 L60 66 L99 34" stroke="currentColor" stroke-width="2" />
+            </svg>
+          </span>
+          Доклад
+        </span>
+      </div>
+      <h1 class="cw-title">Новая генерация</h1>
+      <p class="cw-subtitle">Опишите, что нужно получить</p>
+
+      <div class="cw-layout">
+        <aside class="chat-panel" data-mock="composer"></aside>
+
+        <section class="doc-area">
+          <div class="doc-placeholder">
+            <h2>О чём будет доклад?</h2>
+            <p>Введите тему в панели слева — ИИ сгенерирует готовый текст.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock-data.js"></script>
+  <script src="mock.js"></script>
+  <script src="mock-generation.js"></script>
+</body>
+</html>

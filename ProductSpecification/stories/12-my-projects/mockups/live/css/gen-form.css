@@ -1,0 +1,137 @@
+/* Экран «Создание "Тип документа"» по фрейму заказчика (26 августа) — шаг 1 из 3.
+   Это НОВЫЙ дизайн, а не снимок текущего компонента: страница на светло-серой подложке,
+   заголовок и шаги по центру, ниже две карточки — форма и сводка справа.
+   Блока загрузки файлов на фрейме здесь быть не должно: загрузки материалов в продукте нет,
+   поэтому его место занимают параметры генерации, которые компонент уже собирает
+   (требования, объём, стиль, пожелания). */
+
+/* Подложка серая (`--bg-sunken`), а не голубая `--bg-page`: на фрейме страница нейтральная,
+   голубым остаётся только лендинг. Белые карточки на голубом читались как чужие. */
+.genform-page {
+  min-height: 100vh;
+  background: var(--bg-sunken);
+  padding-bottom: 64px;
+}
+
+.genform-container {
+  width: min(1640px, 100% - 80px);
+  margin: 0 auto;
+}
+
+/* Заголовок и подзаголовок по центру — единственный центрированный блок на экране. */
+.genform-head {
+  text-align: center;
+  padding: 24px 0 0;
+}
+
+.genform-title {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+}
+
+.genform-subtitle {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--text-divider);
+}
+
+/* Шаги. Линия между ними — растягивающийся элемент, а не border на контейнере: так она
+   всегда занимает остаток строки и не разъезжается при другой длине подписей. */
+.genform-steps {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 28px auto 0;
+  max-width: 1000px;
+}
+
+.genform-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--text-divider);
+}
+
+.genform-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-card-muted);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Текущий шаг: цифра на голубой заливке и синим, подпись — основным цветом текста. */
+.genform-step-current {
+  color: var(--text-primary);
+}
+
+.genform-step-current .genform-step-num {
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-fg);
+}
+
+.genform-step-line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--projects-edge);
+}
+
+/* Форма и сводка. 1fr + фиксированные 434 — на фрейме правая карточка не тянется, она
+   держит ширину, а форма забирает остаток. */
+.genform-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 434px;
+  gap: 24px;
+  margin-top: 32px;
+  align-items: start;
+}
+
+.genform-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--projects-edge);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  padding: 32px;
+}
+
+@media (max-width: 1100px) {
+  .genform-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .genform-container {
+    width: min(1640px, 100% - 40px);
+  }
+
+  .genform-title {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  /* Подписи шагов на 360 не помещаются в строку — остаются только цифры и линии, а название
+     текущего шага повторяет заголовок формы под ними. */
+  .genform-step-label {
+    display: none;
+  }
+
+  .genform-step-current .genform-step-label {
+    display: inline;
+  }
+
+  .genform-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+}

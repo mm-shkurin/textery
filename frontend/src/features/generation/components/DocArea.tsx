@@ -5,11 +5,7 @@ import docMarkdownStyles from './DocMarkdown.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { formatRelativeTime } from '../utils/formatRelativeTime'
 import { type DocumentType } from '../../../shared/domain/documentTypes'
-import {
-  generatingTitle,
-  generationFailedTitle,
-  topicPromptTitle,
-} from '../../../shared/copy/documentTypeCopy'
+import { generationFailedTitle } from '../../../shared/copy/documentTypeCopy'
 
 interface DocAreaProps {
   state: GenerationUiState
@@ -83,25 +79,8 @@ export function DocArea({
       </div>
     )
   }
-  if (state === 'pending') {
-    // Story 18 contract: the generating surface is marked with this testid (also scenario 1.2's
-    // subject). It is present only while a generation is in flight, so a Selenium wait on it
-    // observes exactly the generating state and nothing else.
-    return (
-      <div
-        className={chatWorkspaceDocStyles['doc-placeholder']}
-        data-testid="generation-generating"
-      >
-        <div className={chatWorkspaceDocStyles.spinner} />
-        <h2>{generatingTitle(documentType)}</h2>
-        <p>Обычно занимает 1–2 минуты — страница обновится автоматически</p>
-      </div>
-    )
-  }
-  return (
-    <div className={chatWorkspaceDocStyles['doc-placeholder']}>
-      <h2>{topicPromptTitle(documentType)}</h2>
-      <p>Введите тему в панели слева — ИИ сгенерирует готовый текст.</p>
-    </div>
-  )
+  // `pending` и `idle` сюда больше не приходят: ожидание рисует GenerationPending, а пустой
+  // экран до отправки — форма со сводкой. Обе ветки удалены вместе с двухколоночной раскладкой;
+  // оставлять их значило бы держать код, который нельзя ни увидеть, ни проверить.
+  return null
 }

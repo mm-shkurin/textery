@@ -1,0 +1,40 @@
+.me-save-status {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.me-save-status--dirty {
+  color: var(--warning);
+}
+
+.me-save-status--saved {
+  color: var(--success);
+}
+
+.me-save-status--retrying {
+  color: var(--warning);
+}
+
+.me-save-status--failed {
+  color: var(--error);
+}
+
+.me-save-status--saved svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 480px) {
+  /* Sits in the wrapped toolbar status row beside Сохранить. The failed and retrying states are
+     whole sentences, and inline-flex on one line makes them a single unbroken run that shoves
+     the save button out of the row. Allowing the wrap keeps both on screen; min-width: 0 is
+     what actually lets it shrink — a flex item defaults to min-width: auto and refuses to go
+     below its content, which is how a long status wins a fight it should lose. */
+  .me-save-status {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+}

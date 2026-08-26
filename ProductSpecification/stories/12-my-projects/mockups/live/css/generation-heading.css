@@ -1,0 +1,85 @@
+/* Mockup 01/04-generation-form.html — breadcrumb + page title of the topic-entry surface. */
+
+.cw-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.cw-breadcrumb-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.cw-chip-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cw-chip-icon svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-inverse);
+}
+
+.cw-title {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.cw-subtitle {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin-bottom: 40px;
+}
+
+/* Mobile mockup 04-generation-form.html — the breadcrumb wraps (the document-type label is a
+   server-owned string), and the title/subtitle step down to 26px/14px. */
+@media (max-width: 768px) {
+  .cw-breadcrumb {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .cw-breadcrumb-chip {
+    padding: 5px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .cw-chip-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cw-chip-icon svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .cw-title {
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+
+  .cw-subtitle {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+}

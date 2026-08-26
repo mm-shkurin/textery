@@ -96,7 +96,10 @@ export function LinkPopover({ editor, onClose }: LinkPopoverProps) {
       const popover = popoverRef.current
       if (!popover) return
       const target = event.target as Node
-      const toolbar = popover.closest(`.${manualEditorToolbarStyles['me-toolbar']}`)
+      // Класс панели переехал вместе с перерисовкой по фрейму: `me-toolbar` -> `edf-toolbar`.
+      // Ищется именно панель, а не группа внутри неё: кнопка ссылки — сосед поповера внутри
+      // группы, но нажатие на любую кнопку панели тоже не «снаружи».
+      const toolbar = popover.closest(`.${manualEditorToolbarStyles['edf-toolbar']}`)
       const editorDom = editor.view.dom
       if (popover.contains(target) || toolbar?.contains(target) || editorDom.contains(target)) {
         return

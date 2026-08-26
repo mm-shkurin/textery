@@ -34,24 +34,25 @@ function typeTopic(value: string) {
 }
 
 describe('ChatWorkspace', () => {
-  // The heading slot is owned by two different mockups: before anything is submitted it is
-  // mockup 04's breadcrumb + title, and from the first generation onward it is mockups 05-07's
-  // status badge. Both arms were previously unasserted — deleting the idle branch outright left
-  // the whole suite green.
-  it('introduces the idle composer with the breadcrumb heading and no status badge', () => {
+  // Экран перерисован по фрейму «Создание "Тип документа"»: вместо бейджа состояния —
+  // три шага, вместо хлебных крошек — заголовок с типом и сводка справа. Оба состояния
+  // проверяются, потому что удаление любой из веток раньше оставляло сюиту зелёной.
+  it('называет тип документа в заголовке и держит форму на первом шаге', () => {
     renderWorkspace()
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Доклад$/)
-    expect(screen.getByText('Новая генерация')).toBeInTheDocument()
-    expect(screen.queryByText('Новый запрос')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Создание «Доклад»' })).toBeInTheDocument()
+    expect(screen.getByTestId('generation-summary-type')).toHaveTextContent(/^Доклад$/)
+    const steps = within(screen.getByTestId('generation-steps')).getAllByRole('listitem')
+    expect(steps[0]).toHaveAttribute('aria-current', 'step')
   })
 
-  it('replaces the heading with the run status badge once a generation exists', () => {
+  it('переводит шаг на генерацию и убирает форму, пока идёт прогон', () => {
     renderWorkspace({ state: 'pending' })
 
-    expect(screen.getByText('В обработке')).toBeInTheDocument()
-    expect(screen.queryByTestId('generation-breadcrumb')).not.toBeInTheDocument()
-    expect(screen.queryByText('Новая генерация')).not.toBeInTheDocument()
+    const steps = within(screen.getByTestId('generation-steps')).getAllByRole('listitem')
+    expect(steps[1]).toHaveAttribute('aria-current', 'step')
+    expect(screen.queryByTestId('topic-input')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('generation-summary-type')).not.toBeInTheDocument()
   })
 
   // documentType and documentTypeLabel arrive as independent props, so a caller can pair a
@@ -59,10 +60,10 @@ describe('ChatWorkspace', () => {
   // breadcrumb renders the label, the composer heading renders topicFieldLabel(documentType).
   // DocumentGenerationFlow derives them consistently today; this pins the contract at the
   // component boundary so a future caller cannot silently re-open the bug.
-  it('names one and the same document type in the breadcrumb and the topic field', () => {
+  it('names one and the same document type in the summary and the topic field', () => {
     renderWorkspace({ documentType: 'referat', documentTypeLabel: 'Реферат' })
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Реферат$/)
+    expect(screen.getByTestId('generation-summary-type')).toHaveTextContent(/^Реферат$/)
     expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
   })
 

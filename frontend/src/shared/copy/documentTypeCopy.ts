@@ -114,11 +114,6 @@ export function generationFailedTitle(documentType: DocumentType): string {
   return `Не удалось сгенерировать ${DOCUMENT_TYPE_ACCUSATIVE[documentType]}`
 }
 
-// The idle doc area's prompt, genitive like the composer heading it sits beside.
-export function topicPromptTitle(documentType: DocumentType): string {
-  return `Опишите тему ${DOCUMENT_TYPE_GENITIVE[documentType]}`
-}
-
 // The display label for a value that came off the wire. The history list rendered `document_type`
 // RAW, so its rows said 'доклад' while the modal that created them said 'Доклад' — the same
 // document named two ways, because the list reached for the wire value when the label was one

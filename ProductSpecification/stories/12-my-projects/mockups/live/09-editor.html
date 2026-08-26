@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textery — Редактор с готовым текстом</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/theme-switch.css">
+  <link rel="stylesheet" href="css/profile-menu.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/editor-toolbar.css">
+  <link rel="stylesheet" href="css/editor-breadcrumb.css">
+  <link rel="stylesheet" href="css/editor-save-status.css">
+  <link rel="stylesheet" href="css/editor-export.css">
+  <link rel="stylesheet" href="css/doc-markdown.css">
+</head>
+<body>
+  <!-- Редактор после генерации: документ уже создан и сохранён, текст пришёл из генерации.
+       Снимок текущих компонентов — с ним и сравниваем фрейм. -->
+  <div class="manual-editor-page">
+    <div data-mock="editor-header"></div>
+
+    <div class="me-container">
+      <div class="me-toolbar-row">
+        <div data-mock="editor-breadcrumb"></div>
+        <div data-mock="editor-export"></div>
+      </div>
+
+      <div class="me-editor-shell">
+        <div data-mock="editor-toolbar"></div>
+        <div class="me-content-area" data-mock="editor-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock-data.js"></script>
+  <script src="mock-editor.js"></script>
+</body>
+</html>

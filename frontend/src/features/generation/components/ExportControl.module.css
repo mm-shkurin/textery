@@ -3,23 +3,45 @@
   display: inline-flex;
 }
 
+/* «Скачать» — единственная синяя кнопка на полосе документа: экспорт пользователь делает
+   осознанно, а сохранение происходит и само. По фрейму: 40 в высоту, радиус 10, иконка
+   слева и шеврон справа. */
 .me-export-trigger {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: var(--bg-surface);
-  color: var(--text-primary);
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 
 .me-export-trigger:hover {
-  background: var(--bg-card-muted);
+  background: var(--accent-hover);
+}
+
+/* Пока документ не создан, скачивать нечего — кнопка гаснет, но остаётся на месте: её
+   исчезновение сдвигало бы всю полосу в момент создания документа. */
+.me-export-trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.me-export-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.me-export-chevron {
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
 }
 
 .me-export-menu {

@@ -5,7 +5,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements, WAIT_TIMEOUT_SECONDS
 from statements.frontend.generation.generation_flow_actions import (
-    CHAT_PANEL,
+    GENERATION_FORM,
     GENERATIONS_PATH,
     GenerationFlowActionsMixin,
     is_status_poll_path,
@@ -14,7 +14,6 @@ from statements.frontend.generation.generating_state_locators import (
     DOC_BODY,
     DOC_ERROR,
     EXPECTED_GENERATING_DOC_TEXT,
-    EXPECTED_GENERATING_PANEL_TEXT,
     GENERATING_SURFACE,
 )
 from statements.frontend.network_throttle_mixin import SLOW_LATENCY_MS, NetworkThrottleMixin
@@ -82,10 +81,7 @@ class GeneratingStateStatements(
         renderer-level suite, which already covers it.
         """
         self._assert_element_text_equals(
-            driver, GENERATING_SURFACE, EXPECTED_GENERATING_DOC_TEXT, "generating doc surface"
-        )
-        self._assert_element_text_equals(
-            driver, CHAT_PANEL, EXPECTED_GENERATING_PANEL_TEXT, "generation progress panel"
+            driver, GENERATING_SURFACE, EXPECTED_GENERATING_DOC_TEXT, "generating surface"
         )
 
     def assert_no_result_shown(self, driver: WebDriver) -> None:

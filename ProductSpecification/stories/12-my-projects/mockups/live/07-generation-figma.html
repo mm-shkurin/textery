@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textery — Создание документа (шаг 1, по фрейму)</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/theme-switch.css">
+  <link rel="stylesheet" href="css/navbar-placement.css">
+  <link rel="stylesheet" href="css/profile-menu.css">
+  <link rel="stylesheet" href="css/projects-toolbar.css">
+  <link rel="stylesheet" href="css/gen-form.css">
+  <link rel="stylesheet" href="css/gen-form-fields.css">
+</head>
+<body>
+  <!-- Шаг 1 «Укажите тему» по фрейму заказчика. Блока загрузки файлов нет намеренно:
+       загрузки материалов в продукте не существует, и на его месте стоят параметры,
+       которые композер уже собирает сегодня. -->
+  <div class="genform-page">
+    <div class="genform-container">
+      <div data-mock="gen-navbar"></div>
+
+      <div class="genform-head">
+        <h1 class="genform-title">Создание «Доклада»</h1>
+        <p class="genform-subtitle">
+          Укажите тему — Textery подготовит все остальные параметры автоматически
+        </p>
+      </div>
+
+      <div class="genform-steps" data-mock="gen-steps"></div>
+
+      <div class="genform-grid">
+        <section class="genform-card" data-mock="gen-form"></section>
+        <aside class="genform-card" data-mock="gen-side"></aside>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock-data.js"></script>
+  <script src="mock-gen-figma.js"></script>
+</body>
+</html>

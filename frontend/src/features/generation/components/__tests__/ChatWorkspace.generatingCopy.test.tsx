@@ -35,11 +35,11 @@ describe('ChatWorkspace generating copy', () => {
   it('names the picked document type in both halves of the generating screen', () => {
     renderGenerating('referat')
 
-    const generating = screen.getByTestId('generation-generating')
-    expect(within(generating).getByRole('heading')).toHaveTextContent(/^Готовим ваш реферат$/)
-    expect(
-      within(screen.getByTestId('chat-panel')).getByText('ИИ пишет реферат'),
-    ).toBeInTheDocument()
+    // Обе половины теперь на одном экране ожидания: панели прогресса рядом с областью
+    // документа больше нет — фрейм её не рисует, и оба сообщения живут в одном блоке.
+    const generating = within(screen.getByTestId('generation-generating'))
+    expect(generating.getByRole('heading')).toHaveTextContent(/^Готовим ваш реферат$/)
+    expect(generating.getByText('ИИ пишет реферат')).toBeInTheDocument()
   })
 
   // The doklad rendering is pinned here because two Python constants transcribe it by EQUALITY —
@@ -58,7 +58,7 @@ describe('ChatWorkspace generating copy', () => {
       within(screen.getByTestId('generation-generating')).getByRole('heading'),
     ).toHaveTextContent(/^Готовим ваш доклад$/)
     expect(
-      within(screen.getByTestId('chat-panel')).getByText('ИИ пишет доклад'),
+      within(screen.getByTestId('generation-generating')).getByText('ИИ пишет доклад'),
     ).toBeInTheDocument()
   })
 

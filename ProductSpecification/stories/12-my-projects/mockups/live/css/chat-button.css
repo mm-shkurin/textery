@@ -1,0 +1,19 @@
+.cw-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cw-btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+.cw-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

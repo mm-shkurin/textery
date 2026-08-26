@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textery — Редактор (по фрейму)</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/editor-figma.css">
+  <link rel="stylesheet" href="css/editor-figma-topbar.css">
+  <link rel="stylesheet" href="css/editor-figma-toolbar.css">
+  <link rel="stylesheet" href="css/editor-figma-sheet.css">
+</head>
+<body>
+  <!-- Редактор по фрейму: полоса документа, полоса форматирования, один непрерывный лист.
+       Разбиения на страницы нет намеренно — в продукте такой фичи не существует. -->
+  <div class="edf-page">
+    <div data-mock="edf-topbar"></div>
+    <div data-mock="edf-toolbar"></div>
+
+    <main class="edf-sheet" data-mock="edf-doc"></main>
+  </div>
+
+  <script src="mock-editor-figma.js"></script>
+</body>
+</html>

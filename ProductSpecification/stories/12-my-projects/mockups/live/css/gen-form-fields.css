@@ -1,0 +1,197 @@
+/* Поля формы и карточка-сводка экрана «Создание "Тип документа"».
+   Отдельный файл от gen-form.css: тот описывает страницу и её сетку, этот — контролы внутри
+   карточки, и вместе они выходят за 200 строк. */
+
+.genform-field + .genform-field {
+  margin-top: 24px;
+}
+
+.genform-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+/* Подпись под меткой — на фрейме она есть у блока материалов; у нас на её месте пояснение,
+   что параметры необязательны. */
+.genform-hint {
+  margin: -4px 0 10px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+.genform-input,
+.genform-textarea,
+.genform-select {
+  width: 100%;
+  border: 1px solid var(--projects-edge);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 15px;
+}
+
+.genform-input,
+.genform-select {
+  height: 52px;
+  padding: 0 16px;
+}
+
+.genform-textarea {
+  min-height: 96px;
+  padding: 14px 16px;
+  resize: vertical;
+}
+
+.genform-input:focus-visible,
+.genform-textarea:focus-visible,
+.genform-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Объём и стиль — в одну строку: два коротких контрола, каждый из которых в своей строке
+   оставлял бы половину карточки пустой. */
+.genform-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.genform-field-note {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+/* Кнопки формы прижаты к правому краю карточки, «Отмена» слева от «Далее» — как на фрейме. */
+.genform-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.genform-btn {
+  height: 48px;
+  padding: 0 28px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.genform-btn-ghost {
+  border: 1px solid var(--projects-edge);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.genform-btn-primary {
+  border: none;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+/* «Далее» на фрейме нарисована приглушённой: тема не введена, шаг не пройден. Это состояние
+   disabled, а не отдельный цвет. */
+.genform-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* --- Сводка справа --- */
+
+.genform-side-type {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.genform-side-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--projects-well);
+  color: var(--text-divider);
+}
+
+.genform-side-tile svg {
+  width: 22px;
+  height: 22px;
+}
+
+.genform-side-caption {
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--text-divider);
+}
+
+.genform-side-name {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.genform-side-heading {
+  margin: 24px 0 14px;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+/* Пункты плана — точка нарисована как элемент, а не list-style: маркер на фрейме синий и
+   крупнее браузерного, а ::marker не принимает ни размер, ни выравнивание по первой строке. */
+.genform-side-list {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+.genform-side-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.genform-side-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.genform-side-item-title {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.genform-side-item-text {
+  display: block;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+/* Замечание внизу сводки — плашка, а не строка текста: на фрейме у неё своя заливка. */
+.genform-side-note {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--projects-well);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
