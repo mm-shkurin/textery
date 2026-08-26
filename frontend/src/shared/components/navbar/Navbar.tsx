@@ -35,6 +35,12 @@ interface NavbarProps {
   // it only to a signed-in visitor, the profile screen unconditionally), so the decision stays
   // with the caller and this component just obeys.
   profileMenu?: { onLogoutClick: () => void; testIdPrefix: string }
+  // The theme switch is rendered for a signed-out visitor no matter what — it is then the only
+  // way to reach the setting at all. A signed-in bar hid it, because the account menu carries a
+  // theme row of its own, and two controls for one setting in one bar is a bug report waiting to
+  // happen. The projects frame draws BOTH, so a screen can ask for the switch back; the argument
+  // above still holds everywhere that does not.
+  themeSwitch?: boolean
 }
 
 // Exported from the Figma `Logo` component (node 577:2034) rather than redrawn, and one file per
@@ -70,10 +76,11 @@ function NavbarLogo() {
 // which is behind the auth gate.
 function NavbarAccount({
   profileMenu,
+  themeSwitch,
   position,
-}: Pick<NavbarProps, 'profileMenu'> & { position: 'before' | 'after' }) {
+}: Pick<NavbarProps, 'profileMenu' | 'themeSwitch'> & { position: 'before' | 'after' }) {
   if (profileMenu === undefined) return position === 'before' ? <ThemeSwitch /> : null
-  if (position === 'before') return null
+  if (position === 'before') return themeSwitch === true ? <ThemeSwitch /> : null
   return (
     <ProfileMenu
       onLogoutClick={profileMenu.onLogoutClick}
@@ -89,6 +96,7 @@ export function Navbar({
   testId,
   actions,
   profileMenu,
+  themeSwitch,
 }: NavbarProps) {
   const Element = as
   const classes = [styles.navbar, styles[`navbar-${variant}`], className].filter(Boolean).join(' ')
@@ -103,9 +111,9 @@ export function Navbar({
           to the mark and the account at the far edge. Rendering both through one component in one
           position forced the switch to the far right on every signed-out screen. */}
       <div className={styles['navbar-actions']}>
-        <NavbarAccount profileMenu={profileMenu} position="before" />
+        <NavbarAccount profileMenu={profileMenu} themeSwitch={themeSwitch} position="before" />
         {actions}
-        <NavbarAccount profileMenu={profileMenu} position="after" />
+        <NavbarAccount profileMenu={profileMenu} themeSwitch={themeSwitch} position="after" />
       </div>
     </Element>
   )

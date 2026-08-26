@@ -1,14 +1,11 @@
 import type { ProjectSummary } from '../api/projectsApi'
-import type { ProjectView } from '../hooks/useProjectView'
 import { ProjectCard } from './ProjectCard'
 import { projectKey } from '../utils/projectKey'
 import type { RetryOverrides } from '../api/retryGenerationApi'
 import projectsPageStyles from './ProjectsPage.module.css'
-import projectsScreenStyles from './ProjectsScreen.module.css'
 
 interface ProjectsFeedProps {
   items: ProjectSummary[]
-  view: ProjectView
   onOpen: (project: ProjectSummary) => void
   // Namespaces the cards' testids. «Недавние проекты» shows the same rows the full list below it
   // does, and two elements answering to `project-card-document-1` make an identity lookup
@@ -20,15 +17,14 @@ interface ProjectsFeedProps {
 }
 
 /**
- * The cards, as a grid or as rows.
+ * Карточки сеткой.
  *
- * The two views render the SAME components with a different class: switching is a re-render of
- * data already in hand, never a refetch, and a second component tree would be a second place for
- * a card to drift.
+ * Вид списком больше не эта же сетка с другим классом — фрейм рисует там таблицу, и она живёт
+ * в `ProjectsTable`. Переключение вида по-прежнему перерисовка данных, которые уже на руках,
+ * а не новый запрос.
  */
 export function ProjectsFeed({
   items,
-  view,
   onOpen,
   testIdPrefix,
   onRetry,
@@ -37,9 +33,7 @@ export function ProjectsFeed({
 }: ProjectsFeedProps) {
   return (
     <div
-      className={`${projectsPageStyles['projects-page']} ${
-        projectsScreenStyles[`projects-view-${view}`] ?? ''
-      }`}
+      className={projectsPageStyles['projects-page']}
       data-testid={testIdPrefix ? `${testIdPrefix}-projects-page` : 'projects-page'}
     >
       {items.map((project) => (

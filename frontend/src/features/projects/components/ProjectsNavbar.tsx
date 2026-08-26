@@ -23,6 +23,9 @@ export function ProjectsNavbar({ onLogoutClick }: ProjectsNavbarProps) {
         as="nav"
         variant="pill"
         testId="projects-navbar"
+        // Фрейм рисует тумблер темы рядом с аватаром — на этом экране он есть у
+        // авторизованного пользователя, а не только у гостя.
+        themeSwitch
         profileMenu={
           onLogoutClick === undefined ? undefined : { onLogoutClick, testIdPrefix: 'projects' }
         }

@@ -1,0 +1,138 @@
+/* Вид списком — это ТАБЛИЦА, а не карточки в одну колонку.
+   На фрейме «Мои проекты — вид списком — вариант 1»: белая плита с радиусом 16,
+   шапка Название / Тип / Дата создания на серой заливке, строки разделены линией,
+   слева квадратная плитка с иконкой типа, справа «···».
+   Поэтому у списка своя разметка, а не класс-модификатор на сетке. */
+
+.projects-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--projects-edge);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.projects-table th {
+  padding: 14px 24px;
+  background: var(--projects-well);
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* Колонка названия — единственная выключенная влево: остальные две узкие и на
+   фрейме отцентрованы по своей ширине. */
+.projects-table th:first-child,
+.projects-table td:first-child {
+  text-align: left;
+}
+
+.projects-table td {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Три ширины заданы на колонках, а не на ячейках: тип и дата одинаковые на всех
+   строках, а название забирает остаток. */
+.projects-table-type {
+  width: 220px;
+}
+
+.projects-table-date {
+  width: 320px;
+}
+
+.projects-table-actions {
+  width: 72px;
+}
+
+.projects-row-name {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Плитка 48x48 с радиусом 12 — уменьшенный превью-блок карточки. Заливка та же
+   `--projects-well`, цвет папки задаёт акцент типа. */
+.projects-row-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--projects-well);
+}
+
+.projects-row-thumb .project-card-folder {
+  width: 22px;
+  height: 30px;
+}
+
+.projects-row-title {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.projects-table .project-card-type {
+  display: inline-block;
+}
+
+.projects-row-date {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-divider);
+}
+
+/* «···» — действия над проектом (переименовать / удалить / дублировать). Меню за
+   ней — story 11, здесь только кнопка. */
+.projects-row-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.projects-row-more:hover {
+  background: var(--projects-well);
+}
+
+.projects-row-more svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Ниже 720px таблица не помещается: тип уезжает в строку под названием, дата
+   остаётся, «···» прижата вправо. */
+@media (max-width: 720px) {
+  .projects-table th,
+  .projects-table td {
+    padding: 10px 14px;
+  }
+
+  .projects-table-type {
+    display: none;
+  }
+
+  .projects-table-date {
+    width: 120px;
+  }
+}

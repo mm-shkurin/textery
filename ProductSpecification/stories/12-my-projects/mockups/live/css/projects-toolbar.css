@@ -1,7 +1,10 @@
-/* The toolbar above the feed: search, filter, sort, «Создать проект», and the grid/list toggle.
-   Drawn from the Figma frames (desktop + 360 mobile). Tokens from index.css. */
+/* The toolbar above the feed: search, sort, «Создать проект», and the grid/list toggle. Split out
+   of ProjectsScreen.css, which sits near the 200-line cap and owns the rest of the screen's chrome.
+   Drawn from the Figma frames 527:1863 (desktop) and 1141:12494 (mobile). Tokens from index.css. */
 
-/* Two groups, pushed apart: filters from the search box, actions against the right edge. */
+/* Two groups, pushed apart: filters read left-to-right from the search box, actions sit against
+   the right edge. `space-between` rather than a margin-left auto on the second group — the
+   relationship is between the two, not a property of one of them. */
 .projects-toolbar {
   display: flex;
   align-items: center;
@@ -70,6 +73,45 @@
   color: var(--text-muted);
 }
 
+/* Фильтр и сортировка — две иконочные кнопки 48x48 (`Dropdown/Icon only`, `Tabs/Sort`),
+   а не нативный `<select>`: на фрейме в тулбаре стоят именно они, а списки открываются
+   поповером. Одинаковая геометрия с полем поиска, чтобы ряд читался одной полосой. */
+.projects-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--projects-edge);
+  /* 16, как у кнопок на фрейме: при 12 квадрат читается жёстче соседнего поля поиска. */
+  border-radius: 16px;
+  background: var(--bg-surface);
+  /* Обводка hex D9D9D9 (`--projects-edge`), рисунок hex 464551. Второй берётся из
+     `--text-divider` — тем же токеном покрашена дата на карточке, где макет требует
+     ровно этот цвет. ВНИМАНИЕ: сам токен сейчас #454748, то есть на 1 шаг холоднее
+     макетного 464551; правим в `tokens-light.css` одним местом, а не литералом здесь. */
+  color: var(--text-divider);
+  cursor: pointer;
+}
+
+/* Верхняя стрелка сортировки тёмная, нижняя — цвета обводки: на фрейме пара показывает
+   НАПРАВЛЕНИЕ, а не два равных значка, и активное направление выделено цветом. */
+.projects-sort-arrow-idle {
+  stroke: var(--projects-edge);
+}
+
+.projects-icon-button:hover {
+  background: var(--projects-well);
+}
+
+/* 24 в кнопке 48 — на фрейме рисунок занимает половину кнопки; при 20 он выглядел
+   мелким рядом с 18px лупой в поле поиска. */
+.projects-icon-button svg {
+  width: 24px;
+  height: 24px;
+}
+
 /* The screen's primary action, shared with the empty state's button so the two cannot drift into
    two different blues. */
 /* `Buttons/Main+icon`: 48px tall, 12px radius, 32px side padding, 12px gap, 16/600 text. */
@@ -99,8 +141,10 @@
   height: 18px;
 }
 
-/* A <fieldset>, with its three UA defaults neutralised: groove border, ~0.35em/0.75em padding and
-   `min-inline-size: min-content`, which would stop the toggle shrinking with the toolbar. */
+/* A <fieldset>, so the three UA defaults it ships with are neutralised here: the groove border
+   (replaced below), the ~0.35em/0.75em padding, and `min-inline-size: min-content`, which would
+   stop the toggle from shrinking with the toolbar. Without these the group renders as a boxed
+   form section rather than as the segmented control the design draws. */
 .projects-view-toggle {
   display: inline-flex;
   margin: 0;
@@ -134,27 +178,4 @@
 .projects-view-toggle button[aria-pressed='true'] {
   background: var(--projects-well);
   color: var(--text-primary);
-}
-
-/* Mobile, per frames 1141:12494 and 674:2534: the search row keeps its controls side by side, the
-   primary action drops to its own full-width row beneath them, and the view toggle is gone — the
-   board's note reads «в мобильной версии только сеткой вид карточек». It is HIDDEN rather than
-   unmounted so a user who rotates back to a wide viewport still has the view they chose. */
-@media (max-width: 720px) {
-  .projects-toolbar {
-    display: grid;
-    gap: 12px;
-  }
-
-  .projects-search {
-    max-width: none;
-  }
-
-  .projects-create-button {
-    width: 100%;
-  }
-
-  .projects-view-toggle {
-    display: none;
-  }
 }

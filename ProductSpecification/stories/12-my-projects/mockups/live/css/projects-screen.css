@@ -105,6 +105,10 @@
   .projects-section-title {
     margin-top: 28px;
   }
+
+
+
+
 }
 
 /* Cards in outline, so the wait reads as loading rather than as an empty feed. aria-hidden in
@@ -157,11 +161,4 @@
 .projects-pager button:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-/* В светлой теме страница и карточка — одна белая поверхность, их разделяет волосяная рамка.
-   В тёмной так нельзя: карточка на фрейме на шаг СВЕТЛЕЕ страницы, и если холст красить тем же
-   `--bg-surface`, вся лента сливается в одно чёрное поле. */
-:root[data-theme='dark'] .projects-shell {
-  background: var(--bg-page);
 }

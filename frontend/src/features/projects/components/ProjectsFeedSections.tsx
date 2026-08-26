@@ -4,6 +4,7 @@ import type { useRetryGeneration } from '../hooks/useRetryGeneration'
 import type { ProjectView } from '../hooks/useProjectView'
 import { ProjectsEmptyState } from './ProjectsEmptyState'
 import { ProjectsFeed } from './ProjectsFeed'
+import { ProjectsTable } from './ProjectsTable'
 import projectsScreenStyles from './ProjectsScreen.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 
@@ -101,12 +102,22 @@ export function ProjectsFeedSections({
           data-testid="projects-recent"
         >
           <h2 className={projectsScreenStyles['projects-section-title']}>Недавние проекты</h2>
-          <ProjectsFeed
-            items={feed.items.slice(0, RECENT_COUNT)}
-            view="grid"
-            onOpen={onOpen}
-            testIdPrefix="recent"
-          />
+          {/* Рейл следует ВЫБРАННОМУ виду, а не всегда сетке: на фрейме «вид списком» шапка
+              столбцов стоит и над «Недавними проектами», и над «Всеми». Рейл, застрявший
+              карточками, дал бы на одном экране две разные формы одной и той же записи. */}
+          {view === 'list' ? (
+            <ProjectsTable
+              items={feed.items.slice(0, RECENT_COUNT)}
+              onOpen={onOpen}
+              testIdPrefix="recent"
+            />
+          ) : (
+            <ProjectsFeed
+              items={feed.items.slice(0, RECENT_COUNT)}
+              onOpen={onOpen}
+              testIdPrefix="recent"
+            />
+          )}
         </section>
       )}
 
@@ -124,10 +135,15 @@ export function ProjectsFeedSections({
               onClearSearch={() => feed.update({ q: '' })}
               onCreateProject={onCreateProject}
             />
+          ) : view === 'list' ? (
+            // Вид списком — таблица, а не те же карточки в одну колонку. Повтор генерации в
+            // ней не показывается: строка таблицы вмещает название, тип, дату и «···», а
+            // «Повторить» со своими двумя селектами — блок высотой в карточку. Пользователь
+            // видит кнопку, переключившись на сетку, где для неё есть место.
+            <ProjectsTable items={feed.items} onOpen={onOpen} />
           ) : (
             <ProjectsFeed
               items={feed.items}
-              view={view}
               onOpen={onOpen}
               onRetry={retry.retry}
               retryingId={retry.pendingId}

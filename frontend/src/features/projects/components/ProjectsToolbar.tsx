@@ -4,6 +4,7 @@ import {
   ProjectsSearchField,
   ProjectsSortSelect,
   ProjectsViewToggle,
+  ProjectsFilterButton,
 } from './ProjectsToolbarControls'
 import styles from './ProjectsToolbar.module.css'
 import projectsEmptyStateStyles from './ProjectsEmptyState.module.css'
@@ -62,6 +63,7 @@ export function ProjectsToolbar({
     <div className={styles['projects-toolbar']} data-testid="projects-toolbar">
       <div className={styles['projects-toolbar-filters']}>
         <ProjectsSearchField q={q} onQueryChange={onQueryChange} />
+        <ProjectsFilterButton />
         <ProjectsSortSelect sort={sort} onSortChange={onSortChange} />
         <ProjectsResultCount resultCount={resultCount} />
       </div>

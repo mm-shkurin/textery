@@ -11,7 +11,6 @@ import type { ProjectSummary } from '../api/projectsApi'
 import './ProjectsPage.module.css'
 import projectsScreenStyles from './ProjectsScreen.module.css'
 import { QueryBoundary } from '../../../shared/query/QueryBoundary'
-import { SiteFooter } from '../../../shared/components/SiteFooter'
 
 interface ProjectsPageProps {
   // Opening a card is the host's decision, not this screen's: the app reaches the editor through
@@ -89,10 +88,9 @@ function ProjectsPageScreen({
           onPage={(page) => feed.update({ page })}
         />
       </div>
-
-      {/* The frame ends the screen on the pale footer strip (node 788:5094, y=16279) — the same
-          copyright and links the landing's slab carries, without its four columns. */}
-      <SiteFooter variant="strip" />
+      {/* Футера здесь НЕТ. Он стоял тут со ссылкой на узел 788:5094, но на фреймах «Мои
+          проекты» экран кончается лентой карточек — подтверждено заказчиком 26.08.
+          `SiteFooter` остаётся: его слэб рисует лендинг. */}
     </div>
   )
 }
