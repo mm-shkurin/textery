@@ -1,6 +1,5 @@
 import chatButtonStyles from './ChatButton.module.css'
 import styles from './Composer.module.css'
-import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
 import { ComposerParameters } from './ComposerParameters'
 import { TopicSuggestions } from './TopicSuggestions'
 import { isVolumeAcceptable, type GenerationParameters } from '../utils/generationParameters'
@@ -80,7 +79,7 @@ export function Composer({
           with a 400 the user cannot act on from this screen. */}
       <button
         type="button"
-        className={`${chatButtonStyles['cw-btn']} ${chatWorkspaceDocStyles['cw-btn']} ${chatButtonStyles['cw-btn-primary']} ${styles['composer-send']}`}
+        className={`${chatButtonStyles['cw-btn']} ${chatButtonStyles['cw-btn-primary']} ${styles['composer-send']}`}
         data-testid="topic-send"
         onClick={onSend}
         disabled={!topic.trim() || !isVolumeAcceptable(parameters.volumePages)}

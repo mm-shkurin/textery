@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import styles from './GenerationScreen.module.css'
-import './DocMarkdown.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { ComposerPanel } from './ComposerPanel'
 import type { GenerationParameters } from '../utils/generationParameters'
-import { DocArea } from './DocArea'
 import { GenerationPending } from './GenerationPending'
 import { GenerationSteps } from './GenerationSteps'
 import { GenerationSummary } from './GenerationSummary'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { type DocumentType } from '../../../shared/domain/documentTypes'
 import { topicFieldLabel } from '../../../shared/copy/documentTypeCopy'
+
+// Ленивая: DocArea тянет react-markdown, а он был в стартовом чанке — том, что грузится до
+// первого кадра для КАЖДОГО посетителя. Показывается эта ветка редко: завершённую генерацию с
+// текстом перехватывает DocumentGenerationFlow и открывает редактор, так что сюда попадают
+// только пустой ответ и ошибка. Платить за разметчик markdown на входе ради этих двух случаев
+// незачем — он приезжает, когда действительно нужен.
+const DocArea = lazy(() => import('./DocArea').then((m) => ({ default: m.DocArea })))
 
 interface ChatWorkspaceProps {
   documentType: DocumentType
@@ -100,16 +105,21 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
             молчать нельзя. */}
         {(state === 'completed' || state === 'failed') && (
           <section className={styles['genform-card']} data-testid="doc-area">
-            <DocArea
-              state={state}
-              content={content}
-              volumePages={volumePages}
-              createdAt={createdAt ?? null}
-              error={error}
-              documentType={documentType}
-              label={documentTypeLabel}
-              onReset={reset}
-            />
+            {/* Фолбэк говорит, что происходит, а не показывает пустую карточку: чанк
+                догружается уже после того, как генерация завершилась, и на медленной сети
+                это видимая пауза. */}
+            <Suspense fallback={<p className={styles['genform-loading']}>Загрузка…</p>}>
+              <DocArea
+                state={state}
+                content={content}
+                volumePages={volumePages}
+                createdAt={createdAt ?? null}
+                error={error}
+                documentType={documentType}
+                label={documentTypeLabel}
+                onReset={reset}
+              />
+            </Suspense>
           </section>
         )}
       </div>

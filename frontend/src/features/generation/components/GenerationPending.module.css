@@ -88,3 +88,22 @@
     opacity: 0.8;
   }
 }
+
+@media (max-width: 720px) {
+  /* 60vh на телефоне — это почти весь экран под одним диском: блок и так центрирован в
+     остатке страницы, ему хватает 44vh, а остальное отдаётся шагам сверху. */
+  .genpend {
+    min-height: 44vh;
+    padding: 0 16px;
+  }
+
+  .genpend-disc {
+    width: 60px;
+    height: 60px;
+  }
+
+  .genpend-disc svg {
+    width: 26px;
+    height: 26px;
+  }
+}

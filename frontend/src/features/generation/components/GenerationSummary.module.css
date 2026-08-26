@@ -91,3 +91,19 @@
   line-height: 18px;
   color: var(--text-divider);
 }
+
+@media (max-width: 720px) {
+  /* Под формой, а не рядом: сетка экрана уже одноколоночная, здесь остаётся только убрать
+     воздух, который был рассчитан на карточку высотой в полформы. */
+  .genform-side-heading {
+    margin: 20px 0 12px;
+  }
+
+  .genform-side-list {
+    gap: 12px;
+  }
+
+  .genform-side-note {
+    margin-top: 20px;
+  }
+}
