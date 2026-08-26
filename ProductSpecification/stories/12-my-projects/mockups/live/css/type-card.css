@@ -62,19 +62,19 @@
    (orange, green, yellow, magenta) are downloaded alongside them and wait for the document types
    that do not exist yet. */
 .type-card-blue .type-card-tile {
-  background-image: url('/design/doc-types/blue.png');
+  background-image: url('../../../../../../frontend/public/design/doc-types/blue.png');
 }
 
 .type-card-coral .type-card-tile {
-  background-image: url('/design/doc-types/coral.png');
+  background-image: url('../../../../../../frontend/public/design/doc-types/coral.png');
 }
 
 .type-card-violet .type-card-tile {
-  background-image: url('/design/doc-types/violet.png');
+  background-image: url('../../../../../../frontend/public/design/doc-types/violet.png');
 }
 
 .type-card-teal .type-card-tile {
-  background-image: url('/design/doc-types/teal.png');
+  background-image: url('../../../../../../frontend/public/design/doc-types/teal.png');
 }
 
 .type-card-heading {

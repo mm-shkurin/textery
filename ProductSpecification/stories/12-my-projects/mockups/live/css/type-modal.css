@@ -112,11 +112,11 @@
      `.type-modal-panel` and loses only by import order — which is not a thing to rely on. */
   /* Подложка этой модалки нейтральная, а не голубая: голубая — приём экрана генерации, где за
    ней размыт лендинг. Здесь за ней «Мои проекты», и синий вуалью красит весь экран. */
-  .type-modal-backdrop {
-    background: var(--scrim-panel);
-  }
+.type-modal-backdrop {
+  background: var(--scrim-panel);
+}
 
-  .type-modal-panel {
+.type-modal-panel {
     width: 100%;
     padding: 24px 16px;
   }

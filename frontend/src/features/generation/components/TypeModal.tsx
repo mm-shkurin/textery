@@ -11,7 +11,10 @@ interface TypeModalProps {
 
 export function TypeModal({ onSelect, onClose }: TypeModalProps) {
   return (
-    <div className={modalStyles['modal-backdrop']}>
+    // Подложка своя, а не общая: голубая вуаль — приём экрана генерации, где за ней размыт
+    // лендинг. За этой модалкой «Мои проекты», и синий скрим красил весь экран в синий,
+    // делая подложку заметнее панели.
+    <div className={`${modalStyles['modal-backdrop']} ${styles['type-modal-backdrop']}`}>
       <div
         className={`${modalStyles.modal} ${styles['type-modal-panel']}`}
         data-testid="type-modal"
@@ -28,7 +31,16 @@ export function TypeModal({ onSelect, onClose }: TypeModalProps) {
             onClick={onClose}
             aria-label="Закрыть"
           >
-            ×
+            {/* Штрих, а не глиф «×»: у символа своя насыщенность в каждом шрифте, и на
+                фреймовом размере он выходил заметно жирнее нарисованного. */}
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 3l10 10M13 3L3 13"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
         </div>
         {/* The accent on «тип документа» is the design's, and it is a highlight rather than a

@@ -75,6 +75,9 @@
   /* The modal's light-blue wash is a light-theme device. In dark the panel must be the lit thing,
      so the page behind it goes to a conventional dark scrim. */
   --scrim-modal: rgba(8, 14, 24, 0.72);
+  /* В тёмной обе подложки — тёмные: светлая вуаль на чёрной странице читалась бы как туман
+     ярче панели. Нейтральная чуть мягче, потому что панель под ней не белая. */
+  --scrim-panel: rgba(0, 0, 0, 0.6);
 
   --spinner-track: rgba(255, 255, 255, 0.35);
   --skeleton-highlight: var(--dark-700);
