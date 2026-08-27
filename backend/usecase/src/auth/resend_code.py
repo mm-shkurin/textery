@@ -88,18 +88,3 @@ class ResendCode(AccountVerificationDependencies):
             await rollback_quietly(self._unit_of_work)
             raise
         return verification_code
-
-    def _already_verified(self) -> ValidationException:
-        # Mirrors VerifyAccount._already_verified (scenario 3.5): the account has
-        # already transitioned, so a resend is a genuine 409 conflict, not the
-        # generic state-hiding rejection.
-        return ValidationException(
-            error_code=ErrorCode.ALREADY_VERIFIED,
-            message="The account is already verified.",
-        )
-
-    def _invalid_or_expired(self) -> ValidationException:
-        return ValidationException(
-            error_code=ErrorCode.INVALID_OR_EXPIRED_CODE,
-            message="The verification code is invalid or has expired.",
-        )

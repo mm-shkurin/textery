@@ -136,37 +136,3 @@ class VerifyAccount(AccountVerificationDependencies):
                 error_code=ErrorCode.INVALID_CODE,
                 message="The verification code is not valid.",
             ) from error
-
-    def _already_verified(self) -> ValidationException:
-        """The account is already verified and a NON-matching code was submitted.
-
-        Distinct from _invalid_or_expired: on an already-verified account the
-        transition is done, so a code that is not the one that verified it is a
-        genuine conflict, not a state-hiding oracle. The matching code takes the
-        idempotent-success path above and never reaches here.
-        """
-        return ValidationException(
-            error_code=ErrorCode.ALREADY_VERIFIED,
-            message="The account is already verified.",
-        )
-
-    def _invalid_or_expired(self) -> ValidationException:
-        """One generic rejection for every failure that depends on stored state.
-
-        Wrong code, no such account, and no issued code all answer identically, on
-        purpose: auth_verify.yaml requires the 400 to be client-safe and to not
-        reveal whether the email exists. Giving the unknown-account case its own
-        code (or letting it 500 on a None dereference, which is what happened
-        before this) turns the status line into an account-existence oracle.
-
-        Distinct from INVALID_CODE, which is shape-only: that one is a pure
-        function of the submitted string and reveals nothing about any account.
-
-        Known gap, not closed here: the unknown-account branch returns after one
-        query while a wrong code costs two, so the paths are still
-        distinguishable by timing. Out of scope for this sprint.
-        """
-        return ValidationException(
-            error_code=ErrorCode.INVALID_OR_EXPIRED_CODE,
-            message="The verification code is invalid or has expired.",
-        )
