@@ -1,16 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import {
   DELETE_FAILURE_FALLBACK,
   RENAME_FAILURE_FALLBACK,
   deleteDocument,
   renameDocument,
 } from '../api/documentActionsApi'
-import { describeFailure } from '../../../shared/api/send'
-
-interface ProjectActionError {
-  id: string
-  message: string
-}
+import { useRowAction } from './useRowAction'
 
 /**
  * Переименование и удаление проекта из ленты.
@@ -19,32 +14,17 @@ interface ProjectActionError {
  * сервере, и переименованная строка может уехать на другую страницу — локальная правка тогда
  * показала бы её там, где сервер её больше не отдаёт.
  *
- * Ошибка хранится вместе с id строки, а не одной на экран: баннер сверху заставил бы искать,
- * о какой из двадцати карточек речь.
+ * Однопоточность действия и привязка ошибки к строке живут в `useRowAction` — это правила про
+ * любое действие над строкой, а не про переименование.
  */
 export function useProjectActions(reload: () => void) {
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const [error, setError] = useState<ProjectActionError | null>(null)
+  const { run: runOnRow, pendingId, error } = useRowAction()
 
   const run = useCallback(
     (documentId: string, action: () => Promise<void>, fallback: string) => {
-      // Второй запрос по той же строке не отправляется: «Удалить» дважды по строке, которая уже
-      // удаляется, получило бы 404 — ошибку о том, что всё сработало.
-      if (pendingId !== null) return
-      setPendingId(documentId)
-      setError(null)
-      action()
-        .then(() => {
-          reload()
-        })
-        .catch((failure) => {
-          setError({ id: documentId, message: describeFailure(failure, fallback) })
-        })
-        .finally(() => {
-          setPendingId(null)
-        })
+      runOnRow(documentId, action, fallback, reload)
     },
-    [pendingId, reload],
+    [runOnRow, reload],
   )
 
   const rename = useCallback(
