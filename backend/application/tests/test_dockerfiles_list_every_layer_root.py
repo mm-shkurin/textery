@@ -14,8 +14,10 @@ the deploy crashed on `No module named 'geolocation'`.
 Two images, because the directory is published as its own repository:
 `backend/Dockerfile` builds with this directory as context, and
 `infra/docker/backend.Dockerfile` builds the monorepo's stack from the repo root.
-The second one is absent in the published repository, and its check is skipped
-there rather than failing a suite that cannot fix it.
+The second one is absent in the published repository, so the parameter list is built
+from the images that are actually present rather than skipped at run time. A skip is
+indistinguishable from a check that silently stopped running; `test_at_least_one_image_is_checked`
+is what keeps an empty list from reading as a pass.
 """
 
 from pathlib import Path
@@ -41,13 +43,29 @@ def _pythonpath_line(dockerfile: Path) -> str:
     raise AssertionError(f"{dockerfile} declares no ENV PYTHONPATH")
 
 
-@pytest.mark.parametrize(
-    "dockerfile", [STANDALONE_DOCKERFILE, MONOREPO_DOCKERFILE], ids=["standalone", "monorepo"]
-)
-def test_the_image_puts_every_layer_root_on_the_import_path(dockerfile: Path):
-    if not dockerfile.is_file():
-        pytest.skip(f"{dockerfile} is absent — this is the published repository")
+def _present_dockerfiles() -> list[Path]:
+    """The images this checkout actually contains.
 
+    `infra/docker/backend.Dockerfile` exists only in the monorepo; the published
+    repository is the `backend/` directory alone. Filtering here rather than skipping
+    inside the test keeps the suite free of run-time skips, which hide a check that
+    has stopped running behind the same green as one that ran.
+    """
+    return [p for p in (STANDALONE_DOCKERFILE, MONOREPO_DOCKERFILE) if p.is_file()]
+
+
+def test_at_least_one_image_is_checked():
+    """The standalone image is present in every checkout, so an empty list is a bug here."""
+    present = _present_dockerfiles()
+
+    assert STANDALONE_DOCKERFILE in present, (
+        f"{STANDALONE_DOCKERFILE} is missing. Without it the parametrised check below "
+        "collects nothing and the suite passes while verifying no image at all."
+    )
+
+
+@pytest.mark.parametrize("dockerfile", _present_dockerfiles(), ids=lambda p: p.parent.name)
+def test_the_image_puts_every_layer_root_on_the_import_path(dockerfile: Path):
     declared = _pythonpath_line(dockerfile)
     missing = [name for name in _layer_roots() if f"/{name}/src" not in declared]
 

@@ -13,7 +13,13 @@ logger = logging.getLogger(__name__)
 
 # Explicit per-code mapping with a 400 default. An if/else chain here would make
 # a silently-wrong status the easy mistake; a dict makes each choice visible.
-_ERROR_CODE_STATUS_MAP = {
+#
+# Every key is an `ErrorCode` member, so a mistyped key is an AttributeError at
+# import rather than a code that quietly answers the 400 default. The annotation
+# is `str` only because the lookup below reads `ValidationException.error_code`,
+# which is a plain string: `ErrorCode` is a `StrEnum`, so a member hashes and
+# compares as its own value and the two meet correctly at `.get`.
+_ERROR_CODE_STATUS_MAP: dict[str, int] = {
     ErrorCode.EMAIL_ALREADY_REGISTERED: 409,
     ErrorCode.ALREADY_VERIFIED: 409,
     ErrorCode.RESEND_COOLDOWN_ACTIVE: 429,
