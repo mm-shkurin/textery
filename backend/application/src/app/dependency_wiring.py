@@ -73,12 +73,12 @@ from router.auth.profile_router import (
     get_rename_account_usecase,
 )
 from router.document.document_deletion_router import get_delete_document_usecase
+from router.document.document_list_router import get_list_documents_usecase
 from router.document.document_router import (
     get_create_document_from_generation_usecase,
     get_create_document_usecase,
     get_export_document_usecase,
     get_get_document_usecase,
-    get_list_documents_usecase,
     get_save_document_usecase,
 )
 from router.generation.generation_router import (

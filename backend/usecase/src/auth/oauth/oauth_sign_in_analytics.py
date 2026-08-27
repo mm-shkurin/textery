@@ -6,6 +6,16 @@ that has already succeeded and may not affect it. Kept out of
 `RecordRegistrationContext` for the rule's sake -- a usecase may not call another
 usecase -- and out of the callback for the reader's: the callback's flow is now
 readable without the analytics tail in the middle of it.
+
+A FIRST sign-in through a provider is two events; a later one is one. Both are
+emitted AFTER the commit, so neither can name an account the transaction went on
+to roll back. The registration's occurrence key is derived from the account, so
+two callbacks racing the same first sign-in still record one registration.
+
+The technical context and the parked campaign are stored only for a NEW account.
+Rewriting them on every sign-in would move an existing account's first-touch
+attribution to whichever link its owner happened to click last, which is the exact
+opposite of what a first-touch model means.
 """
 
 from uuid import UUID
@@ -36,18 +46,7 @@ class SignInAnalytics:
         user_agent: str | None,
         accept_language: str | None,
     ) -> None:
-        """A FIRST sign-in through a provider is two events; a later one is one.
-
-        Both are emitted after the commit, so neither can name an account the
-        transaction went on to roll back. The registration's occurrence key is
-        derived from the account, so two callbacks racing the same first sign-in
-        still record one registration.
-
-        The technical context and the parked campaign are stored only for a new
-        account: rewriting them on every sign-in would move an existing account's
-        first-touch attribution to whichever link its owner happened to click last,
-        which is the exact opposite of what a first-touch model means.
-        """
+        """Emit the sign-in's events. Rationale: the module docstring."""
         if is_new_account:
             await self._recorder.record(
                 event_name=REGISTRATION_COMPLETED,

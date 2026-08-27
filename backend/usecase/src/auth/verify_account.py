@@ -17,6 +17,18 @@ from shared.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
+# Why `execute` reads in the order it does.
+#
+# Both shape checks run BEFORE any repository lookup, so a malformed request costs
+# zero queries. Email is validated first: a request bad on both axes answers
+# INVALID_EMAIL, matching `RegisterUser`'s order.
+#
+# The registration event is emitted AFTER the transition is committed, and only on
+# the path that actually performed it. The already-verified branch returns before
+# reaching it, so confirming the same code twice records ONE registration (§8.2) --
+# and the derived occurrence key collapses two that race each other into one row
+# as well (§8.3).
+
 
 class VerifyAccount(AccountVerificationDependencies):
     VERIFICATION_FAILED_MESSAGE = (
@@ -42,9 +54,7 @@ class VerifyAccount(AccountVerificationDependencies):
         self._analytics_recorder = analytics_recorder or NullAnalyticsRecorder()
 
     async def execute(self, email: str, code: str) -> None:
-        # Both shape checks run before any repository lookup, so a malformed
-        # request costs zero queries. Email is validated first: a request bad on
-        # both axes answers INVALID_EMAIL, matching RegisterUser's order.
+        """Confirm the code. Why it reads in this order: the note above the class."""
         normalized_email = validate_email(email).value
         self._validate_code(code)
         account = await self._account_repository.find_by_email(normalized_email)
@@ -62,11 +72,6 @@ class VerifyAccount(AccountVerificationDependencies):
 
         self._refuse_unless_usable(verification_code, code)
         await self._apply_verification(account, verification_code)
-        # AFTER the transition is committed, and only on the path that actually
-        # performed it. The already-verified branch above returns without
-        # reaching here, so confirming the same code twice records ONE
-        # registration (§8.2) -- and the derived occurrence key collapses the
-        # two that race each other into one row as well (§8.3).
         await self._analytics_recorder.record(
             event_name=REGISTRATION_COMPLETED,
             visitor_id=None,

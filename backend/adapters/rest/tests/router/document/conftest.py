@@ -10,6 +10,7 @@ from error_handling.exception_handlers import (
     validation_exception_handler,
 )
 from router.document import document_deletion_router as deletion_router_module
+from router.document import document_list_router as document_list_router_module
 from router.document import document_router as document_router_module
 from security.current_owner import get_account_existence, get_current_owner_id, get_token_service
 from shared.exceptions import (
@@ -39,6 +40,10 @@ class _EveryAccountExists:
 @pytest.fixture
 def document_app():
     app = FastAPI()
+    # The list route lives in its own module and must be registered FIRST: it holds
+    # the literal `""` path, and a parameterised `/{document_id}` registered above
+    # it would shadow a future literal sibling.
+    app.include_router(document_list_router_module.router)
     app.include_router(document_router_module.router)
     app.add_exception_handler(ValidationException, validation_exception_handler)
     app.add_exception_handler(NotFoundException, not_found_exception_handler)
@@ -64,6 +69,20 @@ class _RejectingTokenService:
         raise InvalidTokenException("token rejected by the test double")
 
 
+def _provider(provider_name):
+    """The named dependency provider, from whichever router module exports it.
+
+    The documents resource is three modules on one prefix, so a test naming a
+    provider should not also have to know which file it ended up in — that is
+    exactly the coupling the split would otherwise introduce into every fixture.
+    """
+    for module in (document_router_module, document_list_router_module):
+        provider = getattr(module, provider_name, None)
+        if provider is not None:
+            return provider
+    raise AttributeError(f"no router module exports {provider_name}")
+
+
 def _client_factory(app, provider_name, override_owner=True):
     """Wire `mock_usecase` in as the override for `provider_name`.
 
@@ -77,7 +96,7 @@ def _client_factory(app, provider_name, override_owner=True):
     """
 
     def _make(mock_usecase):
-        provider = getattr(document_router_module, provider_name)
+        provider = _provider(provider_name)
         app.dependency_overrides[provider] = lambda: mock_usecase
         if override_owner:
             app.dependency_overrides[get_current_owner_id] = lambda: OWNER_ID

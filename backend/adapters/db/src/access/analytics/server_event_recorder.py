@@ -14,6 +14,20 @@ Three properties, each of which is the reason one scenario passes:
 * **It is bounded in time.** A dependency that hangs is worse than one that
   fails, because a caller waiting on it holds a request open (§12.3). The wait is
   capped and a timeout is just another swallowed failure.
+
+It executes `insert_of` — the statement builder its sibling store also uses —
+rather than calling `SqlAlchemyAnalyticsEventRepository`. One third-layer adapter
+must not call another (`.claude/rules/coding-rules.md`); a module-level statement
+builder is shared code, not a peer. Nothing is lost by not going through the
+repository: that class exists to INTERPRET a refused insert into a `SaveOutcome`,
+and a fail-open recorder has no use for the answer — a conflict here means the
+transition was already reported, which is success.
+
+`occurrence_key` is a DERIVED key when the emitter has a natural subject to derive
+one from (`uuid5` of the transition being reported), and NULL otherwise. Where it
+is present the partial unique index performs the collapse itself, so a completion
+reported twice from two instances stores one row (§9.3) without a read-then-insert
+that would race.
 """
 
 import asyncio
@@ -24,7 +38,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from access.analytics.analytics_event_storage import SqlAlchemyAnalyticsEventRepository
+from access.analytics.analytics_event_storage import insert_of
 from analytics.analytics_event import AnalyticsEvent
 from shared.clock import Clock
 
@@ -78,24 +92,17 @@ class SqlAlchemyServerEventRecorder:
         payload: dict[str, Any] | None,
         occurrence_key: UUID | None,
     ) -> None:
+        event = AnalyticsEvent(
+            event_name=event_name,
+            visitor_id=visitor_id,
+            occurrence_key=occurrence_key,
+            user_id=user_id,
+            event_time=self._clock.now(),
+            payload=payload or {},
+        )
         session = self._session_factory()
         try:
-            await SqlAlchemyAnalyticsEventRepository(session).save_new(
-                AnalyticsEvent(
-                    event_name=event_name,
-                    visitor_id=visitor_id,
-                    # A DERIVED key when the emitter has a natural subject to
-                    # derive one from -- `uuid5` of the transition being reported
-                    # -- and NULL otherwise. Where it is present the partial
-                    # unique index performs the collapse itself, so a completion
-                    # reported twice from two instances stores one row (§9.3)
-                    # without a read-then-insert that would race.
-                    occurrence_key=occurrence_key,
-                    user_id=user_id,
-                    event_time=self._clock.now(),
-                    payload=payload or {},
-                )
-            )
+            await session.execute(insert_of(event))
             await session.commit()
         finally:
             await session.close()

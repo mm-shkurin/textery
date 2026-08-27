@@ -23,6 +23,25 @@ from shared.clock import Clock
 from shared.unit_of_work import UnitOfWork
 
 
+def _sign_in_analytics(
+    recorder: AnalyticsRecorder | None,
+    registration_context: RegistrationContextRecorder | None,
+    attribution_parking: OAuthAttributionParking,
+) -> SignInAnalytics:
+    """The analytics tail, with its two optional collaborators defaulted.
+
+    A function rather than four more lines in an already long `__init__`: the
+    defaulting is one decision (an unwired deployment records nothing rather than
+    failing), and it reads better stated once than interleaved with the assignments
+    that make up the rest of the constructor.
+    """
+    return SignInAnalytics(
+        recorder=recorder or NullAnalyticsRecorder(),
+        registration_context=registration_context or RegistrationContextRecorder(),
+        attribution_parking=attribution_parking,
+    )
+
+
 class CompleteOAuthCallback(OAuthLegDependencies):
     """Leg 2: validate the provider's redirect and mint a one-time handoff code.
 
@@ -30,6 +49,18 @@ class CompleteOAuthCallback(OAuthLegDependencies):
     resolves or auto-creates the local account, and returns an opaque handoff code.
     Every failure raises `OAuthCallbackError`, which the controller renders as a
     single generic `?error=` — no leg's failure is distinguishable to the client.
+
+    `SignInAnalytics` is built from collaborators rather than by calling the
+    `RecordRegistrationContext` usecase: a usecase may not call another usecase,
+    and this leg genuinely needs the same behaviour the register route does — it
+    is the only other place an account is born.
+
+    `execute` takes IP, User-Agent and `Accept-Language` as parameters because
+    `/callback` is itself a browser request: they are present here exactly as they
+    are at `/register`, so a provider-created account carries the same technical
+    context as a registered one. They are never accepted from a query parameter —
+    the provider drives this redirect, and a value a client could set is a value
+    it could fabricate.
     """
 
     def __init__(
@@ -59,13 +90,8 @@ class CompleteOAuthCallback(OAuthLegDependencies):
         self._account_repository = account_repository
         self._handoff_code_repository = handoff_code_repository
         self._handoff_ttl_seconds = handoff_ttl_seconds
-        # Collaborators, NOT the `RecordRegistrationContext` usecase: a usecase may
-        # not call another usecase, and this leg genuinely needs the same behaviour
-        # the register route does -- it is the only other place an account is born.
-        self._sign_in_analytics = SignInAnalytics(
-            recorder=analytics_recorder or NullAnalyticsRecorder(),
-            registration_context=registration_context or RegistrationContextRecorder(),
-            attribution_parking=self._attribution_parking,
+        self._sign_in_analytics = _sign_in_analytics(
+            analytics_recorder, registration_context, self._attribution_parking
         )
 
     async def execute(
@@ -78,13 +104,7 @@ class CompleteOAuthCallback(OAuthLegDependencies):
         user_agent: str | None = None,
         accept_language: str | None = None,
     ) -> str:
-        """The three request facts are parameters because `/callback` is itself a
-        browser request: IP, User-Agent and `Accept-Language` are present here
-        exactly as they are at `/register`, so a provider-created account carries
-        the same technical context as a registered one. They are never accepted
-        from a query parameter -- the provider drives this redirect, and a value a
-        client could set is a value it could fabricate.
-        """
+        """Turn the provider's redirect into a handoff code. See the class docstring."""
         now = self._clock.now()
         await self._rate_guard.check("callback", source, now)
         provider = self._provider_registry.get(provider_name)
