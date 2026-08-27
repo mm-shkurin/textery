@@ -1,0 +1,49 @@
+/* The avatar stack under the export cards — its own sheet, split from `LandingExport.module.css`
+   when that file crossed the repository's 200-line cap (`.claude/rules/coding-rules.md`). The
+   discs are a self-contained ornament: five overlapping circles and a badge, with one breakpoint
+   of their own and no selector shared with the cards above them. */
+
+/* The discs overlap by roughly half their width, ringed in the page colour so the row reads as one
+   stack rather than five circles in a line. */
+.export-discs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.export-discs img,
+.export-badge {
+  width: 180px;
+  height: 180px;
+  border-radius: var(--radius-pill);
+  border: 7px solid var(--bg-page);
+  object-fit: cover;
+  flex: none;
+}
+
+.export-discs > * + * {
+  margin-left: -76px;
+}
+
+.export-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border-color: var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--border-hairline) inset;
+  font-size: 34px;
+  color: var(--text-hero);
+}
+
+@media (max-width: 900px) {
+  .export-discs img,
+  .export-badge {
+    width: 96px;
+    height: 96px;
+  }
+
+  .export-discs > * + * {
+    margin-left: -40px;
+  }
+}

@@ -10,6 +10,7 @@
    `Pallete` (node 315:2139), divided by the 1.3333x the frames are drawn at. */
 @import './styles/palette.css';
 @import './styles/tokens-light.css';
+@import './styles/tokens-light-components.css';
 @import './styles/tokens-dark.css';
 
 * {

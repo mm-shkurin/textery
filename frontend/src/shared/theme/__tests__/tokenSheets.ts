@@ -33,7 +33,14 @@ function declarationsIn(css: string): Map<string, string> {
 }
 
 export const paletteTokens = declarationsIn(sheet('palette.css'))
-export const lightTokens = declarationsIn(sheet('tokens-light.css'))
+// The light theme is TWO sheets — `tokens-light.css` (semantic roles) and
+// `tokens-light-components.css` (component-scoped values), split when the first crossed the
+// 200-line cap. Both are `@import`ed into the same `:root` by `index.css`, so the browser sees
+// one flat table and this must too: reading only the first would make every component token
+// look undefined, and `resolve()` would throw on values that ship correctly.
+export const lightTokens = declarationsIn(
+  sheet('tokens-light.css') + sheet('tokens-light-components.css'),
+)
 export const darkTokens = declarationsIn(sheet('tokens-dark.css'))
 
 // Follows `var(--a)` chains to a literal. `depth` bounds a cycle: a token pair that referenced

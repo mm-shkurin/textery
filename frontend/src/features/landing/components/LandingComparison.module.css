@@ -54,7 +54,7 @@
   bottom: 20px;
   width: 72%;
   height: 420px;
-  background: #120ecf;
+  background: var(--landing-comparison-glow-left);
 }
 
 .comparison-glow-right {
@@ -62,7 +62,7 @@
   bottom: 40px;
   width: 42%;
   height: 380px;
-  background: #0239fe;
+  background: var(--landing-comparison-glow-right);
 }
 
 .comparison-inner {

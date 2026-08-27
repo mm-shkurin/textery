@@ -1,0 +1,72 @@
+/* Component-scoped light-theme colours — the second half of `tokens-light.css`, split out
+   when that file crossed the repository's 200-line cap (`.claude/rules/coding-rules.md`).
+
+   The division is by KIND, not by line count: `tokens-light.css` holds the semantic roles every
+   screen shares (`--bg-*`, `--text-*`, `--accent-*`, elevation, radii), and this file holds the
+   values that belong to exactly one component. Names keep their component prefix — they are
+   specific, not general. A value that starts being used by a second screen has stopped being
+   component-scoped and should move back to the roles file under a role name.
+
+   Dark counterparts live in `tokens-dark.css`, which redefines only the ones that must flip;
+   anything absent there falls through from here, which is correct for a surface that does not
+   theme (the footer slab, the comparison band). */
+:root {
+  /* ProfileButtons */
+  --profile-danger-fg: #ff383c;
+
+  /* ProfileModal */
+  --profile-modal-line: #cbd5e1;
+  --profile-modal-scrim: rgba(15, 23, 42, 0.35);
+
+  /* ProfilePage */
+  --profile-page-bg: #f4f6fb;
+  --profile-row-fg: #6b7280;
+  --profile-card-line: #d9d9d9;
+
+  /* ProfileTheme */
+  --profile-track-bg: #f5f5f7;
+
+  /* ProjectsPage */
+  --projects-well: var(--bg-sunken);
+  --projects-edge: var(--border-hairline);
+
+  /* Mask stencil. NOT a colour: a mask reads only the alpha channel, so this is the "opaque" end
+     of a mask gradient — geometry, not paint. It is a token anyway so that no component sheet has
+     to carry a literal and no reader has to decide which literals are exceptions. Never theme it:
+     flipping it would punch the hole on the wrong side of the ring. */
+  --mask-opaque: #000;
+
+  /* Neutral greys that predate this file and were written as `var(--x, #hex)` fallbacks in the
+     component sheets — the var was never declared, so the hex is what actually rendered, in BOTH
+     themes. They are declared here at exactly those values so the move changes nothing; they are
+     deliberately NOT overridden in dark, because they never were. */
+  --bg-subtle: #f3f4f6;
+  --bg-subtle-soft: #f9fafb;
+  /* Поля экранов авторизации: голубая подложка ввода и почти чёрный текст на ней. Роли, а не
+     сырые swatch'и `--blue-50` / `--neutral-900`, которые эти экраны брали напрямую: swatch не
+     имеет мнения о теме, поэтому в тёмной поле оставалось светло-голубым, а текст на нём —
+     светлым. Код подтверждения на тёмной теме читать было нечем. */
+  --field-soft-bg: var(--blue-50);
+  --field-soft-fg: var(--neutral-900);
+  --danger: #dc2626;
+
+  /* ManualEditor — the ProseMirror table surface. */
+  --editor-cell-selected: rgba(99, 102, 241, 0.16);
+
+  /* HistoryDeleteModal */
+  --history-modal-scrim: rgba(17, 24, 39, 0.45);
+  --history-modal-shadow: 0 24px 48px rgba(17, 24, 39, 0.18);
+
+  /* LandingComparison — the table head inside the dark band. A true black, one step below
+     `--neutral-950` the band itself is drawn in, so the header reads as a deeper inset. */
+  --landing-comparison-head-bg: #000000;
+  /* The band's two blue glows — the frame's `Dark Gradient 06`. Blurred discs under the table,
+     which is what stops the black slab reading as a flat rectangle. Not themed, for the same
+     reason the head above is not: the band is dark on both pages. */
+  --landing-comparison-glow-left: #120ecf;
+  --landing-comparison-glow-right: #0239fe;
+
+  /* ThemeSwitch — the knob's drop shadow. Keyed to the knob, which is a light disc in both
+     themes, so it does not flip. */
+  --theme-switch-knob-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}

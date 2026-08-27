@@ -1,5 +1,6 @@
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
+import { LandingExportDiscs } from './LandingExportDiscs'
 import styles from './LandingExport.module.css'
 
 // Figma `Desktop` → `Export` (node 1097:10952): the section that shows what leaves the product.
@@ -25,17 +26,6 @@ const CARDS = [
     score: '72%',
     shot: '/design/landing/export-word.png',
   },
-]
-
-// The gradient discs the frame sets beside the closing numbers, ending in the round «try it free»
-// badge. Decorative. The fifth render is the one the quality bars are also filled with — the frame
-// reuses it here, and so does this.
-const DISCS = [
-  '/design/landing/export-circle-1.webp',
-  '/design/landing/export-circle-2.webp',
-  '/design/landing/quality-bar-teal.webp',
-  '/design/landing/export-circle-3.webp',
-  '/design/landing/export-circle-4.webp',
 ]
 
 export function LandingExport() {
@@ -101,12 +91,7 @@ export function LandingExport() {
         </div>
 
         <div className={styles['export-summary-right']}>
-          <div className={styles['export-discs']} aria-hidden="true">
-            {DISCS.map((disc) => (
-              <img src={disc} alt="" key={disc} />
-            ))}
-            <span className={styles['export-badge']}>↗</span>
-          </div>
+          <LandingExportDiscs />
 
           <div className={styles['export-stats-row']}>
             <p className={styles['export-stat']}>

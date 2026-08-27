@@ -1,5 +1,4 @@
-import type { FormEvent } from 'react'
-
+import { LandingHeroPrompt } from './LandingHeroPrompt'
 import styles from './LandingHero.module.css'
 
 interface LandingHeroProps {
@@ -11,11 +10,6 @@ interface LandingHeroProps {
 // product makes four kinds of text and naming one of them in the first line of the page reads as
 // a limit on what it can do.
 export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    onPromptSubmit?.()
-  }
-
   return (
     <section className={styles.hero}>
       {/* The faint 60px grid the frame lays under the hero, fading out toward the edges. Drawn in
@@ -54,25 +48,7 @@ export function LandingHero({ onPromptSubmit }: LandingHeroProps) {
         интеллекта. Генерация докладов <strong>за 30 секунд</strong>
       </p>
 
-      {/* The topic typed here is not yet carried into the generation flow — submitting opens
-          the document-type step, same as the header CTA. Wiring the topic through requires a
-          change in DocumentGenerationFlow and is deliberately left for that work unit. */}
-      <form className={styles['hero-prompt']} onSubmit={handleSubmit}>
-        <input
-          className={styles['hero-prompt-input']}
-          type="text"
-          data-testid="hero-prompt-input"
-          placeholder="Опишите тему доклада, реферата, эссе, сочинения..."
-          aria-label="Тема документа"
-        />
-        <button
-          type="submit"
-          className={styles['hero-prompt-button']}
-          data-testid="hero-generate-button"
-        >
-          Сгенерировать
-        </button>
-      </form>
+      <LandingHeroPrompt onSubmit={onPromptSubmit} />
     </section>
   )
 }
