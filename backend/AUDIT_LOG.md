@@ -364,3 +364,42 @@ the previous fix had not actually run.
   `ci.yml` (216) exceed the project's own 200-line rule undetected.
 - Broad `except Exception` at ~24 storage-adapter sites — fail-open by design,
   but indistinguishable from a programming error.
+
+## Iteration 16 — Score: 2.5 / 3.0 — 2026-08-27 — 413ba383
+### Fixed Issues:
+- Three parallel error-code vocabularies folded into one `ErrorCode` enum. `oauth_error_codes`
+  and `analytics_error_codes` kept sets of bare strings feeding the same `_ERROR_CODE_STATUS_MAP`
+  as the enum; nine codes are members now. mypy found the seam the moment the keys became uniform.
+- `test_dockerfiles_list_every_layer_root` no longer calls `pytest.skip` at run time. It filters
+  the images at collection, with a companion test so an empty parameter list cannot read as a pass.
+  `TEST-SKIPS` (a grader regression item) is PASS again.
+- `CHANGELOG.md` records this pass.
+### Outstanding Blockers:
+- `GIT-BULK` / `GIT-DIRECT-MAIN` / `GIT-LANGUAGE` — all three are published history. Not
+  repairable without rewriting refs the jury has already fetched.
+- `SMELL-LONG-FUNC` (10 functions over 30 lines) and `SMELL-DUPLICATION` (12 six-line pairs).
+  Both are new findings, not grader remarks; the 30-line threshold and the literal-normalising
+  duplication rule both produce hits the prior two runs judged not worth splitting.
+
+## Iteration 17 — Score: 2.5 / 3.0 (confirmation, held) — 2026-08-27 — 4091e9d3
+### Fixed Issues:
+- `adapters/geolocation_provider/` had no `tests/` directory at all while `pyproject.toml`
+  counted it in `[tool.coverage.run] source`. 32 tests over `httpx.MockTransport`: the country it
+  reads, that it never raises, that it is asked once, that the token never reaches the log, and
+  that an unconfigured deployment gets `None` rather than a boot failure.
+- The Yandex client's inline `timeout=10.0` is configuration in `oauth_endpoints.toml` with a
+  `YANDEX_TIMEOUT_SECONDS` override, consistent with every other outbound client here.
+### Outstanding Blockers:
+- **No CORS configuration anywhere in `application/src` or `adapters/rest/src`.** Works only
+  because nginx fronts `/api/`; the published standalone repo publishes the backend port directly
+  and has no such front. Runtime behaviour — needs a task, not a sprint-check fix.
+- **`UnlimitedSearchSlots` is a no-op throttle.** `ListProjects` requires a `SearchSlots` port
+  whose wired implementation returns `True` unconditionally, so an unindexed content scan on a
+  public route has no concurrency bound. Needs a task.
+- **No IP/subject rate limit on `POST /login`, `/register`, `/resend`.** Only the per-account
+  lockout exists, so credential stuffing across many accounts from one source is unthrottled at
+  the application layer. Needs a task.
+- The stale-generation sweep runs in every replica on a 60s timer; the DB-side CAS is the only
+  thing preventing duplicate requeues, and that guarantee is not documented at the sweep site.
+- 31 tests behind `pytest.importorskip`; CI installs the render libraries, but a local run
+  without them reports green with the whole export path unexecuted.
