@@ -1,3 +1,4 @@
+import { LandingSection, AccentLine } from './LandingSection'
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
 import styles from './LandingProcess.module.css'
@@ -33,16 +34,14 @@ const STEPS = [
 
 export function LandingProcess() {
   return (
-    <section className={landingSectionStyles['landing-section']} data-testid="landing-process">
+    <LandingSection testId="landing-process">
       <LandingSectionHead
         eyebrow="Процесс"
         title={
           <>
             {/* The frame paints the first line blue and the second in ink — two claims, not one
                 sentence: what the process IS, then what it gives you. */}
-            <span className={landingSectionStyles['landing-section-title-accent']}>
-              Простой рабочий процесс
-            </span>
+            <AccentLine>Простой рабочий процесс</AccentLine>
             <br />
             Максимальная автоматизация и минимум усилий
           </>
@@ -61,6 +60,6 @@ export function LandingProcess() {
           </li>
         ))}
       </ol>
-    </section>
+    </LandingSection>
   )
 }

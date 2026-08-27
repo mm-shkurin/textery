@@ -1,3 +1,4 @@
+import { LandingSection, AccentLine } from './LandingSection'
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
 import { LandingExportDiscs } from './LandingExportDiscs'
@@ -30,14 +31,12 @@ const CARDS = [
 
 export function LandingExport() {
   return (
-    <section className={landingSectionStyles['landing-section']} data-testid="landing-export">
+    <LandingSection testId="landing-export">
       <LandingSectionHead
         eyebrow="Без правок"
         title={
           <>
-            <span className={landingSectionStyles['landing-section-title-accent']}>
-              Идеальный экспорт
-            </span>
+            <AccentLine>Идеальный экспорт</AccentLine>
             <br />в Word и PDF
           </>
         }
@@ -105,6 +104,6 @@ export function LandingExport() {
           </div>
         </div>
       </div>
-    </section>
+    </LandingSection>
   )
 }

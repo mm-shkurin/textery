@@ -1,6 +1,6 @@
+import { LandingCtaButton } from './LandingCtaButton'
 import landingSectionStyles from './LandingSection.module.css'
 import styles from './LandingCta.module.css'
-import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingCtaProps {
   onPrimaryCtaClick?: () => void
@@ -65,18 +65,12 @@ export function LandingCta({ onPrimaryCtaClick }: LandingCtaProps) {
         </p>
       </div>
 
-      {onPrimaryCtaClick !== undefined && (
-        <div className={styles['landing-cta-action']}>
-          <button
-            type="button"
-            className={navbarButtonsStyles['btn-light']}
-            data-testid="cta-primary-cta"
-            onClick={onPrimaryCtaClick}
-          >
-            Попробовать бесплатно
-          </button>
-        </div>
-      )}
+      <LandingCtaButton
+        onClick={onPrimaryCtaClick}
+        wrapperClassName={styles['landing-cta-action']}
+        testId="cta-primary-cta"
+        label="Попробовать бесплатно"
+      />
     </section>
   )
 }

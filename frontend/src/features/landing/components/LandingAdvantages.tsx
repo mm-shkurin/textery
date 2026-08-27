@@ -1,8 +1,9 @@
+import { LandingSection, AccentLine } from './LandingSection'
+import { LandingCtaButton } from './LandingCtaButton'
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
 import { LandingAdvantageArt } from './LandingAdvantageArt'
 import styles from './LandingAdvantages.module.css'
-import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingAdvantagesProps {
   onPrimaryCtaClick?: () => void
@@ -61,14 +62,12 @@ const ADVANTAGES = [
 
 export function LandingAdvantages({ onPrimaryCtaClick }: LandingAdvantagesProps) {
   return (
-    <section className={landingSectionStyles['landing-section']} data-testid="landing-advantages">
+    <LandingSection testId="landing-advantages">
       <LandingSectionHead
         eyebrow="Возможности"
         title={
           <>
-            <span className={landingSectionStyles['landing-section-title-accent']}>
-              Учебные тексты под ключ
-            </span>
+            <AccentLine>Учебные тексты под ключ</AccentLine>
             <br />
             на одной платформе
           </>
@@ -105,18 +104,12 @@ export function LandingAdvantages({ onPrimaryCtaClick }: LandingAdvantagesProps)
         ))}
       </div>
 
-      {onPrimaryCtaClick !== undefined && (
-        <div className={styles['advantages-action']}>
-          <button
-            type="button"
-            className={navbarButtonsStyles['btn-light']}
-            data-testid="advantages-primary-cta"
-            onClick={onPrimaryCtaClick}
-          >
-            Попробовать бесплатно
-          </button>
-        </div>
-      )}
-    </section>
+      <LandingCtaButton
+        onClick={onPrimaryCtaClick}
+        wrapperClassName={styles['advantages-action']}
+        testId="advantages-primary-cta"
+        label="Попробовать бесплатно"
+      />
+    </LandingSection>
   )
 }

@@ -1,4 +1,5 @@
 import { Header } from './Header'
+import type { LandingChromeProps } from './landingChrome'
 import { LandingAdvantages } from './LandingAdvantages'
 import { LandingComparison } from './LandingComparison'
 import { LandingExport } from './LandingExport'
@@ -12,30 +13,10 @@ import { LandingTrustedBy } from './LandingTrustedBy'
 import { SiteFooter } from '../../../shared/components/SiteFooter'
 import styles from './LandingPage.module.css'
 
-interface LandingPageProps {
-  onPrimaryCtaClick?: () => void
-  isAuthenticated?: boolean
-  onLogoutClick?: () => void
-  onLoginClick?: () => void
-  onHistoryClick?: () => void
-}
-
-export function LandingPage({
-  onPrimaryCtaClick,
-  isAuthenticated,
-  onLogoutClick,
-  onLoginClick,
-  onHistoryClick,
-}: LandingPageProps) {
+export function LandingPage({ onPrimaryCtaClick, ...chrome }: LandingChromeProps) {
   return (
     <div className={styles.landing}>
-      <Header
-        onPrimaryCtaClick={onPrimaryCtaClick}
-        isAuthenticated={isAuthenticated}
-        onLogoutClick={onLogoutClick}
-        onLoginClick={onLoginClick}
-        onHistoryClick={onHistoryClick}
-      />
+      <Header onPrimaryCtaClick={onPrimaryCtaClick} {...chrome} />
 
       {/* The frame's order, top to bottom (Figma `Desktop`, node 90:880): the hero with its
           prompt bar and the three stat cards, the logos of who trusts the product, the three

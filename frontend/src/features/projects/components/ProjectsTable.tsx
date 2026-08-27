@@ -5,7 +5,8 @@ import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import { projectKey } from '../utils/projectKey'
 import { accentClass } from './projectAccent'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
-import { ProjectCardMenu, type ProjectActions } from './ProjectCardMenu'
+import { type ProjectActions } from './ProjectCardMenu'
+import { ProjectRowMenu, ProjectTypeBadge } from './ProjectRowMenu'
 import styles from './ProjectsTable.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 
@@ -65,12 +66,7 @@ function ProjectsTableRowComponent({
         </div>
       </td>
       <td className={accentClass(project.documentType)}>
-        <span
-          className={projectsPageStyles['project-card-type']}
-          data-testid={namespaced('project-card-type')}
-        >
-          {documentTypeLabelFromWire(project.documentType)}
-        </span>
+        <ProjectTypeBadge documentType={project.documentType} namespaced={namespaced} />
       </td>
       <td className={styles['projects-row-date']} data-testid={namespaced('project-card-date')}>
         {formatCardDate(project.updatedAt)}
@@ -78,16 +74,7 @@ function ProjectsTableRowComponent({
       <td>
         {/* То же меню, что на карточке: переименовать или удалить. У генерации его нет —
             удалять и переименовать нечего. */}
-        {actions !== undefined && project.kind === 'document' && (
-          <ProjectCardMenu
-            documentId={project.id}
-            title={label}
-            testId={namespaced('project-card-menu')}
-            onRename={actions.onRename}
-            onDelete={actions.onDelete}
-            busy={actions.busy}
-          />
-        )}
+        <ProjectRowMenu project={project} label={label} namespaced={namespaced} actions={actions} />
       </td>
     </tr>
   )

@@ -1,16 +1,8 @@
 import { Navbar } from '../../../shared/components/navbar/Navbar'
+import type { LandingChromeProps } from './landingChrome'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
-interface HeaderProps {
-  onPrimaryCtaClick?: () => void
-  // Signed-in state is passed in rather than read from the session here: the header is a
-  // presentational landing component, and the gate that owns this decision is App's. One
-  // reader means one place to be wrong.
-  isAuthenticated?: boolean
-  onLogoutClick?: () => void
-  onLoginClick?: () => void
-  onHistoryClick?: () => void
-}
+type HeaderProps = LandingChromeProps
 
 // The landing's top bar. It is the shared `Navbar` in its `flat` shell — the design draws ONE bar
 // for the whole product (Figma `Navbar/Variant5`, node 1086:4929) and the four hand-rolled headers

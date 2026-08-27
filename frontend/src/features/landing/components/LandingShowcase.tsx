@@ -1,9 +1,10 @@
+import { LandingSection, AccentLine } from './LandingSection'
+import { LandingCtaButton } from './LandingCtaButton'
 import type { CSSProperties } from 'react'
 
 import styles from './LandingShowcase.module.css'
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
-import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 interface LandingShowcaseProps {
   onPrimaryCtaClick?: () => void
@@ -74,14 +75,12 @@ const SCORES = [
 
 export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
   return (
-    <section className={landingSectionStyles['landing-section']} data-testid="landing-showcase">
+    <LandingSection testId="landing-showcase">
       <LandingSectionHead
         eyebrow="Преимущества"
         title={
           <>
-            <span className={landingSectionStyles['landing-section-title-accent']}>
-              Лучшее качество
-            </span>
+            <AccentLine>Лучшее качество</AccentLine>
             <br />
             на русском языке
           </>
@@ -141,16 +140,12 @@ export function LandingShowcase({ onPrimaryCtaClick }: LandingShowcaseProps) {
         ))}
       </div>
 
-      <div className={styles['showcase-action']}>
-        <button
-          type="button"
-          className={navbarButtonsStyles['btn-light']}
-          data-testid="features-primary-cta-button"
-          onClick={onPrimaryCtaClick}
-        >
-          Создать генерацию
-        </button>
-      </div>
-    </section>
+      <LandingCtaButton
+        onClick={onPrimaryCtaClick}
+        wrapperClassName={styles['showcase-action']}
+        testId="features-primary-cta-button"
+        label="Создать генерацию"
+      />
+    </LandingSection>
   )
 }

@@ -8,7 +8,8 @@ import { projectKey } from '../utils/projectKey'
 import styles from './ProjectCard.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 import { ProjectRetryControls } from './ProjectRetryControls'
-import { ProjectCardMenu, type ProjectActions } from './ProjectCardMenu'
+import { type ProjectActions } from './ProjectCardMenu'
+import { ProjectRowMenu, ProjectTypeBadge } from './ProjectRowMenu'
 import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectCardProps {
@@ -68,25 +69,16 @@ function ProjectCardComponent({
           {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
               the history list shipped the raw field once and named one document two ways
               depending on which screen you looked at. */}
-          <span
-            className={projectsPageStyles['project-card-type']}
-            data-testid={namespaced('project-card-type')}
-          >
-            {documentTypeLabelFromWire(project.documentType)}
-          </span>
+          <ProjectTypeBadge documentType={project.documentType} namespaced={namespaced} />
           {/* Действия над проектом. Только у документа: у генерации нет ни своего DELETE, ни
               названия, которое можно править, поэтому кнопки там нет вовсе — отключённая
               кнопка обещала бы меню, которого не будет. */}
-          {actions !== undefined && project.kind === 'document' && (
-            <ProjectCardMenu
-              documentId={project.id}
-              title={label}
-              testId={namespaced('project-card-menu')}
-              onRename={actions.onRename}
-              onDelete={actions.onDelete}
-              busy={actions.busy}
-            />
-          )}
+          <ProjectRowMenu
+            project={project}
+            label={label}
+            namespaced={namespaced}
+            actions={actions}
+          />
         </div>
         {/* The whole card is the click target — that is what the ::after overlay on
             `.project-card-open` does — but the element that TAKES FOCUS and carries the
