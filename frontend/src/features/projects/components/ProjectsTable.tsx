@@ -1,3 +1,4 @@
+import { memo, useCallback } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { formatCardDate } from '../../../shared/lib/formatCardDate'
@@ -18,7 +19,10 @@ interface ProjectsTableProps {
   actions?: ProjectActions
 }
 
-function ProjectsTableRow({
+// Мемоизирована по той же причине, что и `ProjectCard`: это второй рендерер ОДНОГО списка, и
+// две формы одной строки, из которых защищена только одна, читаются как два разных решения.
+// Работает только вместе со стабильными пропсами ниже — `namespaced` тоже завёрнут.
+function ProjectsTableRowComponent({
   project,
   onOpen,
   namespaced,
@@ -97,8 +101,15 @@ function ProjectsTableRow({
  * Столбцы — это столбцы, поэтому `<table>`: скринридер объявляет заголовок колонки вместе со
  * значением, чего набор `<div>` с теми же рамками не даёт.
  */
+const ProjectsTableRow = memo(ProjectsTableRowComponent)
+
 export function ProjectsTable({ items, onOpen, testIdPrefix, actions }: ProjectsTableProps) {
-  const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
+  // Стабильная ссылка: иначе каждый рендер таблицы раздаёт строкам новую функцию, и мемоизация
+  // строки выше не срабатывает ни разу.
+  const namespaced = useCallback(
+    (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name),
+    [testIdPrefix],
+  )
   return (
     <table
       className={styles['projects-table']}

@@ -11,6 +11,26 @@ import { DIRTY_STATUS, SAVED_STATUS } from './ManualEditor.saveStatus.testSuppor
 
 vi.mock('../../api/documentApi')
 
+// Autosave is stubbed out for this FILE, and the reason is a race rather than a preference.
+//
+// Both tests below assert `saveDocument` was called exactly ONCE, to prove the dirty flag is what
+// re-marks the document rather than a fresh in-flight save. But `fireEvent.input` also arms the
+// real 1000 ms autosave debounce (`useAutosave.AUTOSAVE_DEBOUNCE_MS`), and the `waitFor` that
+// follows runs on real timers with a 5 s budget (`src/test/setup.ts`, raised because the Tiptap
+// chunk takes ~1.4 s under full-suite load and comfortably under 1 s alone). So in a full-suite
+// run the debounce fires INSIDE that wait, `useDocumentSave` takes its queued-write branch, and
+// the count is 2; run alone the file finishes before 1000 ms and it is 1.
+//
+// The queued re-save is correct product behaviour — it exists so an edit landing mid-flight is not
+// marked clean, and it carries the advanced version, so nothing is lost. The defect was the test
+// asserting a call count over a window whose length machine load decides. Neither test here is
+// about autosave: they drive the «Сохранить» button. Removing the timer makes the count mean what
+// the assertions say it means. The autosave suites test the debounce on their own fixture.
+vi.mock('../../hooks/useAutosave', () => ({
+  AUTOSAVE_DEBOUNCE_MS: 1000,
+  useAutosave: () => () => {},
+}))
+
 describe('ManualEditor dirty flag', () => {
   afterEach(() => {
     // restoreAllMocks (not just clearAllMocks) so a console.error spy survives no

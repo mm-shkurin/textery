@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
 import type { useProjectsFeed } from '../hooks/useProjectsFeed'
 import type { useRetryGeneration } from '../hooks/useRetryGeneration'
@@ -95,11 +96,20 @@ export function ProjectsFeedSections({
   onCreateProject,
 }: ProjectsFeedSectionsProps) {
   // Одни и те же обработчики для рейла и полного списка: и там, и там это одна и та же строка.
-  const cardActions = {
-    onRename: actions.rename,
-    onDelete: actions.remove,
-    busy: actions.pendingId !== null,
-  }
+  //
+  // `useMemo` здесь не оптимизация «на всякий случай», а условие, без которого работает вхолостую
+  // `memo(ProjectCard)`. Литерал объекта — новая ссылка на каждый рендер, а `memo` сравнивает
+  // пропсы поверхностно: карточка, получившая гарантированно новый `actions`, перерисовывается
+  // всегда, и обёртка не экономит ничего. Зависимости — ровно те три значения, которые объект и
+  // содержит, поэтому ссылка меняется тогда и только тогда, когда меняется поведение.
+  const cardActions = useMemo(
+    () => ({
+      onRename: actions.rename,
+      onDelete: actions.remove,
+      busy: actions.pendingId !== null,
+    }),
+    [actions.rename, actions.remove, actions.pendingId],
+  )
   return (
     <>
       {feed.error !== null && <ProjectsErrorBlock message={feed.error} onReload={feed.reload} />}

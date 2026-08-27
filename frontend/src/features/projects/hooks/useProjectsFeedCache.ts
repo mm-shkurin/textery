@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ProjectPage } from '../api/projectsApi'
-import type { FeedParams } from './feedQueryParams'
+import type { FeedParams } from '../utils/feedQueryParams'
 
 // The cache entry a feed page is stored under. Exported because the retry mutation writes to the
 // exact page the user is looking at rather than asking for the whole list again.
