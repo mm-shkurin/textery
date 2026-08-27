@@ -1,11 +1,9 @@
-import pytest
 from wiring_support import wired_on_one_session
 
 from access.auth.oauth_rate_limit_storage import SqlAlchemyRateLimiter
-from container.auth_wiring import create_credential_rate_guard
+from container.credential_rate_limit_wiring import create_credential_rate_guard
 
 
-@pytest.mark.skip(reason="RED: create_credential_rate_guard is not implemented yet")
 class TestCreateCredentialRateGuardWiresTheStore:
     """The guard defaults to allow-all, so an unwired binding throttles nothing.
 

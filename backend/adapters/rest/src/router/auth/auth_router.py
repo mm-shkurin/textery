@@ -17,6 +17,12 @@ from dto.auth.resend_response_dto import ResendResponseDto
 from dto.auth.verify_request_dto import VerifyRequestDto
 from dto.auth.verify_response_dto import VerifyResponseDto
 from router import api_routes
+from router.auth.credential_rate_limit import (
+    LOGIN_ROUTE,
+    REGISTER_ROUTE,
+    RESEND_CODE_ROUTE,
+    rate_limited,
+)
 
 router = APIRouter(prefix=api_routes.AUTH, tags=["auth"])
 
@@ -56,7 +62,12 @@ def get_resend_code_usecase() -> ResendCode:
     raise NotImplementedError("wired by the application composition root")
 
 
-@router.post("/register", status_code=201, response_model=RegisterResponseDto)
+@router.post(
+    "/register",
+    status_code=201,
+    response_model=RegisterResponseDto,
+    dependencies=[Depends(rate_limited(REGISTER_ROUTE))],
+)
 async def register(
     request: RegisterRequestDto,
     http_request: Request,
@@ -99,7 +110,12 @@ async def verify(
     return VerifyResponseDto(is_verified=True)
 
 
-@router.post("/login", status_code=200, response_model=LoginResponseDto)
+@router.post(
+    "/login",
+    status_code=200,
+    response_model=LoginResponseDto,
+    dependencies=[Depends(rate_limited(LOGIN_ROUTE))],
+)
 async def login(
     request: LoginRequestDto,
     usecase: LoginUser = Depends(get_login_user_usecase),
@@ -117,7 +133,12 @@ async def refresh(
     return LoginResponseDto.from_domain(pair)
 
 
-@router.post("/resend-code", status_code=200, response_model=ResendResponseDto)
+@router.post(
+    "/resend-code",
+    status_code=200,
+    response_model=ResendResponseDto,
+    dependencies=[Depends(rate_limited(RESEND_CODE_ROUTE))],
+)
 async def resend_code(
     request: ResendRequestDto,
     usecase: ResendCode = Depends(get_resend_code_usecase),

@@ -9,7 +9,7 @@ name and the caller's identity.
 import hashlib
 from collections.abc import Awaitable, Callable
 
-from fastapi import Request
+from fastapi import Depends, Request
 
 from analytics.client_context import client_ip_of
 from auth.rate_limiting import CredentialRateGuard
@@ -42,5 +42,17 @@ def hashed_client_source(request: Request) -> str:
 
 
 def rate_limited(route: str) -> Callable[..., Awaitable[None]]:
-    """The `Depends` guard for one route's bucket."""
-    raise NotImplementedError()
+    """The `Depends` guard for one route's bucket.
+
+    A factory rather than one dependency reading the path, because the bucket has
+    to be named by the route it guards: sharing one bucket would let a flood of
+    registrations lock every caller out of signing in.
+    """
+
+    async def enforce(
+        request: Request,
+        guard: CredentialRateGuard = Depends(get_credential_rate_guard),
+    ) -> None:
+        await guard.check(route, hashed_client_source(request))
+
+    return enforce

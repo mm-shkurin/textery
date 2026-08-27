@@ -62,6 +62,11 @@ class ErrorCode(StrEnum):
     # interchangeable to a client reading the spec.
     UNAUTHENTICATED = auto()
 
+    # The per-source bound in front of the password routes, mapped to HTTP 429.
+    # Distinct from OAUTH_RATE_LIMITED so a client can tell which bound refused it,
+    # and it names the class of refusal only -- never the source or the count.
+    AUTH_RATE_LIMITED = auto()
+
     # --- E-mail verification ---
     ALREADY_VERIFIED = auto()
     INVALID_CODE = auto()

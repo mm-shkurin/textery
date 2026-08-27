@@ -34,6 +34,7 @@ from container.auth_wiring import (
     create_update_avatar,
     create_verify_account,
 )
+from container.credential_rate_limit_wiring import create_credential_rate_guard
 from container.document_wiring import (
     create_create_document,
     create_create_document_from_generation,
@@ -93,6 +94,7 @@ __all__ = [
     "create_list_generations",
     "create_retry_generation",
     "create_list_projects",
+    "create_credential_rate_guard",
     "create_delete_account",
     "create_delete_avatar",
     "create_get_avatar",

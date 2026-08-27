@@ -24,6 +24,11 @@ _ERROR_CODE_STATUS_MAP: dict[str, int] = {
     ErrorCode.ALREADY_VERIFIED: 409,
     ErrorCode.RESEND_COOLDOWN_ACTIVE: 429,
     oauth_error_codes.OAUTH_RATE_LIMITED: 429,
+    # The per-source bound in front of the three password routes. 429 rather than
+    # 401: the caller is not being told its credentials are wrong, it is being
+    # told to come back later, and a client that retried on 401 would keep
+    # spending the bucket it has already emptied.
+    ErrorCode.AUTH_RATE_LIMITED: 429,
     ErrorCode.INVALID_CREDENTIALS: 401,
     ErrorCode.INVALID_REFRESH_TOKEN: 401,
     ErrorCode.UNVERIFIED: 403,

@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import Protocol
 
 from shared.clock import Clock, SystemClock
+from shared.error_codes import ErrorCode
+from shared.exceptions import ValidationException
 
 
 class RateLimiter(Protocol):
@@ -56,4 +58,11 @@ class CredentialRateGuard:
         self._clock = clock or SystemClock()
 
     async def check(self, route: str, source: str) -> None:
-        raise NotImplementedError()
+        """Register this attempt against the (route, source) bucket, or refuse it.
+
+        The hit is registered even when the guarded operation goes on to fail --
+        a refused password still spends allowance, which is the only reason a
+        bound on failed attempts bounds anything.
+        """
+        if not await self._rate_limiter.register_hit(f"{route}:{source}", self._clock.now()):
+            raise ValidationException(self.MESSAGE, ErrorCode.AUTH_RATE_LIMITED)

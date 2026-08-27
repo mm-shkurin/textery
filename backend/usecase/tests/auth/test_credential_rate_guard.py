@@ -1,9 +1,6 @@
-import pytest
-
 from statements.credential_rate_guard_statements import CredentialRateGuardStatements
 
 
-@pytest.mark.skip(reason="RED: CredentialRateGuard.check is not implemented yet")
 class TestCredentialRateGuard:
     """The per-source bound the password routes need on top of the account lockout.
 

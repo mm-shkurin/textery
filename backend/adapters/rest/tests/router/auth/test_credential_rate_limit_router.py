@@ -1,9 +1,7 @@
-import pytest
 from credential_rate_limit_fixtures import MAX_REQUESTS, RATE_LIMITED_BODY, credentials_for
 from login_router_fixtures import given_issued_token_pair
 
 
-@pytest.mark.skip(reason="RED: the password routes do not declare a rate-limit guard yet")
 class TestCredentialRateLimitAcrossAccounts:
     """One source, many accounts: the shape the per-account lockout cannot see.
 
