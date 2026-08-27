@@ -51,6 +51,23 @@ class DocumentCreation:
     signal to bind them once. Not a usecase — it has no `execute`, is constructed
     by the usecases themselves rather than wired, and decides nothing about which
     document gets built.
+
+    `created_or_recovered` returns the whole result rather than a "did it conflict?"
+    flag, so a caller is one `return` and cannot get the not-a-replay answer wrong.
+    Which constraint fired, and what to answer with, stays the caller's: the two
+    creation routes recover by different reads and refuse with different codes. What
+    is shared is the ORDER, and the order is the subtle part.
+
+    **The rollback inside a recovery is load-bearing, not tidy-up**, and this is the
+    one place it is explained — both `recover` implementations point here rather than
+    restating it, because three wordings of one rule is how two of them stop being
+    true. After an IntegrityError the session is poisoned and the very next query
+    raises `PendingRollbackError`, so a recovery that re-reads without rolling back
+    first turns a legitimate replay into a 500. `RegisterUser` never hit this because
+    it rolls back and *aborts*; here we roll back and then *read*.
+
+    The commit happens only on the non-conflicting path. A recovery has nothing to
+    write — it answers with a row somebody else already committed.
     """
 
     def __init__(self, document_repository: DocumentRepository, unit_of_work: UnitOfWork) -> None:
@@ -62,27 +79,7 @@ class DocumentCreation:
         document: Document,
         recover: Callable[[], Awaitable[DocumentCreationResult]],
     ) -> DocumentCreationResult:
-        """Insert the document; on a unique-constraint conflict, hand over to `recover`.
-
-        Returns the whole result rather than a "did it conflict?" flag, so a caller
-        is one `return` and cannot get the not-a-replay answer wrong.
-
-        Which constraint fired, and what to answer with, is the caller's: the two
-        creation routes recover by different reads and refuse with different codes.
-        What is shared is the ORDER, and the order is the subtle part.
-
-        **The rollback inside a recovery is load-bearing, not tidy-up**, and this is
-        the one place it is explained — both `recover` implementations point here
-        rather than restating it, because three wordings of one rule is how two of
-        them stop being true. After an
-        IntegrityError the session is poisoned and the very next query raises
-        `PendingRollbackError`, so a recovery that re-reads without rolling back
-        first turns a legitimate replay into a 500. `RegisterUser` never hit this
-        because it rolls back and *aborts*; here we roll back and then *read*.
-
-        The commit happens only on the non-conflicting path. A recovery has nothing
-        to write — it answers with a row somebody else already committed.
-        """
+        """Insert the document; on a conflict, hand over to `recover`. See the class."""
         try:
             await self._document_repository.save_new(document)
         except ConflictException:
