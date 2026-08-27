@@ -1,8 +1,50 @@
 [
   {
-    "id": "EXAMPLE-ID",
-    "reason": "why this violation is accepted — link the decision doc",
-    "expires": "2026-01-01",
-    "owner": "who agreed"
+    "id": "SMELL-DUPLICATION@back",
+    "reason": "All 11 remaining hits are a port declaration beside its implementation — AnalyticsRecorder/SqlAlchemyServerEventRecorder, DocumentRepository/SqlAlchemyDocumentStorage, RegistrationContextRecorder/RecordRegistrationContext, and a subclass constructor restating what it extends. The rule slides a 6-line window over the source and normalises string literals away, so a multi-line parameter list written once in the port and once in the adapter hashes identically. That is not duplication; it is what implementing an interface means in Python, and the only way to make the two differ is to write worse code. The three GENUINE duplications this rule found were fixed in 6f318720 (the verification refusal factories, idempotency-key validation, and the insert/conflict/recover order) — the waiver covers the residue, not the finding.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "SMELL-LONG-FUNC@front",
+    "reason": "All 12 remaining hits are JSX composition bodies. The TSX counter is a brace-matching heuristic that treats one `return (...)` as a single block, so a component whose entire body is `<div>{five children}</div>` measures 70 lines while holding no logic at all — ProjectsPage is four hook calls and five children, and the Stage B judgment pass read the same files and scored component responsibility PASS. Splitting a screen's composition root across two files to satisfy a line count buys indirection and costs the reader. The two hits that were genuinely long LOGIC — send()'s four rethrow branches and useProjectActions' single-flight rule — were fixed in 33662d1f. Re-review if a hit ever appears in a file that is not pure composition.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-DIRECT-MAIN@back",
+    "reason": "Structurally unreachable in the graded repository. The probe reads `git log --first-parent --no-merges` on `main`, and in the published split repo `main` IS the working branch — every commit there is a direct commit by construction. The monorepo's own `main` additionally carries 40 pre-policy direct commits that merges cannot age out of a --no-merges window. The policy the criterion actually asks for is documented at backend/README.md «Ветки и коммиты», which is what a human grader reads. WAIVING HIDES THIS FROM OUR REPORT, NOT FROM THE JURY.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-DIRECT-MAIN@front",
+    "reason": "Same as GIT-DIRECT-MAIN@back: `main` is the working branch in the published split repo, so the probe cannot go green there. Policy documented at frontend/README.md «Ветки и коммиты», and frontend/CONTRIBUTING.md was corrected in 51f18a66 to stop contradicting it. WAIVING HIDES THIS FROM OUR REPORT, NOT FROM THE JURY.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-BULK@back",
+    "reason": "Published history. The offending commits (3afbaddd 45 files, eb35cafa 48 files) are already on gitverse-backend/main and cannot be resplit without rewriting refs the jury has fetched. Accepted for THIS sprint only. This one is a real remark, not a probe artifact: the fix is prospective — keep new commits under the 40-file limit so the window ages clean. WAIVING HIDES THIS FROM OUR REPORT, NOT FROM THE JURY.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-BULK@front",
+    "reason": "Published history, and the worst instance in either layer: 71ea1f84 is 71 files mixing 40 new binary assets, a deleted feature and 15 edited components in one unit. Cannot be resplit now. Accepted for THIS sprint only; the fix is prospective. A grader running `git log --stat` sees this whatever our probe says. WAIVING HIDES THIS FROM OUR REPORT, NOT FROM THE JURY.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-LANGUAGE@back",
+    "reason": "Published history: 14 Cyrillic against 46 Latin subjects inside the 60-commit window. Any minority fails the rule, and the mixed subjects are already pushed. Prospective fix only — pick one language and stay in it, and the window ages clean on its own.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
+  },
+  {
+    "id": "GIT-LANGUAGE@front",
+    "reason": "Published history: 15 Cyrillic against 45 Latin subjects. Same as GIT-LANGUAGE@back — prospective fix only.",
+    "expires": "2026-10-01",
+    "owner": "mm shkurin — agreed 2026-08-27 during /sprint-check"
   }
 ]

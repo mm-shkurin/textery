@@ -17,14 +17,14 @@ from document.create_document_from_generation import CreateDocumentFromGeneratio
 from document.export_document import ExportDocument
 from document.get_document import GetDocument
 from document.save_document import SaveDocument
-from dto.document.document_dtos import (
+from dto.document.create_document_from_generation_request_dto import (
     CreateDocumentFromGenerationRequestDto,
-    CreateDocumentRequestDto,
-    DocumentResponseDto,
-    SaveDocumentRequestDto,
 )
+from dto.document.create_document_request_dto import CreateDocumentRequestDto
+from dto.document.document_response_dto import DocumentResponseDto
 from dto.document.export_media_type import media_type_for
 from dto.document.get_document_response_dto import GetDocumentResponseDto
+from dto.document.save_document_request_dto import SaveDocumentRequestDto
 from router import api_routes
 from security.current_owner import get_current_owner_id
 from shared.exceptions import NotFoundException

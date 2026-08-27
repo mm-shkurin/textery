@@ -24,10 +24,20 @@ and a fail-open recorder has no use for the answer — a conflict here means the
 transition was already reported, which is success.
 
 `occurrence_key` is a DERIVED key when the emitter has a natural subject to derive
-one from (`uuid5` of the transition being reported), and NULL otherwise. Where it
-is present the partial unique index performs the collapse itself, so a completion
-reported twice from two instances stores one row (§9.3) without a read-then-insert
-that would race.
+one from (`uuid5` of the transition being reported), and NULL otherwise.
+
+**It does NOT deduplicate what this recorder writes, and an earlier version of this
+docstring claimed it did.** The unique index is
+`(visitor_id, occurrence_key) WHERE occurrence_key IS NOT NULL`, Postgres indexes
+are `NULLS DISTINCT` by default, and every server-emitted row passes
+`visitor_id=None` — so two rows carrying a NULL there are never equal to each other
+and the constraint cannot collapse them. `analytics_event_model` says the same in
+its own words: the index "governs client-origin rows only, and server-emitted dedupe
+stays a separate mechanism for the scenario that introduces it."
+
+The key is still carried, because it is what that later mechanism will key on and
+because the client-origin path genuinely relies on it. What a caller must NOT assume
+is that emitting the same transition twice from two instances stores one row.
 """
 
 import asyncio

@@ -4,7 +4,11 @@ from analytics.analytics_recorder import AnalyticsRecorder, NullAnalyticsRecorde
 from analytics.event_names import REGISTRATION_COMPLETED
 from auth.account import Account
 from auth.account_repository import AccountRepository
-from auth.account_verification_deps import AccountVerificationDependencies
+from auth.account_verification_deps import (
+    AccountVerificationDependencies,
+    already_verified,
+    invalid_or_expired,
+)
 from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
 from auth.verification_code_repository import VerificationCodeRepository
@@ -17,20 +21,28 @@ from shared.unit_of_work import UnitOfWork
 
 logger = logging.getLogger(__name__)
 
-# Why `execute` reads in the order it does.
-#
-# Both shape checks run BEFORE any repository lookup, so a malformed request costs
-# zero queries. Email is validated first: a request bad on both axes answers
-# INVALID_EMAIL, matching `RegisterUser`'s order.
-#
-# The registration event is emitted AFTER the transition is committed, and only on
-# the path that actually performed it. The already-verified branch returns before
-# reaching it, so confirming the same code twice records ONE registration (§8.2) --
-# and the derived occurrence key collapses two that race each other into one row
-# as well (§8.3).
-
 
 class VerifyAccount(AccountVerificationDependencies):
+    """Confirm an account with the code that was e-mailed to it.
+
+    Why `execute` reads in the order it does.
+
+    Both shape checks run BEFORE any repository lookup, so a malformed request costs
+    zero queries. Email is validated first: a request bad on both axes answers
+    INVALID_EMAIL, matching `RegisterUser`'s order.
+
+    The registration event is emitted AFTER the transition is committed, and only on
+    the path that actually performed it. The already-verified branch returns before
+    reaching it, so confirming the same code twice records ONE registration (§8.2).
+
+    The derived occurrence key is carried, but it does NOT collapse two emissions
+    that race each other: this event is emitted with `visitor_id=None`, the unique
+    index is `(visitor_id, occurrence_key)`, and Postgres treats NULLs as distinct —
+    so server-emitted dedupe is a separate mechanism, as
+    `analytics_event_model` says. The idempotency §8.2 relies on is the branch above,
+    not the index.
+    """
+
     VERIFICATION_FAILED_MESSAGE = (
         "Verification could not be completed due to an unexpected error. Please try again."
     )
@@ -59,12 +71,12 @@ class VerifyAccount(AccountVerificationDependencies):
         self._validate_code(code)
         account = await self._account_repository.find_by_email(normalized_email)
         if account is None:
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
         verification_code = await self._verification_code_repository.find_active_by_account_id(
             account.id
         )
         if verification_code is None:
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
 
         if account.is_verified:
             self._settle_an_already_verified_account(verification_code, code)
@@ -90,14 +102,14 @@ class VerifyAccount(AccountVerificationDependencies):
         idempotent success, not a 400.
         """
         if not verification_code.matches(code):
-            raise self._already_verified()
+            raise already_verified()
 
     def _refuse_unless_usable(self, verification_code: VerificationCode, code: str) -> None:
         """Wrong code and expired code answer identically -- neither confirms the other."""
         if not verification_code.matches(code):
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
         if self._clock.now() >= verification_code.expires_at:
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
 
     async def _apply_verification(
         self, account: Account, verification_code: VerificationCode

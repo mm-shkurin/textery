@@ -56,11 +56,7 @@ class CreateDocument:
     async def _recover_replay(self, owner_id: UUID, idempotency_key: str) -> DocumentCreationResult:
         """The unique constraint fired: this owner already used the key.
 
-        The rollback is load-bearing, not tidy-up. After an IntegrityError the
-        session is poisoned and the very next query raises PendingRollbackError --
-        so without it the re-read below fails and a legitimate retry 500s.
-        RegisterUser never hit this because it rolls back and *aborts*; here we
-        roll back and then *read*.
+        Why the rollback must come first: `DocumentCreation.created_or_recovered`.
         """
         await self._unit_of_work.rollback()
         existing = await self._document_repository.find_by_idempotency_key(

@@ -18,6 +18,7 @@ application → adapters → usecase → domain
 | `adapters/security` | Хеширование паролей (bcrypt), JWT, санитизация HTML (nh3). | `usecase` |
 | `adapters/generation_provider` | Интеграция с GigaChat и фейковый провайдер. | `usecase` |
 | `adapters/oauth_provider` | Вход через Yandex ID и фейковый провайдер. | `usecase` |
+| `adapters/geolocation_provider` | Определение страны по IP для аналитики. Никогда не бросает и не повторяет запрос: недоступный сервис оставляет колонку пустой, а регистрацию — целой. | `usecase` |
 | `adapters/rendering` | Экспорт документа: PDF (WeasyPrint), DOCX, Markdown→HTML. | `usecase` |
 | `application` | Точка входа и composition root — связывает всё вместе. | все модули |
 
@@ -136,6 +137,7 @@ docker run --rm -p 8000:8000 --env-file .env \
 | `GET /api/v1/documents/{id}` | Прочитать документ. | да |
 | `GET /api/v1/documents/{id}/export` | Выгрузить документ файлом (`?format=pdf` или `docx`). | да |
 | `PUT /api/v1/documents/{id}` | Сохранить содержимое (оптимистичная блокировка по `version`). | да |
+| `DELETE /api/v1/documents/{id}` | Удалить документ из истории. | да |
 | `GET /api/v1/projects` | Лента проектов: документы и генерации одним списком. | да |
 | `POST /api/v1/analytics/events` | Событие посещения. Единственная запись без токена: заголовок необязателен, но присутствующий и непригодный — отказ, а не анонимное событие. | нет |
 | `GET /health` | Готовность экземпляра: `200` — БД отвечает, `503` — нет. | нет |

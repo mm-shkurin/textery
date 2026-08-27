@@ -151,9 +151,7 @@ class CreateDocumentFromGeneration:
             somebody else's text under their own generation's name, so it is
             refused instead.
 
-        The rollback is load-bearing, not tidy-up: after an IntegrityError the
-        session is poisoned and the next query raises PendingRollbackError, so
-        without it this read fails and a legitimate replay 500s.
+        Why the rollback must come first: `DocumentCreation.created_or_recovered`.
         """
         await self._unit_of_work.rollback()
         existing = await self._document_repository.find_by_generation_id(owner_id, generation_id)

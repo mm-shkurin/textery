@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends
 
 from document.document_filter import DocumentFilter
 from document.list_documents import ListDocuments
-from dto.document.document_dtos import DocumentSummaryDto
+from dto.document.document_summary_dto import DocumentSummaryDto
 from dto.shared.page_dto import PageDto
 from dto.shared.query_int import exact_int
 from router import api_routes

@@ -1,3 +1,4 @@
+import { LandingSection } from './LandingSection'
 import { LandingCtaButton } from './LandingCtaButton'
 import landingSectionStyles from './LandingSection.module.css'
 import styles from './LandingCta.module.css'
@@ -28,10 +29,7 @@ const TILES = [
 ]
 export function LandingCta({ onPrimaryCtaClick }: LandingCtaProps) {
   return (
-    <section
-      className={`${landingSectionStyles['landing-section']} ${styles['landing-cta']}`}
-      data-testid="landing-cta"
-    >
+    <LandingSection testId="landing-cta" className={styles['landing-cta']}>
       <div className={styles['landing-cta-tiles']} aria-hidden="true">
         {TILES.map((tile) => (
           <img
@@ -71,6 +69,6 @@ export function LandingCta({ onPrimaryCtaClick }: LandingCtaProps) {
         testId="cta-primary-cta"
         label="Попробовать бесплатно"
       />
-    </section>
+    </LandingSection>
   )
 }

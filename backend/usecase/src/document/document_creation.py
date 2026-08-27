@@ -71,7 +71,10 @@ class DocumentCreation:
         creation routes recover by different reads and refuse with different codes.
         What is shared is the ORDER, and the order is the subtle part.
 
-        **The rollback inside a recovery is load-bearing, not tidy-up.** After an
+        **The rollback inside a recovery is load-bearing, not tidy-up**, and this is
+        the one place it is explained — both `recover` implementations point here
+        rather than restating it, because three wordings of one rule is how two of
+        them stop being true. After an
         IntegrityError the session is poisoned and the very next query raises
         `PendingRollbackError`, so a recovery that re-reads without rolling back
         first turns a legitimate replay into a 500. `RegisterUser` never hit this

@@ -3,6 +3,12 @@ import landingSectionStyles from './LandingSection.module.css'
 
 interface LandingSectionProps {
   testId: string
+  /**
+   * The section's own class, ADDED to the shared one, never replacing it — the same
+   * rule `LandingSectionHead` uses for its overrides, so a section cannot quietly
+   * drop out of the shared shell while still appearing to use it.
+   */
+  className?: string
   children: ReactNode
 }
 
@@ -10,12 +16,19 @@ interface LandingSectionProps {
  * The `<section>` shell every landing block opens with.
  *
  * `LandingSectionHead` already owns the eyebrow/title/lead inside it; this owns the
- * element around it, which six components had also written out by hand. Together
- * they mean a section is its content, and the shell it sits in is stated once.
+ * element around it, which five components had written out by hand. Together they
+ * mean a section is its content, and the shell it sits in is stated once.
+ *
+ * Five, not six: `LandingComparison` puts the same class on an inner `<div>` rather
+ * than on its `<section>`, because the dark band bleeds full-width while its content
+ * stays in the column. That is a different element doing a different job, and forcing
+ * it through here would mean an `as` prop — a shell that renders anything is not a
+ * shell.
  */
-export function LandingSection({ testId, children }: LandingSectionProps) {
+export function LandingSection({ testId, className, children }: LandingSectionProps) {
+  const shell = landingSectionStyles['landing-section']
   return (
-    <section className={landingSectionStyles['landing-section']} data-testid={testId}>
+    <section className={className ? `${shell} ${className}` : shell} data-testid={testId}>
       {children}
     </section>
   )

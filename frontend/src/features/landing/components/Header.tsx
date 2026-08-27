@@ -1,5 +1,5 @@
 import { Navbar } from '../../../shared/components/navbar/Navbar'
-import type { LandingChromeProps } from './landingChrome'
+import type { LandingChromeProps } from '../utils/landingChrome'
 import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 type HeaderProps = LandingChromeProps

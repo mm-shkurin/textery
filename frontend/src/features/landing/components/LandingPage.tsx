@@ -1,5 +1,5 @@
 import { Header } from './Header'
-import type { LandingChromeProps } from './landingChrome'
+import type { LandingChromeProps } from '../utils/landingChrome'
 import { LandingAdvantages } from './LandingAdvantages'
 import { LandingComparison } from './LandingComparison'
 import { LandingExport } from './LandingExport'

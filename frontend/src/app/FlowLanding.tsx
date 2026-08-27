@@ -1,14 +1,14 @@
 import { LandingPage } from '../features/landing/components/LandingPage'
+import type { LandingChromeProps } from '../features/landing/utils/landingChrome'
 import { TypeModal } from '../features/generation/components/TypeModal'
 import { type DocumentType } from '../shared/domain/documentTypes'
 
-interface FlowLandingProps {
+// The chrome props come from `LandingChromeProps` rather than being respelled here, which is the
+// whole point of that type: a sixth landing action has to break every forwarder that has not been
+// updated, and a hand-written copy in this file would compile while silently dropping it.
+// Required here, optional there — this component always has all four to give.
+interface FlowLandingProps extends Required<LandingChromeProps> {
   step: 'landing' | 'type'
-  isAuthenticated: boolean
-  onPrimaryCtaClick: () => void
-  onLoginClick: () => void
-  onLogoutClick: () => void
-  onHistoryClick: () => void
   onSelectType: (type: DocumentType) => void
   onClose: () => void
 }
