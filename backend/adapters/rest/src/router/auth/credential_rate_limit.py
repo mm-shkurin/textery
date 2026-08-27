@@ -6,13 +6,12 @@ guard itself is a usecase-layer object; this module only supplies it the route
 name and the caller's identity.
 """
 
-import hashlib
 from collections.abc import Awaitable, Callable
 
 from fastapi import Depends, Request
 
-from analytics.client_context import client_ip_of
 from auth.rate_limiting import CredentialRateGuard
+from security.client_source import hashed_client_source
 
 LOGIN_ROUTE = "login"
 REGISTER_ROUTE = "register"
@@ -28,17 +27,6 @@ def get_credential_rate_guard() -> CredentialRateGuard:
     instead, which is what keeps the fail-open from becoming silent.
     """
     return CredentialRateGuard()
-
-
-def hashed_client_source(request: Request) -> str:
-    """The rate-limit bucket's subject: the caller's address, one-way hashed.
-
-    Hashed because these counters must not become a permanent visitor log
-    (`03_Security_Tests.md` §5.2, §5.4): the limiter needs to tell two callers
-    apart, which a digest does, and never needs to know who either of them is.
-    """
-    client_ip = client_ip_of(request) or ""
-    return hashlib.sha256(client_ip.encode("utf-8")).hexdigest()[:32]
 
 
 def rate_limited(route: str) -> Callable[..., Awaitable[None]]:

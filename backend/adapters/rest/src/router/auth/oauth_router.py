@@ -31,6 +31,7 @@ from auth.oauth.start_oauth import StartOAuth
 from dto.auth.login_response_dto import LoginResponseDto
 from dto.auth.oauth_exchange_request_dto import OAuthExchangeRequestDto
 from router import api_routes
+from security.client_source import hashed_client_source
 
 logger = logging.getLogger(__name__)
 
@@ -57,26 +58,11 @@ def get_frontend_callback_url() -> str:
     raise NotImplementedError("wired by the application composition root")
 
 
-def client_source(request: Request) -> str:
-    """The caller identity the rate-limit buckets key on.
-
-    Behind the nginx proxy the real client IP is the rightmost X-Forwarded-For hop
-    (nginx appends `$remote_addr`); earlier hops are client-supplied and spoofable,
-    so the last entry is the one to trust. Falls back to the socket peer for a
-    direct connection. This is a best-effort abuse bound, not an auth boundary — no
-    security invariant rests on it.
-    """
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[-1].strip()
-    return request.client.host if request.client else "unknown"
-
-
 @router.get("/{provider}/start")
 async def start(
     provider: str,
     request: Request,
-    source: str = Depends(client_source),
+    source: str = Depends(hashed_client_source),
     usecase: StartOAuth = Depends(get_start_oauth_usecase),
 ) -> RedirectResponse:
     # The five `utm_*` are read off the query string rather than declared as
@@ -94,7 +80,7 @@ async def callback(
     request: Request,
     code: str = "",
     state: str = "",
-    source: str = Depends(client_source),
+    source: str = Depends(hashed_client_source),
     usecase: CompleteOAuthCallback = Depends(get_complete_oauth_callback_usecase),
     frontend_callback_url: str = Depends(get_frontend_callback_url),
 ) -> RedirectResponse:
@@ -121,7 +107,7 @@ async def callback(
 @router.post("/exchange", status_code=200, response_model=LoginResponseDto)
 async def exchange(
     request: OAuthExchangeRequestDto,
-    source: str = Depends(client_source),
+    source: str = Depends(hashed_client_source),
     usecase: ExchangeHandoffCode = Depends(get_exchange_handoff_code_usecase),
 ) -> LoginResponseDto:
     pair = await usecase.execute(request.code, source)
