@@ -18,7 +18,7 @@
 .verify-code-inputs input {
   width: 46px;
   height: 56px;
-  background: var(--blue-50);
+  background: var(--field-soft-bg);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -47,7 +47,7 @@
   transform: translate(-50%, -50%);
   width: 23px;
   height: 2px;
-  background: var(--neutral-900);
+  background: var(--field-soft-fg);
 }
 
 /* Wrong/expired code: red border on every box. Placed after :focus so an error box keeps the
@@ -66,7 +66,7 @@
   text-align: center;
   font-size: 15px;
   font-weight: 500;
-  color: var(--neutral-900);
+  color: var(--field-soft-fg);
 }
 
 .verify-resend button {
@@ -81,7 +81,7 @@
 }
 
 .verify-resend [data-testid='verify-resend-countdown'] {
-  color: var(--neutral-900);
+  color: var(--field-soft-fg);
   font-weight: 600;
 }
 

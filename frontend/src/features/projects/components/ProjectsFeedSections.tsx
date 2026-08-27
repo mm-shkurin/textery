@@ -2,6 +2,7 @@ import type { ProjectSummary } from '../api/projectsApi'
 import type { useProjectsFeed } from '../hooks/useProjectsFeed'
 import type { useRetryGeneration } from '../hooks/useRetryGeneration'
 import type { ProjectView } from '../hooks/useProjectView'
+import type { useProjectActions } from '../hooks/useProjectActions'
 import { ProjectsEmptyState } from './ProjectsEmptyState'
 import { ProjectsFeed } from './ProjectsFeed'
 import { ProjectsTable } from './ProjectsTable'
@@ -20,12 +21,14 @@ export const RECENT_COUNT = 4
 
 type Feed = ReturnType<typeof useProjectsFeed>
 type Retry = ReturnType<typeof useRetryGeneration>
+type Actions = ReturnType<typeof useProjectActions>
 
 interface ProjectsFeedSectionsProps {
   feed: Feed
   view: ProjectView
   searching: boolean
   retry: Retry
+  actions: Actions
   onOpen: (project: ProjectSummary) => void
   onCreateProject?: () => void
 }
@@ -87,9 +90,16 @@ export function ProjectsFeedSections({
   view,
   searching,
   retry,
+  actions,
   onOpen,
   onCreateProject,
 }: ProjectsFeedSectionsProps) {
+  // Одни и те же обработчики для рейла и полного списка: и там, и там это одна и та же строка.
+  const cardActions = {
+    onRename: actions.rename,
+    onDelete: actions.remove,
+    busy: actions.pendingId !== null,
+  }
   return (
     <>
       {feed.error !== null && <ProjectsErrorBlock message={feed.error} onReload={feed.reload} />}
@@ -110,12 +120,15 @@ export function ProjectsFeedSections({
               items={feed.items.slice(0, RECENT_COUNT)}
               onOpen={onOpen}
               testIdPrefix="recent"
+              actions={cardActions}
             />
           ) : (
             <ProjectsFeed
               items={feed.items.slice(0, RECENT_COUNT)}
               onOpen={onOpen}
               testIdPrefix="recent"
+              actions={cardActions}
+              actionError={actions.error}
             />
           )}
         </section>
@@ -140,7 +153,7 @@ export function ProjectsFeedSections({
             // ней не показывается: строка таблицы вмещает название, тип, дату и «···», а
             // «Повторить» со своими двумя селектами — блок высотой в карточку. Пользователь
             // видит кнопку, переключившись на сетку, где для неё есть место.
-            <ProjectsTable items={feed.items} onOpen={onOpen} />
+            <ProjectsTable items={feed.items} onOpen={onOpen} actions={cardActions} />
           ) : (
             <ProjectsFeed
               items={feed.items}
@@ -148,6 +161,8 @@ export function ProjectsFeedSections({
               onRetry={retry.retry}
               retryingId={retry.pendingId}
               retryError={retry.error}
+              actions={cardActions}
+              actionError={actions.error}
             />
           )}
         </section>

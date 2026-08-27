@@ -59,7 +59,7 @@ button.history-row {
 }
 
 button.history-row:hover {
-  background: var(--blue-50);
+  background: var(--field-soft-bg);
 }
 
 .history-row-title {

@@ -32,10 +32,34 @@ interface SiteFooterProps {
   variant?: 'slab' | 'strip'
 }
 
-function SiteFooterBrand() {
+function SiteFooterBrand({ variant }: Required<SiteFooterProps>) {
   return (
     <div className="site-footer-brand">
-      <img className={styles['site-footer-logo']} src="/design/logo-textery.svg" alt="Textery" />
+      {/* Слэб всегда тёмный, поэтому на нём стоит СВЕТЛЫЙ экспорт знака — тот же, что в шапке
+          тёмной темы. Раньше чёрный знак выворачивался фильтром `invert(1) brightness(1.8)`,
+          а инверсия синего глифа даёт жёлтый: логотип на слэбе был жёлто-чёрным вместо
+          сине-белого. Полоса (`strip`) живёт на поверхности приложения и следует теме — там
+          знаков два, и лишний прячет CSS. */}
+      {variant === 'slab' ? (
+        <img
+          className={styles['site-footer-logo']}
+          src="/design/logo-textery-dark.svg"
+          alt="Textery"
+        />
+      ) : (
+        <>
+          <img
+            className={`${styles['site-footer-logo']} ${styles['site-footer-logo-light']}`}
+            src="/design/logo-textery.svg"
+            alt="Textery"
+          />
+          <img
+            className={`${styles['site-footer-logo']} ${styles['site-footer-logo-dark']}`}
+            src="/design/logo-textery-dark.svg"
+            alt=""
+          />
+        </>
+      )}
       <p className={styles['site-footer-note']}>
         По всем вопросам, связанным с работой сервиса, вы можете связаться с поддержкой
       </p>
@@ -82,7 +106,7 @@ export function SiteFooter({ variant = 'slab' }: SiteFooterProps) {
       data-testid="site-footer"
     >
       <div className={styles['site-footer-inner']}>
-        <SiteFooterBrand />
+        <SiteFooterBrand variant={variant} />
         {variant === 'slab' && <SiteFooterColumns />}
       </div>
       <SiteFooterLegal />

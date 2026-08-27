@@ -77,7 +77,6 @@ export function DocumentGenerationFlow() {
         <ProjectsPage
           onOpenDocument={flow.openDocumentFromHistory}
           onCreateProject={flow.startFlow}
-          onBack={flow.backToLanding}
           onLogoutClick={flow.handleLogout}
         />
 

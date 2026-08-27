@@ -25,7 +25,7 @@ export function LandingTrustedBy() {
         <span aria-hidden="true" />
         <span aria-hidden="true" />
         <span aria-hidden="true" />
-        нам доверяют
+        Нам доверяют
       </p>
 
       <ul className={styles['trusted-logos']}>

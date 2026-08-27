@@ -87,7 +87,13 @@ export const BUDGETS = [
     // Raised from 13 with the landing redraw above: three new stylesheets (export, trusted-by,
     // card artwork) against one deleted, plus the frame's positioning for art that used to be an
     // empty grey well. Measured at 13.5 kB; 14 keeps the margin.
-    maxGzipKb: 14,
+    //
+    // Raised from 14 for the project actions menu (`ProjectCardMenu.module.css`): «···» stopped
+    // being a disabled placeholder and became a real popover with a rename form, and the card's
+    // flow layout for phones came with it. Measured at 14.0 kB — the number this raise is for is
+    // the FEATURE, not a build that would not go green: the entry JS came down 143 -> 108 kB in
+    // the same pass, and nothing was moved into the stylesheet to make room.
+    maxGzipKb: 15,
     why: 'the global stylesheet is render-blocking',
   },
   {

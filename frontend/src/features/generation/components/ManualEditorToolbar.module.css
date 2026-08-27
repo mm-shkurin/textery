@@ -60,6 +60,38 @@
   height: 20px;
 }
 
+/* Буквенные подписи показывают своё действие собой: иначе «B I S U» — четыре одинаковые
+   буквы, и какая из них что включает, приходится угадывать. */
+.edf-tool-heading {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.edf-tool-bold {
+  font-weight: 800;
+}
+
+.edf-tool-italic {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+}
+
+.edf-tool-underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.edf-tool-strike {
+  text-decoration: line-through;
+}
+
+/* Код — моноширинным и мельче: пара «<>» в основном шрифте читается как значок «меньше-больше»,
+   а не как кнопка кода. */
+.edf-tool-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
 .edf-divider {
   flex: none;
   width: 1px;

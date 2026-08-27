@@ -7,6 +7,7 @@ import { ProjectsPageHeader } from './ProjectsPageHeader'
 import { ProjectsFeedSections } from './ProjectsFeedSections'
 import { ProjectsPager } from './ProjectsPager'
 import { useRetryGeneration } from '../hooks/useRetryGeneration'
+import { useProjectActions } from '../hooks/useProjectActions'
 import type { ProjectSummary } from '../api/projectsApi'
 import './ProjectsPage.module.css'
 import projectsScreenStyles from './ProjectsScreen.module.css'
@@ -21,7 +22,6 @@ interface ProjectsPageProps {
   // data on screen.
   onOpenDocument?: (documentId: string, wireDocumentType: string) => void
   onCreateProject?: () => void
-  onBack?: () => void
   // Threaded from the flow rather than called here: signing out has to unwind the flow's step as
   // well as drop the tokens, and this screen knows nothing about either.
   onLogoutClick?: () => void
@@ -30,12 +30,15 @@ interface ProjectsPageProps {
 function ProjectsPageScreen({
   onOpenDocument,
   onCreateProject,
-  onBack,
   onLogoutClick,
 }: ProjectsPageProps = {}) {
   const feed = useProjectsFeed()
   const [view, setView] = useProjectView()
   const retry = useRetryGeneration(feed.markRetried)
+  // Лента перечитывается после успеха: сортировка и поиск живут на сервере, и переименованная
+  // строка может уехать на другую страницу — правка на месте показала бы её там, где сервер её
+  // больше не отдаёт.
+  const actions = useProjectActions(feed.reload)
 
   const searching = feed.q.trim() !== ''
 
@@ -59,7 +62,7 @@ function ProjectsPageScreen({
       <div className={projectsScreenStyles['projects-screen']}>
         <ProjectsNavbar onLogoutClick={onLogoutClick} />
 
-        <ProjectsPageHeader onBack={onBack} />
+        <ProjectsPageHeader />
 
         <ProjectsToolbar
           q={feed.q}
@@ -77,6 +80,7 @@ function ProjectsPageScreen({
           view={view}
           searching={searching}
           retry={retry}
+          actions={actions}
           onOpen={open}
           onCreateProject={onCreateProject}
         />

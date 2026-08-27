@@ -4,7 +4,7 @@ import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import { projectKey } from '../utils/projectKey'
 import { accentClass } from './projectAccent'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
-import { MoreIcon } from './ProjectsIcons'
+import { ProjectCardMenu, type ProjectActions } from './ProjectCardMenu'
 import styles from './ProjectsTable.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 
@@ -15,16 +15,19 @@ interface ProjectsTableProps {
   // rows the full list below it does, and two elements answering to one identity lookup is the
   // one thing a testid exists to prevent.
   testIdPrefix?: string
+  actions?: ProjectActions
 }
 
 function ProjectsTableRow({
   project,
   onOpen,
   namespaced,
+  actions,
 }: {
   project: ProjectSummary
   onOpen: (project: ProjectSummary) => void
   namespaced: (name: string) => string
+  actions?: ProjectActions
 }) {
   const openable = project.kind === 'document'
   const label = project.title ?? project.preview ?? documentTypeLabelFromWire(project.documentType)
@@ -69,16 +72,18 @@ function ProjectsTableRow({
         {formatCardDate(project.updatedAt)}
       </td>
       <td>
-        {/* Те же действия story 11, что и на карточке, и по той же причине недоступны. */}
-        <button
-          type="button"
-          className={styles['projects-row-more']}
-          aria-label="Действия над проектом"
-          title="Действия появятся позже"
-          disabled
-        >
-          <MoreIcon />
-        </button>
+        {/* То же меню, что на карточке: переименовать или удалить. У генерации его нет —
+            удалять и переименовать нечего. */}
+        {actions !== undefined && project.kind === 'document' && (
+          <ProjectCardMenu
+            documentId={project.id}
+            title={label}
+            testId={namespaced('project-card-menu')}
+            onRename={actions.onRename}
+            onDelete={actions.onDelete}
+            busy={actions.busy}
+          />
+        )}
       </td>
     </tr>
   )
@@ -92,7 +97,7 @@ function ProjectsTableRow({
  * Столбцы — это столбцы, поэтому `<table>`: скринридер объявляет заголовок колонки вместе со
  * значением, чего набор `<div>` с теми же рамками не даёт.
  */
-export function ProjectsTable({ items, onOpen, testIdPrefix }: ProjectsTableProps) {
+export function ProjectsTable({ items, onOpen, testIdPrefix, actions }: ProjectsTableProps) {
   const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
   return (
     <table
@@ -118,6 +123,7 @@ export function ProjectsTable({ items, onOpen, testIdPrefix }: ProjectsTableProp
             project={project}
             onOpen={onOpen}
             namespaced={namespaced}
+            actions={actions}
           />
         ))}
       </tbody>

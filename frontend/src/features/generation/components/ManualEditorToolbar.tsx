@@ -25,6 +25,19 @@ interface ManualEditorToolbarProps {
   editor: Editor | null
 }
 
+// Как выглядит буквенная подпись. Менеджер на проде не смог сказать, что делает каждая
+// кнопка: «B I S U» были нарисованы одним и тем же шрифтом, то есть подпись НАЗЫВАЛА
+// действие, но не показывала его. Теперь каждая буква нарисована тем начертанием, которое
+// сама и включает: B жирная, I курсивная, U подчёркнутая, S зачёркнутая, код — моноширинный.
+const LETTER_STYLE: Partial<Record<ToolbarActionKey, string>> = {
+  heading3: 'edf-tool-heading',
+  bold: 'edf-tool-bold',
+  italic: 'edf-tool-italic',
+  underline: 'edf-tool-underline',
+  strike: 'edf-tool-strike',
+  code: 'edf-tool-code',
+}
+
 // Which glyph replaces an action's text label. Only the actions whose label was a symbol are
 // listed: «⌫⊞», «+|», «―» and «⊞» meant nothing outside the file that wrote them, and the
 // toolbar read as debug output because of it. B / I / U / S / </> / H3 keep their letters —
@@ -71,7 +84,9 @@ export function ManualEditorToolbar({ editor }: ManualEditorToolbarProps) {
           const button = (
             <button
               type="button"
-              className={styles['edf-tool']}
+              className={`${styles['edf-tool']}${
+                LETTER_STYLE[action.key] ? ' ' + styles[LETTER_STYLE[action.key]!] : ''
+              }`}
               aria-label={action.ariaLabel}
               data-testid={action.testId}
               onClick={() => handleClick(action)}

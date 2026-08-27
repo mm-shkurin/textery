@@ -8,7 +8,7 @@ import { projectKey } from '../utils/projectKey'
 import styles from './ProjectCard.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 import { ProjectRetryControls } from './ProjectRetryControls'
-import { MoreIcon } from './ProjectsIcons'
+import { ProjectCardMenu, type ProjectActions } from './ProjectCardMenu'
 import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectCardProps {
@@ -20,6 +20,10 @@ interface ProjectCardProps {
   onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retrying?: boolean
   retryError?: string | null
+  // Переименовать / удалить. Приходят только там, где лента может себя перечитать — то есть
+  // от экрана, а не от карточки: сама карточка не знает, как обновить список под собой.
+  actions?: ProjectActions
+  actionError?: string | null
 }
 
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
@@ -32,6 +36,8 @@ function ProjectCardComponent({
   retrying = false,
   retryError = null,
   onRetry,
+  actions,
+  actionError = null,
 }: ProjectCardProps) {
   const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
   const openable = onOpen !== undefined && project.kind === 'document'
@@ -68,19 +74,19 @@ function ProjectCardComponent({
           >
             {documentTypeLabelFromWire(project.documentType)}
           </span>
-          {/* Меню за кнопкой — story 11 (переименовать / удалить / дублировать), у неё нет ни
-              спеки, ни эндпоинтов. Пока это кнопка без меню, поэтому она `disabled`: видимая
-              и явно недоступная честнее, чем та, что молча глотает нажатие. */}
-          <button
-            type="button"
-            className={styles['project-card-more']}
-            data-testid={namespaced('project-card-more')}
-            aria-label="Действия над проектом"
-            title="Действия появятся позже"
-            disabled
-          >
-            <MoreIcon />
-          </button>
+          {/* Действия над проектом. Только у документа: у генерации нет ни своего DELETE, ни
+              названия, которое можно править, поэтому кнопки там нет вовсе — отключённая
+              кнопка обещала бы меню, которого не будет. */}
+          {actions !== undefined && project.kind === 'document' && (
+            <ProjectCardMenu
+              documentId={project.id}
+              title={label}
+              testId={namespaced('project-card-menu')}
+              onRename={actions.onRename}
+              onDelete={actions.onDelete}
+              busy={actions.busy}
+            />
+          )}
         </div>
         {/* The whole card is the click target — that is what the ::after overlay on
             `.project-card-open` does — but the element that TAKES FOCUS and carries the
@@ -119,6 +125,15 @@ function ProjectCardComponent({
             onRetry={onRetry}
             namespaced={namespaced}
           />
+        )}
+        {actionError !== null && (
+          <p
+            className={styles['project-card-retry-error']}
+            data-testid={namespaced('project-card-action-error')}
+            role="alert"
+          >
+            {actionError}
+          </p>
         )}
         {retryError !== null && (
           <p

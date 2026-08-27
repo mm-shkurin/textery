@@ -180,6 +180,12 @@
      deliberately NOT overridden in dark, because they never were. */
   --bg-subtle: #f3f4f6;
   --bg-subtle-soft: #f9fafb;
+  /* Поля экранов авторизации: голубая подложка ввода и почти чёрный текст на ней. Роли, а не
+     сырые swatch'и `--blue-50` / `--neutral-900`, которые эти экраны брали напрямую: swatch не
+     имеет мнения о теме, поэтому в тёмной поле оставалось светло-голубым, а текст на нём —
+     светлым. Код подтверждения на тёмной теме читать было нечем. */
+  --field-soft-bg: var(--blue-50);
+  --field-soft-fg: var(--neutral-900);
   --danger: #dc2626;
 
   /* ManualEditor — the ProseMirror table surface. */

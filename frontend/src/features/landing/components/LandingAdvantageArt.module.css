@@ -98,6 +98,20 @@
 /* Below the two-column breakpoint the card is much narrower than 598, and art positioned as a
    share of it starts to overlap the copy. The composition is ornament; the claim is not. */
 @media (max-width: 900px) {
+  /* Арт перестаёт быть подложкой во всю карточку и становится её первым блоком: карточка на
+     телефоне — обычный поток (см. LandingAdvantages.module.css), и растянутый на всю площадь
+     рисунок ложился ПОД текст, из-за чего строки читались поверх картинки, а первая строка
+     обрезалась краем карточки. */
+  .art {
+    position: relative;
+    inset: auto;
+    height: 168px;
+    margin: -4px -8px 16px;
+    flex: none;
+    /* Рисунки нарочно вылетают за верх и правый край — клипается коробка арта, а не карточка. */
+    overflow: hidden;
+  }
+
   .art-skeleton {
     display: none;
   }

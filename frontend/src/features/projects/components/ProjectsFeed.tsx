@@ -2,6 +2,7 @@ import type { ProjectSummary } from '../api/projectsApi'
 import { ProjectCard } from './ProjectCard'
 import { projectKey } from '../utils/projectKey'
 import type { RetryOverrides } from '../api/retryGenerationApi'
+import type { ProjectActions } from './ProjectCardMenu'
 import projectsPageStyles from './ProjectsPage.module.css'
 
 interface ProjectsFeedProps {
@@ -14,6 +15,8 @@ interface ProjectsFeedProps {
   onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retryingId?: string | null
   retryError?: { id: string; message: string } | null
+  actions?: ProjectActions
+  actionError?: { id: string; message: string } | null
 }
 
 /**
@@ -30,6 +33,8 @@ export function ProjectsFeed({
   onRetry,
   retryingId = null,
   retryError = null,
+  actions,
+  actionError = null,
 }: ProjectsFeedProps) {
   return (
     <div
@@ -49,6 +54,10 @@ export function ProjectsFeed({
           // Scoped to the card that failed: a page-level banner would leave the user hunting for
           // which of twenty cards the sentence is about.
           retryError={retryError?.id === project.id ? retryError.message : null}
+          actions={actions}
+          // Как и ошибка повтора — на карточке, которой она касается: общий баннер заставил бы
+          // искать, о какой из двадцати строк речь.
+          actionError={actionError?.id === project.id ? actionError.message : null}
         />
       ))}
     </div>
