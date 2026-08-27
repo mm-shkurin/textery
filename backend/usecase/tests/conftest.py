@@ -2,6 +2,7 @@ import pytest
 
 from statements.analytics_ingest_statements import AnalyticsIngestStatements
 from statements.avatar_statements import AvatarStatements
+from statements.credential_rate_guard_statements import CredentialRateGuardStatements
 from statements.delete_account_statements import DeleteAccountStatements
 from statements.deletion_confirmation_statements import DeletionConfirmationStatements
 from statements.generation_lifecycle_statements import GenerationLifecycleStatements
@@ -174,3 +175,8 @@ def delete_account_statements():
 @pytest.fixture
 def deletion_confirmation_statements():
     return DeletionConfirmationStatements()
+
+
+@pytest.fixture
+def credential_rate_guard_statements():
+    return CredentialRateGuardStatements()

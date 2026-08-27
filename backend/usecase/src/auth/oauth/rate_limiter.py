@@ -1,32 +1,10 @@
 from datetime import datetime
-from typing import Protocol
 
 from auth.oauth.oauth_error_codes import OAUTH_RATE_LIMITED
+from auth.rate_limiting import AllowAllRateLimiter, RateLimiter
 from shared.exceptions import ValidationException
 
-
-class RateLimiter(Protocol):
-    """A shared, cross-instance abuse bound for the OAuth legs.
-
-    The count lives in a store all instances read, so a caller cannot dodge the
-    limit by landing on a different backend. Each hit is registered atomically —
-    the return says whether this hit is still inside the window's allowance.
-    """
-
-    async def register_hit(self, bucket_key: str, now: datetime) -> bool:
-        """Record one hit against the current window; True if within the limit."""
-        ...
-
-
-class AllowAllRateLimiter:
-    """The default when no store is wired (unit tests, in-process harness).
-
-    Never throttles. The real bound is a deployment concern supplied by the
-    composition root; a usecase constructed without one must still run.
-    """
-
-    async def register_hit(self, bucket_key: str, now: datetime) -> bool:
-        return True
+__all__ = ["AllowAllRateLimiter", "OAuthRateGuard", "RateLimiter"]
 
 
 class OAuthRateGuard:

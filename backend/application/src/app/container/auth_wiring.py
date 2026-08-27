@@ -11,6 +11,7 @@ from auth.delete_avatar import DeleteAvatar
 from auth.get_avatar import GetAvatar
 from auth.get_profile import GetProfile
 from auth.login_user import LoginUser
+from auth.rate_limiting import CredentialRateGuard
 from auth.refresh_access_token import RefreshAccessToken
 from auth.register_user import RegisterUser
 from auth.rename_account import RenameAccount
@@ -23,6 +24,11 @@ from container.runtime import request_scoped, token_service
 from hashing.bcrypt_password_hasher import BcryptPasswordHasher
 from session import SqlAlchemyUnitOfWork
 from shared.clock import SystemClock
+
+
+@request_scoped
+def create_credential_rate_guard(session: AsyncSession) -> CredentialRateGuard:
+    raise NotImplementedError()
 
 
 @request_scoped
