@@ -27,15 +27,33 @@ FastAPI, ни про SQLAlchemy, `usecase` объявляет порты, а р�
 
 ## Установка и запуск
 
+Порядок обязателен: база и переменные окружения нужны уже миграции, поэтому
+шаги 1–3 идут до `alembic`.
+
 ```bash
+# 1. База. Локальный запуск требует поднятого PostgreSQL и созданной базы.
+createdb textery                         # или: psql -c "CREATE DATABASE textery"
+
+# 2. Переменные окружения. Приложение читает ТОЛЬКО os.environ — ни одного
+#    load_dotenv в коде нет, и файл сам себя не подхватывает. `.env` читают
+#    docker compose и IDE; для запуска командами ниже его надо экспортировать.
+cp .env.example .env                     # и заполнить значения
+set -a && . ./.env && set +a             # POSIX; в PowerShell — задать вручную
+
+# 3. Зависимости.
 pip install -r requirements.txt          # только то, что нужно приложению
-alembic -c adapters/db/alembic.ini upgrade head        # применить миграции
-# PYTHONPATH — те же корни слоёв, что получает pytest из pyproject.toml.
-# Раньше их подкладывал сам main.py девятью sys.path.insert; теперь путь
-# сообщается интерпретатору, а не патчится приложением на импорте.
-# Разделитель — `:` на Linux/macOS и `;` в Windows (os.pathsep), поэтому
-# строка ниже для POSIX; в PowerShell — те же корни через `;`.
-export PYTHONPATH=domain/src:usecase/src:adapters/rest/src:adapters/db/src:adapters/security/src:adapters/generation_provider/src:adapters/oauth_provider/src:adapters/rendering/src:application/src
+
+# 4. PYTHONPATH — те же корни слоёв, что получает pytest из pyproject.toml и
+#    образ из `ENV PYTHONPATH` (`Dockerfile`). Все три списка обязаны совпадать:
+#    пропущенный корень — это ModuleNotFoundError на импорте composition root.
+#    Раньше их подкладывал сам main.py девятью sys.path.insert; теперь путь
+#    сообщается интерпретатору, а не патчится приложением на импорте.
+#    Разделитель — `:` на Linux/macOS и `;` в Windows (os.pathsep), поэтому
+#    строка ниже для POSIX; в PowerShell — те же корни через `;`.
+export PYTHONPATH=domain/src:usecase/src:adapters/rest/src:adapters/db/src:adapters/security/src:adapters/generation_provider/src:adapters/oauth_provider/src:adapters/geolocation_provider/src:adapters/rendering/src:application/src:application/src/app
+
+# 5. Миграции и запуск.
+alembic -c adapters/db/alembic.ini upgrade head
 uvicorn app.main:app --reload
 ```
 
@@ -51,14 +69,9 @@ pip install -r requirements-dev.txt
 причине джоб `audit` в CI проверяет уязвимости только по runtime-файлу — он
 отвечает на вопрос «уязвимо ли то, что мы деплоим».
 
-Локальный запуск требует поднятого PostgreSQL и созданной базы:
-
-```bash
-createdb textery                         # или: psql -c "CREATE DATABASE textery"
-cp .env.example .env                     # и заполнить значения
-```
-
-Проще — через Docker, тогда базу поднимать руками не нужно.
+Проще — через Docker, тогда ни базу, ни `PYTHONPATH`, ни экспорт переменных
+поднимать руками не нужно: образ несёт свой `ENV PYTHONPATH`, а compose читает
+`.env` сам.
 
 Команды выполняются из этого каталога (`backend/`). Корни слоёв интерпретатор
 получает из `PYTHONPATH` — из строки выше локально, из `ENV PYTHONPATH`
@@ -208,6 +221,7 @@ mypy --disallow-incomplete-defs domain/src usecase/src adapters/*/src applicatio
                             # то же по production-коду, но с запретом частично
                             # аннотированных сигнатур (см. джоб `types` в CI)
 python scripts/check_file_size.py   # лимит 200 строк на файл
+python scripts/sync_test_cases.py --check   # копии тест-кейсов не отстали от источника
 pip-audit -r requirements.txt   # уязвимости в том, что деплоится
 ```
 
@@ -294,7 +308,7 @@ CI держит покрытие не ниже 90% (`--cov-fail-under`); фак�
 ревью, поэтому «почему» живёт в теле сообщения коммита, а не в описании PR.
 Это осознанное решение при том, как здесь на самом деле идёт работа: по
 истории её ведёт один человек, а `git shortlog -sn -- .` показывает распределение
-468 к 8. PR-ревью между двумя участниками, из которых код пишет один, было бы
+476 к 8. PR-ревью между двумя участниками, из которых код пишет один, было бы
 церемонией без второго читателя. Роль ревью взяли на себя блокирующие гейты CI
 (линтер, форматирование, типы, лимит размера файла, актуальность тест-кейсов,
 `pip-audit`, порог покрытия 90%) — они прогоняются на каждом push, а не на

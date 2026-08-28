@@ -6,8 +6,9 @@ every choice lives in `container/`; this is the single place where the rest laye
 `raise NotImplementedError("wired by the application composition root")` stubs are
 replaced by the real thing.
 
-Imported by `main` AFTER it has set up sys.path, so the adapter packages below
-resolve.
+The adapter packages imported below resolve through PYTHONPATH, set by the image
+(`Dockerfile`) and by the documented local command -- `main.py` no longer patches
+`sys.path`, so import order here carries no meaning.
 """
 
 from fastapi import FastAPI
