@@ -30,7 +30,10 @@ describe('ProjectCard open affordance', () => {
 
   it('offers no way to open a card where the screen wired no handler', () => {
     render(<ProjectCard project={DOCUMENT} />)
-    expect(screen.queryByRole('button')).toBeNull()
+    // Именно ОТКРЫТИЯ нет — карточка теперь всегда несёт «···» (действия story 11, пока
+    // недоступные), поэтому «кнопок на карточке нет» больше не то же самое, что «открыть
+    // нельзя». Проверяем отсутствие контрола с названием документа.
+    expect(screen.queryByRole('button', { name: DOCUMENT.title! })).toBeNull()
     // The title is still shown — it is the card's content, not the control's label.
     expect(screen.getByTestId('project-card-title')).toHaveTextContent(DOCUMENT.title!)
   })

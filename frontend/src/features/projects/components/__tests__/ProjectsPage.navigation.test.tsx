@@ -38,18 +38,9 @@ describe('ProjectsPage navigation', () => {
     expect(onOpenDocument).not.toHaveBeenCalled()
   })
 
-  it('offers a way back when the host provides one', async () => {
-    mockFeed([DOCUMENT], 1)
-    const onBack = vi.fn()
-    renderProjectsPage({ onBack })
-
-    fireEvent.click(screen.getByTestId('projects-back'))
-    expect(onBack).toHaveBeenCalledTimes(1)
-  })
-
-  // Rendered from a route with nowhere to go back to, the button would be a dead end. Absent
-  // rather than disabled: there is no state in which it becomes available later.
-  it('draws no back button when the host provides no target', async () => {
+  // Кнопки «Назад» на этом экране нет: для авторизованного пользователя «Мои проекты» —
+  // домашний экран, а вела она на лендинг, то есть на витрину для того, кто уже вошёл.
+  it('draws no back button: this screen is the home of a signed-in user', async () => {
     mockFeed([DOCUMENT], 1)
     renderProjectsPage()
 

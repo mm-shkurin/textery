@@ -18,8 +18,14 @@ GENERATING_SURFACE = (By.CSS_SELECTOR, "[data-testid='generation-generating']")
 DOC_BODY = (By.CSS_SELECTOR, "[data-testid='doc-body']")
 DOC_ERROR = (By.CSS_SELECTOR, "[data-testid='doc-error']")
 
-# The full visible text of each generating surface, read off the built components rather than
-# a mockup.
+# The full visible text of the generating surface, read off the built component rather than a
+# mockup.
+#
+# ONE surface now, not two. The screen was redrawn against the customer's frame: the progress
+# panel that used to sit beside the document area is gone — the frame draws a single centred
+# block while a run is in flight — so both halves of the copy (what is happening and how long it
+# takes) are lines of that one block. `EXPECTED_GENERATING_PANEL_TEXT` and `GENERATION_FORM` went with
+# the panel they described.
 #
 # Both type-naming halves below are now COMPUTED, not literal: story 18 scenario 1.2 replaced the
 # hardcoded `доклад` with `generatingTitle(documentType)` / `writingProgressMessage(documentType)`
@@ -34,22 +40,6 @@ DOC_ERROR = (By.CSS_SELECTOR, "[data-testid='doc-error']")
 # the four generation states and they differ only by their copy, so a presence-only check
 # would pass on the idle placeholder — the one state that means the send never happened.
 EXPECTED_GENERATING_DOC_TEXT = (
-    "Готовим ваш доклад\nОбычно занимает 1–2 минуты — страница обновится автоматически"
-)
-
-# The left panel's Progress view. `ИИ пишет доклад` is rendered ONLY while pending — the
-# completed and failed branches replace it — so this is the second, independent witness that
-# the surface is the generating one. The typing-dots animation carries no text.
-#
-# The bare `✦` lines are each step's avatar (`Progress.ChatMsg`), which Selenium reports as its
-# own line because avatar and bubble are separate block children. They are kept in the expected
-# value rather than filtered out: `.text` is what the user sees, and the failed branch swaps the
-# same glyph for `✕`, so dropping them would discard a signal instead of noise.
-#
-# `ХОД ГЕНЕРАЦИИ` is upper-case because `.chat-panel h3` carries `text-transform: uppercase` and
-# Selenium reports RENDERED text — the source says `Ход генерации`. Worth stating: this is the
-# one layer that can see it. jsdom applies no CSS, so the renderer-level suite asserts the
-# source casing, and the two expected values legitimately differ for the same element.
-EXPECTED_GENERATING_PANEL_TEXT = (
-    "ХОД ГЕНЕРАЦИИ\n✦\nАнализирую тему и требования\n✦\nИИ пишет доклад"
+    "Готовим ваш доклад
+ИИ пишет доклад — обычно 1–2 минуты, страница обновится автоматически"
 )

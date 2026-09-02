@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 interface ProjectFolderIconProps {
   className?: string
 }
@@ -11,10 +13,21 @@ interface ProjectFolderIconProps {
 // Both paths paint with `currentColor`, so a document type is a colour token on the parent and
 // never a second copy of the geometry.
 export function ProjectFolderIcon({ className }: ProjectFolderIconProps) {
+  // Один id на экземпляр. Общий id схлопывается в первый градиент документа, и вся лента
+  // красится цветом первой карточки — ровно это и случилось в моке, пока id был константой.
+  const gradientId = useId()
   return (
     <svg className={className} viewBox="0 0 52 64" aria-hidden="true">
+      {/* Лист залит градиентом того же цвета типа: два стопа `currentColor` с разной
+          прозрачностью, поэтому тип остаётся ОДНИМ цветовым токеном, а не своей картинкой. */}
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="currentColor" stopOpacity=".78" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="1" />
+        </linearGradient>
+      </defs>
       <path
-        fill="currentColor"
+        fill={`url(#${gradientId})`}
         d="M4 8a6 6 0 0 1 6-6h20l18 18v36a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6V8z"
       />
       {/* The FOLD is the lighter of the two, not the sheet. The card shipped with the opacities

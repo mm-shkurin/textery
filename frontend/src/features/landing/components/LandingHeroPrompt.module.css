@@ -1,0 +1,73 @@
+/* The hero's prompt bar — node 1362:8223's `Button` frame: 797x96 at a 12px radius, 24/28
+   padding, holding an 18/22 placeholder and, against its right edge, the 197x48 black
+   `Сгенерировать` button (12px radius, 12/20 padding, a 23px icon and a 16/600 label).
+
+   Its own file, not a block inside `LandingHero.module.css`: the bar is the one interactive
+   thing on the first screen and it carries its own breakpoint behaviour, while everything
+   left in the hero sheet is decoration and type. */
+.hero-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 797px;
+  height: 96px;
+  margin: 44px auto 0;
+  padding: 24px 28px;
+  background: var(--bg-surface);
+  border-radius: 12px;
+}
+
+.hero-prompt-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 22px;
+  color: var(--text-primary);
+  padding: 0;
+}
+
+/* The design's placeholder is a flat grey, not the body colour at reduced opacity: on the white
+   bar those two are close, but an opacity is a different colour on every background it lands on
+   and this bar is white in one theme and a dark surface in the other. */
+.hero-prompt-input::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+.hero-prompt-button {
+  flex-shrink: 0;
+  width: 197px;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: var(--neutral-950);
+  color: var(--text-inverse);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 19px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hero-prompt-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .hero-prompt {
+    flex-wrap: wrap;
+    /* The 91px is the design's one-row bar. Once the button wraps under the field there are two
+       rows to hold, and a fixed height would crop the second one. */
+    height: auto;
+    padding: 12px;
+  }
+
+  .hero-prompt-button {
+    width: 100%;
+  }
+}

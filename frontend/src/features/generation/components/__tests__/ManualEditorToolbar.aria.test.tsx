@@ -60,13 +60,15 @@ describe('ManualEditorToolbar disclosure semantics (link button)', () => {
 describe('ManualEditorToolbar anchor-span wrapper (only for UI actions)', () => {
   // GREEN today — regression guard. Only the UI (link) button is wrapped in the
   // positioning-context span its popover needs; non-UI buttons render bare, so a
-  // formatting button's DOM parent is the toolbar row itself (the .me-toolbar DIV).
-  it('a non-UI button sits directly in the me-toolbar row (parent is the DIV, no span wrapper)', async () => {
+  // formatting button's DOM parent is the toolbar's own group DIV.
+  // The class moved with the frame redesign (me-toolbar -> edf-toolbar-group); what is
+  // guarded here is the ABSENCE of a wrapper span, not the name of the row.
+  it('a non-UI button sits directly in the toolbar row (parent is the DIV, no span wrapper)', async () => {
     await renderEditorWithDocumentCreated()
 
     const parent = screen.getByTestId('toolbar-bold').parentElement
     expect(parent?.tagName).toBe('DIV')
-    expect(parent?.classList.contains(manualEditorToolbarStyles['me-toolbar'])).toBe(true)
+    expect(parent?.classList.contains(manualEditorToolbarStyles['edf-toolbar-group'])).toBe(true)
   })
 
   // GREEN today — regression guard. The link button must STILL sit inside its

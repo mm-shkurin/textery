@@ -7,11 +7,9 @@ import { useDocumentSave } from '../hooks/useDocumentSave'
 import { useGeneratedDocumentInit } from '../hooks/useGeneratedDocumentInit'
 import { useAutosave } from '../hooks/useAutosave'
 import { useBeforeUnloadGuard } from '../hooks/useBeforeUnloadGuard'
-import { AppHeader } from '../../../shared/components/AppHeader'
 import { useManualEditorInstance } from '../hooks/useManualEditorInstance'
 import { ManualEditorToolbar } from './ManualEditorToolbar'
-import { ManualEditorBreadcrumb } from './ManualEditorBreadcrumb'
-import { ExportControl } from './ExportControl'
+import { ManualEditorTopbar } from './ManualEditorTopbar'
 import { ManualEditorErrorBanner } from './ManualEditorErrorBanner'
 
 // Re-exported: this was the message's home before the save machinery moved to useDocumentSave,
@@ -101,40 +99,27 @@ export function ManualEditor({
   })
 
   return (
-    <div className={styles['manual-editor-page']} data-testid="manual-editor">
-      <AppHeader />
-      <div className={styles['me-container']}>
-        <div className={styles['me-toolbar-row']}>
-          <ManualEditorBreadcrumb
-            documentTypeLabel={documentTypeLabel}
-            onBack={onBack}
-            showManualModeChip={!fromGeneration}
-          />
-          <ExportControl
-            documentId={documentId}
-            hasUnsavedChanges={hasUnsavedChanges}
-            save={save}
-          />
-        </div>
-        <div className={styles['me-editor-shell']}>
-          <ManualEditorToolbar
-            editor={editor}
-            documentId={documentId}
-            hasUnsavedChanges={hasUnsavedChanges}
-            isSaving={isSaving}
-            isRetryPending={isRetryPending}
-            hasFailedToInitialize={Boolean(initError)}
-            // save() REJECTS on failure so ExportControl can skip a stale export; the button has
-            // nothing to await it, so swallow the rejection (the banner was set before the rethrow).
-            onSave={() => void save().catch(() => {})}
-          />
-          {initError && <ManualEditorErrorBanner testId="me-init-error" message={initError} />}
-          {saveError && <ManualEditorErrorBanner testId="me-save-error" message={saveError} />}
-          <div className={styles['me-content-area']}>
-            <EditorContent editor={editor} />
-          </div>
-        </div>
-      </div>
+    <div className={styles['edf-page']} data-testid="manual-editor">
+      <ManualEditorTopbar
+        documentTypeLabel={documentTypeLabel}
+        showManualModeChip={!fromGeneration}
+        documentId={documentId}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSaving}
+        isRetryPending={isRetryPending}
+        hasFailedToInitialize={Boolean(initError)}
+        onBack={onBack}
+        onSave={() => void save().catch(() => {})}
+        save={save}
+      />
+      <ManualEditorToolbar editor={editor} />
+      {initError && <ManualEditorErrorBanner testId="me-init-error" message={initError} />}
+      {saveError && <ManualEditorErrorBanner testId="me-save-error" message={saveError} />}
+      {/* Лист — сам документ, а не карточка вокруг него: на фрейме текст лежит на белой
+          странице поверх серой подложки, и панель с полосой документа висят НАД ней. */}
+      <main className={styles['edf-sheet']}>
+        <EditorContent editor={editor} />
+      </main>
     </div>
   )
 }

@@ -1,8 +1,57 @@
 /* The closing block, `CTA` (node 1290:11260). Its heading is the hero's size — 44/53 — rather than
    the 36 the sections between them use: it is the page asking a second time, and the design gives
    it the same weight as the first ask. */
+/* The tiles are positioned as a share of the block, so the arc keeps its shape as the page
+   narrows instead of scattering. The block clips them: at the bottom of the arc they run off the
+   page in the frame too. */
+/* 880 tall in the frame, and the height is load-bearing: the arc is positioned as a share of the
+   block, so a block that collapses to the height of its own text pulls the tiles onto the words. */
 .landing-cta {
+  position: relative;
+  min-height: 780px;
+  padding-top: 200px;
   text-align: center;
+  overflow: hidden;
+}
+
+.landing-cta-tiles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.landing-cta-tile {
+  position: absolute;
+  width: 11.5%;
+  max-width: 220px;
+  aspect-ratio: 1;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.landing-cta-letter {
+  position: absolute;
+  bottom: 0;
+  width: 17%;
+  max-width: 380px;
+  object-fit: contain;
+}
+
+.landing-cta-letter-t {
+  left: 19%;
+  /* Figma stores this one at 175.6°, which on a symmetric letter reads as a mirror. */
+  transform: scaleX(-1);
+}
+
+.landing-cta-letter-at {
+  right: 19%;
+  transform: rotate(-11deg);
+}
+
+/* Above the art, or the heading sits behind the tiles that surround it. */
+.landing-cta > :not(.landing-cta-tiles) {
+  position: relative;
+  z-index: 1;
 }
 
 .landing-cta-title {
@@ -27,5 +76,16 @@
   .landing-cta-title {
     font-size: 30px;
     line-height: 36px;
+  }
+
+  /* Four tiles instead of ten: the arc is drawn for a 1920 block, and at phone width the rest of
+     it lands on top of the words. */
+  .landing-cta-tile:nth-child(n + 5),
+  .landing-cta-letter {
+    display: none;
+  }
+
+  .landing-cta-tile {
+    width: 22%;
   }
 }

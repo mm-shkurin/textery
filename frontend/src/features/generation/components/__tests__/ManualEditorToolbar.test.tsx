@@ -1,18 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ManualEditorToolbar } from '../ManualEditorToolbar'
 
 describe('ManualEditorToolbar', () => {
   it('disables every toolbar button when the editor instance is not yet ready', () => {
-    render(
-      <ManualEditorToolbar
-        editor={null}
-        documentId={null}
-        hasUnsavedChanges={false}
-        isSaving={false}
-        onSave={vi.fn()}
-      />,
-    )
+    render(<ManualEditorToolbar editor={null} />)
 
     expect(screen.getByTestId('toolbar-bold')).toBeDisabled()
     expect(screen.getByTestId('toolbar-strike')).toBeDisabled()
@@ -30,15 +22,7 @@ describe('ManualEditorToolbar', () => {
   // only the H3 heading level, and there is no dedicated "paragraph" toggle —
   // showing those would overstate what the editor supports. They stay removed.
   it('renders the supported block controls and omits the ones the schema cannot back', () => {
-    render(
-      <ManualEditorToolbar
-        editor={null}
-        documentId={null}
-        hasUnsavedChanges={false}
-        isSaving={false}
-        onSave={vi.fn()}
-      />,
-    )
+    render(<ManualEditorToolbar editor={null} />)
 
     for (const label of ['Заголовок 1', 'Заголовок 2', 'Абзац']) {
       expect(screen.queryByLabelText(label)).toBeNull()

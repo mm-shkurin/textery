@@ -36,7 +36,25 @@ export const BUDGETS = [
     // Production ships hashed names only (`[hash:base64:6]`, see vite.config.ts), which already
     // took 1.5 kB back out; the rest is what scoping costs. Measured at 139.2 kB; 141 keeps the
     // same narrow margin.
-    maxGzipKb: 141,
+    //
+    // Raised again from 141 for the landing's redraw against the Figma frame: the export section
+    // and the «нам доверяют» row are new components, and the feature cards gained their
+    // illustrations. All of it is markup and copy for the first screen a visitor sees, so none of
+    // it can be moved behind the lazy boundary — the split exists to keep the EDITOR out of this
+    // chunk, and a landing that loads after the landing is not a landing. One section was deleted
+    // in the same pass («примеры готовых работ», which the redrawn frame replaces), which is why
+    // the net is under a kilobyte. Measured at 141.9 kB; 143 keeps the same narrow margin.
+    //
+    // Raised again from 143 for the generation screen's redraw against the frame: the three-step
+    // rail, the «Что будет в документе?» summary and the waiting screen are new components on the
+    // one path a signed-in user takes to create anything, so none of them can move behind the
+    // lazy boundary — that boundary exists to keep the EDITOR out of this chunk, and a form that
+    // arrives after the form is not a form. Two components were deleted in the same pass
+    // (`Progress`, the transcript panel the frame does not draw, and `GenerationHeading`), which
+    // is why the net is 200 bytes rather than a kilobyte. No new dependency rode in: the editor's
+    // new glyphs (`EditorIcons`) land in the lazily-loaded chunk below.
+    // Measured at 143.2 kB; 144 keeps the same narrow margin.
+    maxGzipKb: 144,
     why: 'the entry chunk is what a first visit blocks on',
   },
   {
@@ -49,12 +67,42 @@ export const BUDGETS = [
     why: 'the editor chunk is lazily loaded, but only while it stays a chunk',
   },
   {
+    // react-markdown and its unified/remark stack, split out with `DocArea`. It renders exactly
+    // two states of the generation screen — a finished run whose text is empty, and a failure —
+    // because a finished run WITH text is intercepted by DocumentGenerationFlow and opens the
+    // editor instead. Paying 34 kB on every first visit for a branch most sessions never reach
+    // is what moving it here undid: the entry chunk went from 143.2 to 112.3 kB gzipped.
+    // What this budget guards is that it stays split; if someone imports DocArea eagerly the
+    // chunk disappears and the entry budget above catches the same regression from the other end.
+    pattern: /^DocArea-.*\.js$/,
+    maxGzipKb: 36,
+    why: 'the markdown renderer is lazily loaded, but only while it stays a chunk',
+  },
+  {
     pattern: /^index-.*\.css$/,
     // Raised from 12 with the same change: hashed module class names are longer than the
     // hand-written ones they replace, and there are more of them because a shared rule can no
     // longer be reused across slices by accident. Measured at 12.0 kB.
-    maxGzipKb: 13,
+    //
+    // Raised from 13 with the landing redraw above: three new stylesheets (export, trusted-by,
+    // card artwork) against one deleted, plus the frame's positioning for art that used to be an
+    // empty grey well. Measured at 13.5 kB; 14 keeps the margin.
+    //
+    // Raised from 14 for the project actions menu (`ProjectCardMenu.module.css`): «···» stopped
+    // being a disabled placeholder and became a real popover with a rename form, and the card's
+    // flow layout for phones came with it. Measured at 14.0 kB — the number this raise is for is
+    // the FEATURE, not a build that would not go green: the entry JS came down 143 -> 108 kB in
+    // the same pass, and nothing was moved into the stylesheet to make room.
+    maxGzipKb: 15,
     why: 'the global stylesheet is render-blocking',
+  },
+  {
+    // Rides along with the lazily-loaded DocArea: the markdown typography and the two
+    // placeholder surfaces are needed only when a finished-but-empty run or a failure is on
+    // screen. It used to sit in the global stylesheet, which every visitor waits for.
+    pattern: /^DocArea-.*\.css$/,
+    maxGzipKb: 2,
+    why: 'the markdown stylesheet rides along with the lazily-loaded DocArea',
   },
   {
     // Ships inside the editor chunk, so it costs nothing until a document is opened.

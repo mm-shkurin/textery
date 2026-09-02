@@ -42,10 +42,19 @@
   display: block;
 }
 
-/* The wordmark artwork is black, so on the dark slab it has to be lifted rather than swapped: the
-   dark export exists for the navbar, but it is drawn for a dark UI surface, not for this slab. */
-.site-footer-slab .site-footer-logo {
-  filter: invert(1) brightness(1.8);
+/* Полоса следует теме: чёрный знак на светлой поверхности, светлый — на тёмной. Ключ по
+   `[data-theme]`, а не по `prefers-color-scheme`: атрибут выставляется до первой отрисовки
+   скриптом в index.html, и сохранённый светлый выбор должен пережить тёмную настройку ОС. */
+.site-footer-logo-dark {
+  display: none;
+}
+
+:root[data-theme='dark'] .site-footer-logo-light {
+  display: none;
+}
+
+:root[data-theme='dark'] .site-footer-logo-dark {
+  display: block;
 }
 
 .site-footer-note {

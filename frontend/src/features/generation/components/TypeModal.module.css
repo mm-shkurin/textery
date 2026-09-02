@@ -9,6 +9,12 @@
 
 /* White, not the page wash: the modal in 788:5094 sits on a blurred copy of «Мои проекты» and is
    itself plain white, so the cards inside it are the only colour. */
+/* Подложка этой модалки нейтральная, а не голубая: голубая — приём экрана генерации, где за
+   ней размыт лендинг. Здесь за ней «Мои проекты», и синий вуалью красит весь экран. */
+.type-modal-backdrop {
+  background: var(--scrim-panel);
+}
+
 .type-modal-panel {
   /* The close button's containing block. It is pinned to the PANEL's top-right corner in the
      frame — above the title's line, not level with it — so it cannot hang off the header. */
@@ -19,6 +25,9 @@
      the panel read as sitting above them rather than as one more card. */
   border-radius: 24px;
   background: var(--bg-surface);
+  /* Тень, а не рамка: на фрейме панель отделена от размытой страницы мягким падением, и
+     hairline на белом фоне читался бы как ещё одна карточка. */
+  box-shadow: var(--shadow-dropdown);
   text-align: center;
 }
 
@@ -51,11 +60,15 @@
   border-radius: var(--radius-pill);
   border: none;
   background: none;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   /* The glyph the frame draws is 16 square, and «×» draws at roughly 0.43 of its font size, so
-     it takes 37px to reach that. The 32px round box around it is the click target. */
-  font-size: 37px;
-  line-height: 1;
+  /* Крестик рисуется штрихом, а не глифом «×»: у символа своя насыщенность на каждый шрифт,
+     и в 37px он выходил заметно жирнее фреймового. 16x16 при обводке 1.5 — то, что на фрейме. */
+}
+
+.type-modal-panel .close-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .type-modal-panel .modal-subtitle {
@@ -97,6 +110,12 @@
 @media (max-width: 640px) {
   /* Restated here because `.modal`'s own mobile padding in Modal.css has equal specificity to
      `.type-modal-panel` and loses only by import order — which is not a thing to rely on. */
+  /* Подложка этой модалки нейтральная, а не голубая: голубая — приём экрана генерации, где за
+   ней размыт лендинг. Здесь за ней «Мои проекты», и синий вуалью красит весь экран. */
+  .type-modal-backdrop {
+    background: var(--scrim-panel);
+  }
+
   .type-modal-panel {
     width: 100%;
     padding: 24px 16px;
@@ -105,5 +124,34 @@
   .type-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  /* Типографика на 360 на шаг ниже десктопной — так на мобильном фрейме: заголовок 20 против
+     24, подзаголовок 14 против 18 (и он там сознательно в две строки), «Учебные» 16 против 18.
+     Без этого шага панель на 360 читается как десктопная, сжатая до телефона. */
+  .type-modal-panel .modal-header h1 {
+    font-size: 20px;
+    line-height: 24px;
+  }
+
+  .type-modal-panel .modal-header {
+    padding-top: 12px;
+  }
+
+  .type-modal-panel .modal-subtitle {
+    font-size: 14px;
+    line-height: 18px;
+    margin-bottom: 20px;
+  }
+
+  .type-group-heading {
+    font-size: 16px;
+    line-height: 20px;
+    margin-bottom: 12px;
+  }
+
+  .type-modal-panel .close-btn {
+    top: 12px;
+    right: 12px;
   }
 }

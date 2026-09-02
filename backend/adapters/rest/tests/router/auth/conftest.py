@@ -67,3 +67,21 @@ def refresh_client(auth_app):
 def resend_client(auth_app):
     """Factory: `async with resend_client(mock_usecase) as client:`"""
     return _client_factory(auth_app, "get_resend_code_usecase")
+
+
+@pytest.fixture
+def rate_limited_login_client(auth_app):
+    """`login_client`, plus a guard whose counter is small enough to trip in a test.
+
+    The app-wide default guard never throttles -- the bound is a deployment
+    concern -- so a test that wants to observe the refusal has to supply the
+    store, exactly as the composition root does.
+    """
+    from credential_rate_limit_fixtures import CountingRateLimiter
+
+    from auth.rate_limiting import CredentialRateGuard
+    from router.auth import credential_rate_limit
+
+    guard = CredentialRateGuard(rate_limiter=CountingRateLimiter())
+    auth_app.dependency_overrides[credential_rate_limit.get_credential_rate_guard] = lambda: guard
+    return _client_factory(auth_app, "get_login_user_usecase")

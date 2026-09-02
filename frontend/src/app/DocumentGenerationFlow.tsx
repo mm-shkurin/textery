@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { DOCUMENT_TYPE_LABELS } from '../shared/copy/documentTypeCopy'
 import { ProjectsPage } from '../features/projects/components/ProjectsPage'
+import { TypeModal } from '../features/generation/components/TypeModal'
 import { LandingPage } from '../features/landing/components/LandingPage'
 import { ChatWorkspace } from '../features/generation/components/ChatWorkspace'
 import { ErrorBoundary } from '../shared/components/ErrorBoundary'
@@ -62,14 +63,25 @@ export function DocumentGenerationFlow() {
   // how one of them silently rots. `HistoryPage` and its hook stay in the tree — the deprecated
   // `GET /documents`/`GET /generations` endpoints they read still work, and removing the screen
   // is a separate decision from replacing its entry point.
-  if (step === 'history') {
+  // «/» splits on the session. The landing is the pitch for someone who has no account yet;
+  // a signed-in user has already read it, and showing it again buries the thing they came back
+  // for — their own projects — under a «Попробовать бесплатно» they cannot try for the first
+  // time twice. So the signed-in home IS «Мои проекты», and the type modal opens on top of it
+  // rather than on top of a landing nobody signed in to see.
+  const showsProjects =
+    step === 'history' || (isAuthenticated && (step === 'landing' || step === 'type'))
+
+  if (showsProjects) {
     return (
-      <ProjectsPage
-        onOpenDocument={flow.openDocumentFromHistory}
-        onCreateProject={flow.startFlow}
-        onBack={flow.backToLanding}
-        onLogoutClick={flow.handleLogout}
-      />
+      <>
+        <ProjectsPage
+          onOpenDocument={flow.openDocumentFromHistory}
+          onCreateProject={flow.startFlow}
+          onLogoutClick={flow.handleLogout}
+        />
+
+        {step === 'type' && <TypeModal onSelect={flow.selectType} onClose={flow.closeToLanding} />}
+      </>
     )
   }
 

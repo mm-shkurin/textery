@@ -1,9 +1,12 @@
+import { useMemo } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
 import type { useProjectsFeed } from '../hooks/useProjectsFeed'
 import type { useRetryGeneration } from '../hooks/useRetryGeneration'
 import type { ProjectView } from '../hooks/useProjectView'
+import type { useProjectActions } from '../hooks/useProjectActions'
 import { ProjectsEmptyState } from './ProjectsEmptyState'
 import { ProjectsFeed } from './ProjectsFeed'
+import { ProjectsTable } from './ProjectsTable'
 import projectsScreenStyles from './ProjectsScreen.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
 
@@ -19,12 +22,14 @@ export const RECENT_COUNT = 4
 
 type Feed = ReturnType<typeof useProjectsFeed>
 type Retry = ReturnType<typeof useRetryGeneration>
+type Actions = ReturnType<typeof useProjectActions>
 
 interface ProjectsFeedSectionsProps {
   feed: Feed
   view: ProjectView
   searching: boolean
   retry: Retry
+  actions: Actions
   onOpen: (project: ProjectSummary) => void
   onCreateProject?: () => void
 }
@@ -86,9 +91,25 @@ export function ProjectsFeedSections({
   view,
   searching,
   retry,
+  actions,
   onOpen,
   onCreateProject,
 }: ProjectsFeedSectionsProps) {
+  // Одни и те же обработчики для рейла и полного списка: и там, и там это одна и та же строка.
+  //
+  // `useMemo` здесь не оптимизация «на всякий случай», а условие, без которого работает вхолостую
+  // `memo(ProjectCard)`. Литерал объекта — новая ссылка на каждый рендер, а `memo` сравнивает
+  // пропсы поверхностно: карточка, получившая гарантированно новый `actions`, перерисовывается
+  // всегда, и обёртка не экономит ничего. Зависимости — ровно те три значения, которые объект и
+  // содержит, поэтому ссылка меняется тогда и только тогда, когда меняется поведение.
+  const cardActions = useMemo(
+    () => ({
+      onRename: actions.rename,
+      onDelete: actions.remove,
+      busy: actions.pendingId !== null,
+    }),
+    [actions.rename, actions.remove, actions.pendingId],
+  )
   return (
     <>
       {feed.error !== null && <ProjectsErrorBlock message={feed.error} onReload={feed.reload} />}
@@ -101,12 +122,25 @@ export function ProjectsFeedSections({
           data-testid="projects-recent"
         >
           <h2 className={projectsScreenStyles['projects-section-title']}>Недавние проекты</h2>
-          <ProjectsFeed
-            items={feed.items.slice(0, RECENT_COUNT)}
-            view="grid"
-            onOpen={onOpen}
-            testIdPrefix="recent"
-          />
+          {/* Рейл следует ВЫБРАННОМУ виду, а не всегда сетке: на фрейме «вид списком» шапка
+              столбцов стоит и над «Недавними проектами», и над «Всеми». Рейл, застрявший
+              карточками, дал бы на одном экране две разные формы одной и той же записи. */}
+          {view === 'list' ? (
+            <ProjectsTable
+              items={feed.items.slice(0, RECENT_COUNT)}
+              onOpen={onOpen}
+              testIdPrefix="recent"
+              actions={cardActions}
+            />
+          ) : (
+            <ProjectsFeed
+              items={feed.items.slice(0, RECENT_COUNT)}
+              onOpen={onOpen}
+              testIdPrefix="recent"
+              actions={cardActions}
+              actionError={actions.error}
+            />
+          )}
         </section>
       )}
 
@@ -124,14 +158,21 @@ export function ProjectsFeedSections({
               onClearSearch={() => feed.update({ q: '' })}
               onCreateProject={onCreateProject}
             />
+          ) : view === 'list' ? (
+            // Вид списком — таблица, а не те же карточки в одну колонку. Повтор генерации в
+            // ней не показывается: строка таблицы вмещает название, тип, дату и «···», а
+            // «Повторить» со своими двумя селектами — блок высотой в карточку. Пользователь
+            // видит кнопку, переключившись на сетку, где для неё есть место.
+            <ProjectsTable items={feed.items} onOpen={onOpen} actions={cardActions} />
           ) : (
             <ProjectsFeed
               items={feed.items}
-              view={view}
               onOpen={onOpen}
               onRetry={retry.retry}
               retryingId={retry.pendingId}
               retryError={retry.error}
+              actions={cardActions}
+              actionError={actions.error}
             />
           )}
         </section>

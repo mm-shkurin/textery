@@ -18,6 +18,7 @@ from container import (
     create_complete_oauth_callback,
     create_create_document,
     create_create_document_from_generation,
+    create_credential_rate_guard,
     create_delete_account,
     create_delete_avatar,
     create_delete_document,
@@ -61,6 +62,7 @@ from router.auth.avatar_router import (
     get_get_avatar_usecase,
     get_update_avatar_usecase,
 )
+from router.auth.credential_rate_limit import get_credential_rate_guard
 from router.auth.deletion_router import get_delete_account_usecase
 from router.auth.oauth_router import (
     get_complete_oauth_callback_usecase,
@@ -73,12 +75,12 @@ from router.auth.profile_router import (
     get_rename_account_usecase,
 )
 from router.document.document_deletion_router import get_delete_document_usecase
+from router.document.document_list_router import get_list_documents_usecase
 from router.document.document_router import (
     get_create_document_from_generation_usecase,
     get_create_document_usecase,
     get_export_document_usecase,
     get_get_document_usecase,
-    get_list_documents_usecase,
     get_save_document_usecase,
 )
 from router.generation.generation_router import (
@@ -124,6 +126,7 @@ def _override_generation(app: FastAPI) -> None:
 
 
 def _override_auth(app: FastAPI) -> None:
+    app.dependency_overrides[get_credential_rate_guard] = create_credential_rate_guard
     app.dependency_overrides[get_register_user_usecase] = create_register_user
     app.dependency_overrides[get_verify_account_usecase] = create_verify_account
     app.dependency_overrides[get_resend_code_usecase] = create_resend_code

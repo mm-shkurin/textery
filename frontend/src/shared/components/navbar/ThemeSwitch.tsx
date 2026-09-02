@@ -32,9 +32,12 @@ export function ThemeSwitch() {
     >
       {/* Both glyphs are always rendered, one on each end of the track, and the knob slides over
           the one that is active. Swapping a single glyph would make the control state the theme
-          it is IN, which reads to half of users as the theme it would switch TO. */}
-      <SunIcon />
+          it is IN, which reads to half of users as the theme it would switch TO.
+          Moon FIRST: the knob sits left in the light theme and right in the dark one, so this
+          order leaves the sun visible on a light page and the moon on a dark one — which is what
+          the frames draw. */}
       <MoonIcon />
+      <SunIcon />
       <span className={styles['theme-switch-knob']} aria-hidden="true" />
     </button>
   )

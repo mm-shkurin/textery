@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Textery — Генерация идёт (по фрейму)</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/theme-switch.css">
+  <link rel="stylesheet" href="css/navbar-placement.css">
+  <link rel="stylesheet" href="css/profile-menu.css">
+  <link rel="stylesheet" href="css/projects-toolbar.css">
+  <link rel="stylesheet" href="css/gen-form.css">
+  <link rel="stylesheet" href="css/gen-pending.css">
+</head>
+<body>
+  <!-- Что видит пользователь, пока идёт генерация. Шапка та же, что на шаге ввода темы;
+       всё остальное с экрана уходит: ни формы, ни сводки, ни шагов на фрейме здесь нет. -->
+  <div class="genform-page">
+    <div class="genform-container">
+      <div data-mock="gen-navbar"></div>
+
+      <div class="genpend" data-testid="generation-pending">
+        <span class="genpend-disc" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 2.5 11.9 8.1 17.5 10 11.9 11.9 10 17.5 8.1 11.9 2.5 10 8.1 8.1Z" />
+            <path d="M18 14.5 18.9 17.1 21.5 18 18.9 18.9 18 21.5 17.1 18.9 14.5 18 17.1 17.1Z" />
+          </svg>
+        </span>
+        <!-- Живая область: строка состояния меняется по ходу работы, поэтому её читает
+             скринридер, а точки рядом — декорация. -->
+        <p class="genpend-title" role="status">Анализируем задачу</p>
+        <p class="genpend-text">Подбираем структуру...</p>
+        <span class="genpend-dots" aria-hidden="true">
+          <span class="genpend-dot"></span>
+          <span class="genpend-dot"></span>
+          <span class="genpend-dot"></span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock-data.js"></script>
+  <script src="mock-gen-figma.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+/* Верхняя полоса редактора: выход назад, название документа, тип, статус сохранения,
+   «Сохранить» и «Скачать» с меню форматов. Отдельный файл от editor-figma.css — тот держит
+   страницу и лист, и вместе они выходят за 200 строк. */
+
+/* --- Полоса документа --- */
+
+.edf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 68px;
+  padding: 0 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--projects-edge);
+}
+
+/* «Назад», а не иконка дома: у компонента ровно одна навигация — `onBack`, и она ведёт
+   туда, откуда редактор открыли (лента проектов или экран генерации), а не всегда домой.
+   Подпись словом, потому что назначение зависит от того, как сюда попали. */
+.edf-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 36px;
+  padding: 0 12px 0 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.edf-back:hover {
+  background: var(--projects-well);
+}
+
+.edf-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Название — ТЕКСТ, а не поле ввода: переименования документа в контракте нет, название
+   приходит из генерации. Обрезается многоточием, потому что тема бывает длинной, а полоса
+   не должна переноситься. */
+.edf-title-static {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Тип документа — то же, что чип в хлебных крошках компонента: единственное на экране
+   подтверждение, что редактируется именно доклад. */
+.edf-chip {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-fg);
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 600;
+}
+
+/* Статус сохранения вместо счётчика слов: слова никто не считает, а состояние документа
+   компонент знает и обязан показывать — автосохранение иначе выглядит как бездействие. */
+.edf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--success);
+}
+
+.edf-status-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.edf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edf-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* «Сохранить» — на серой заливке без обводки, как на фрейме: действие частое, но не
+   главное, и рамка сделала бы его второй синей кнопкой. */
+.edf-btn-quiet {
+  border: none;
+  background: var(--projects-well);
+  color: var(--text-primary);
+}
+
+.edf-btn-primary {
+  border: none;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+/* Меню экспорта — два формата, которые умеет ExportControl. Открывается по кнопке; в моке
+   показано раскрытым, чтобы состояние было видно на скриншоте. */
+.edf-export {
+  position: relative;
+  flex: none;
+}
+
+.edf-btn-chevron {
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+}
+
+.edf-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  min-width: 132px;
+  padding: 6px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.edf-export-menu button {
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.edf-export-menu button:hover {
+  background: var(--projects-well);
+}
+
+@media (max-width: 720px) {
+  .edf-topbar {
+    height: 60px;
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  /* На 360 уходят чип типа и статус: название и два действия важнее, а строка одна. */
+  .edf-chip,
+  .edf-status {
+    display: none;
+  }
+
+  .edf-btn {
+    height: 36px;
+    padding: 0 14px;
+  }
+}

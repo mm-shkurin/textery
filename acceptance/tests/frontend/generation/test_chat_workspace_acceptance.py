@@ -22,6 +22,6 @@ class TestChatWorkspaceAcceptance(AbstractFrontendTest):
     def test_should_display_chat_workspace_initial_state(self, webdriver, app_url, chat_workspace_statements):
         chat_workspace_statements.navigate_to_chat_workspace_for_doklad(webdriver, app_url)
 
-        chat_workspace_statements.assert_chat_panel_is_visible(webdriver)
+        chat_workspace_statements.assert_generation_form_is_visible(webdriver)
         chat_workspace_statements.assert_topic_input_is_visible_and_empty(webdriver)
         chat_workspace_statements.assert_send_button_is_visible_and_disabled(webdriver)

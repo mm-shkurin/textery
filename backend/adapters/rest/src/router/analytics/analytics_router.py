@@ -15,7 +15,6 @@ Everything unusual about this route follows from that one fact:
   events from the account that produced them.
 """
 
-import hashlib
 import json
 from uuid import UUID
 
@@ -28,11 +27,11 @@ from analytics.analytics_error_codes import (
     REQUEST_BODY_TOO_LARGE_MESSAGE,
 )
 from analytics.analytics_payload import INVALID_PAYLOAD
-from analytics.client_context import client_ip_of
 from analytics.record_analytics_event import RecordAnalyticsEvent
 from analytics.transport_settings import max_body_bytes
 from dto.analytics.record_event_request_dto import RecordEventRequestDto
 from router import api_routes
+from security.client_source import hashed_client_source
 from security.current_owner import get_optional_owner_id
 from shared.exceptions import ValidationException
 
@@ -57,7 +56,7 @@ async def record_event(
         occurrence_key=reported.occurrence_key,
         payload=reported.payload,
         degraded=reported.degraded,
-        source=_source_of(request),
+        source=hashed_client_source(request),
     )
     # 204, not 202: the row is committed before this returns and is readable on
     # another connection by then, which is what makes the read-after-write
@@ -102,14 +101,3 @@ def _parsed(body: bytes) -> RecordEventRequestDto:
         raise ValidationException(
             message=INVALID_PAYLOAD_MESSAGE, error_code=INVALID_PAYLOAD
         ) from error
-
-
-def _source_of(request: Request) -> str:
-    """The rate-limit bucket's subject: the caller's address, one-way hashed.
-
-    Hashed because these counters must not become a permanent visitor log
-    (`03_Security_Tests.md` §5.2, §5.4): the limiter needs to tell two callers
-    apart, which a digest does, and never needs to know who either of them is.
-    """
-    client_ip = client_ip_of(request) or ""
-    return hashlib.sha256(client_ip.encode("utf-8")).hexdigest()[:32]

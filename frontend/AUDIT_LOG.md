@@ -482,3 +482,39 @@ Outstanding итерации 5, но то, что удерживает план�
 - The committer email on every frontend commit is `trape3977@g,ail.com`. Raised;
   the owner chose to leave it.
 
+
+## Iteration 7 — Score: 2.5 / 3.0 — 2026-08-27 — 413ba383
+### Fixed Issues:
+- Three stylesheets were over the repository's own 200-line hard cap and no gate caught them:
+  `LandingHero.module.css` (215), `LandingExport.module.css` (212), `tokens-light.css` (205).
+  Split by KIND, not by line count — the hero's prompt bar became `LandingHeroPrompt`, the
+  avatar stack became `LandingExportDiscs`, and the token sheet divided into semantic roles
+  plus `tokens-light-components.css`. `ARCH-SIZE-STYLE` is PASS.
+- Four colour literals the new landing work introduced are tokens: the comparison band's two
+  glows joined `--landing-comparison-head-bg`, and the hero grid's mask stop uses the
+  `--mask-opaque` token that already existed for exactly that. `ARCH-DESIGN-TOKENS`
+  (a grader regression item) is PASS.
+- `CHANGELOG.md` had gone 27 commits stale against a 25-commit limit, with the whole Figma
+  alignment absent from it. `DOC-CHANGELOG-FRESH` is PASS.
+- `tokenSheets.ts` reads both light sheets, because the browser sees one flat `:root`.
+
+## Iteration 8 — Score: 2.5 / 3.0 (confirmation, held) — 2026-08-27 — 4091e9d3
+### Fixed Issues:
+- Nothing further this iteration; the confirmation run reports the 200-line cap as genuinely
+  held, with the largest file in `src/` at exactly 200 lines.
+### Outstanding Blockers:
+- **A flaky test.** `ManualEditor.dirty.test.tsx` ("applying a toolbar format after a
+  successful save marks the document unsaved again") failed in a full-suite run with
+  `saveDocument` called twice, and passes in isolation both before and after this pass's
+  changes. Timing the suite does not control, not a regression from these edits.
+- `act(...)` warnings in the test output (e.g. `useFlowNavigation.documentType.test.tsx:41`)
+  — unwrapped state updates that pass today and signal the same uncontrolled timing.
+- `GIT-BULK` / `GIT-DIRECT-MAIN` / `GIT-LANGUAGE` — published history. `71ea1f84` alone is
+  71 files mixing 40 new binaries, a deleted feature and 15 edited components.
+- `SMELL-LONG-FUNC` (12 blocks) and `SMELL-DUPLICATION` (12 pairs) stand, on the reasoning
+  recorded on 2026-08-21: the 30-line threshold does not fit a hook with a dependency array,
+  and the duplication rule normalises string literals so two `.map` rows over a card collapse
+  into one "duplicate".
+- `package.json` is at `0.3.0` with no `v0.3.0` tag, so the changelog cannot be tied to a
+  commit range.
+- Bus factor 1 — 662 commits against 7, with no PR review surface by project policy.

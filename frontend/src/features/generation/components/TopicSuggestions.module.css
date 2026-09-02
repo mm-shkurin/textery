@@ -26,6 +26,9 @@
   padding: 6px 12px;
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
+  /* Токен теперь есть и в тёмной теме: раньше он был объявлен только в светлой, поэтому на
+     тёмном экране пилюля оставалась почти белой, а текст на ней — светлым. Подсказки тем
+     читались как пустые плашки. */
   background: var(--bg-subtle-soft);
   color: var(--text-primary);
   font: inherit;

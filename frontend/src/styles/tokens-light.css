@@ -89,6 +89,11 @@
   --auth-glow-strong: rgba(24, 131, 255, 0.35);
   --auth-glow-soft: rgba(24, 131, 255, 0.3);
   --scrim-modal: rgba(113, 183, 253, 0.55);
+  /* Вторая подложка — нейтральная. «Создание проекта» (788:5094) размывает страницу проектов
+     и обесцвечивает её почти до серого; голубой скрим генерации красил бы весь экран в синий
+     и был заметнее самой панели. Серая, а не белая: панель белая, на белой вуали она
+     растворяется — подложка обязана быть на шаг ТЕМНЕЕ панели. */
+  --scrim-panel: rgba(17, 24, 39, 0.12);
 
   /* The account avatar's gradient — Figma `Button/Container` (node 573:4506), the one gradient
      surface left in the UI. Not `--accent-gradient`: that resolves to the flat brand blues. */
@@ -125,62 +130,17 @@
      Distinct from `--input-placeholder-fg` above, which is the near-white used for a placeholder
      sitting ON a saturated field. */
   --input-placeholder: #6b7280;
+  /* The hairline of the grid the hero is drawn on (node 90:880, `Component 7`). Tinted with the
+     brand blue on the pale page and lifted to a white wash in dark, because a blue line on a
+     near-black background is invisible long before it is subtle. */
+  --hero-grid-line: rgba(0, 78, 224, 0.1);
+  /* The grey of a placeholder line inside an illustration — the «document being written» bars on
+     the feature cards and the unfilled dots of their progress cluster. Not `--border-*`: this is
+     a filled shape, and reusing a border colour for it made the bars vanish in dark. */
+  --skeleton-line: #ececee;
 
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-pill: 999px;
-
-  /* Component-scoped colours, moved here from the component sheets: a value written
-     beside the rule that uses it is a value the next screen retypes slightly differently. Names
-     keep their component prefix — they are specific, not general — but every colour in the
-     product is now declared in these two files. */
-
-  /* ProfileButtons */
-  --profile-danger-fg: #ff383c;
-
-  /* ProfileModal */
-  --profile-modal-line: #cbd5e1;
-  --profile-modal-scrim: rgba(15, 23, 42, 0.35);
-
-  /* ProfilePage */
-  --profile-page-bg: #f4f6fb;
-  --profile-row-fg: #6b7280;
-  --profile-card-line: #d9d9d9;
-
-  /* ProfileTheme */
-  --profile-track-bg: #f5f5f7;
-
-  /* ProjectsPage */
-  --projects-well: var(--bg-sunken);
-  --projects-edge: var(--border-hairline);
-
-  /* Mask stencil. NOT a colour: a mask reads only the alpha channel, so this is the "opaque" end
-     of a mask gradient — geometry, not paint. It is a token anyway so that no component sheet has
-     to carry a literal and no reader has to decide which literals are exceptions. Never theme it:
-     flipping it would punch the hole on the wrong side of the ring. */
-  --mask-opaque: #000;
-
-  /* Neutral greys that predate this file and were written as `var(--x, #hex)` fallbacks in the
-     component sheets — the var was never declared, so the hex is what actually rendered, in BOTH
-     themes. They are declared here at exactly those values so the move changes nothing; they are
-     deliberately NOT overridden in dark, because they never were. */
-  --bg-subtle: #f3f4f6;
-  --bg-subtle-soft: #f9fafb;
-  --danger: #dc2626;
-
-  /* ManualEditor — the ProseMirror table surface. */
-  --editor-cell-selected: rgba(99, 102, 241, 0.16);
-
-  /* HistoryDeleteModal */
-  --history-modal-scrim: rgba(17, 24, 39, 0.45);
-  --history-modal-shadow: 0 24px 48px rgba(17, 24, 39, 0.18);
-
-  /* LandingComparison — the table head inside the dark band. A true black, one step below
-     `--neutral-950` the band itself is drawn in, so the header reads as a deeper inset. */
-  --landing-comparison-head-bg: #000000;
-
-  /* ThemeSwitch — the knob's drop shadow. Keyed to the knob, which is a light disc in both
-     themes, so it does not flip. */
-  --theme-switch-knob-shadow: 0 1px 3px rgb(0 0 0 / 25%);
 }

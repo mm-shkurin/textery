@@ -1,0 +1,109 @@
+/* Карточка-сводка справа от формы генерации: тип документа, что будет в документе, и
+   замечание про редактирование. По фрейму «Создание "Тип документа"».
+
+   На фрейме её пункты — рыба («Заголовок / Описание»). Здесь они говорят то, что экран
+   действительно знает: структуру задаёт тип, объём и стиль берутся из полей слева. */
+
+.genform-side-type {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.genform-side-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--projects-well);
+  color: var(--text-divider);
+}
+
+.genform-side-tile svg {
+  width: 22px;
+  height: 22px;
+}
+
+.genform-side-caption {
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--text-divider);
+}
+
+.genform-side-name {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.genform-side-heading {
+  margin: 24px 0 14px;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+/* Пункты плана — точка нарисована как элемент, а не list-style: маркер на фрейме синий и
+   крупнее браузерного, а ::marker не принимает ни размер, ни выравнивание по первой строке. */
+.genform-side-list {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+
+.genform-side-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.genform-side-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.genform-side-item-title {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.genform-side-item-text {
+  display: block;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+/* Замечание внизу сводки — плашка, а не строка текста: на фрейме у неё своя заливка. */
+.genform-side-note {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--projects-well);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+@media (max-width: 720px) {
+  /* Под формой, а не рядом: сетка экрана уже одноколоночная, здесь остаётся только убрать
+     воздух, который был рассчитан на карточку высотой в полформы. */
+  .genform-side-heading {
+    margin: 20px 0 12px;
+  }
+
+  .genform-side-list {
+    gap: 12px;
+  }
+
+  .genform-side-note {
+    margin-top: 20px;
+  }
+}

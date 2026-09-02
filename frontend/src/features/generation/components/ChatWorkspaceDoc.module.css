@@ -1,12 +1,8 @@
-.doc-area {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 48px;
-  min-height: 420px;
-}
+/* Оформление результата генерации — готовый текст и ошибка. Экран ожидания и пустой экран
+   до отправки сюда больше не приходят: их рисуют GenerationPending и форма со сводкой,
+   поэтому спиннера и карточки `.doc-area` здесь нет — карточку даёт GenerationScreen. */
 
-.doc-area .doc-placeholder {
+.doc-placeholder {
   height: 100%;
   min-height: 324px;
   display: flex;
@@ -34,34 +30,6 @@
    that has nothing below it. */
 .doc-placeholder p + .cw-btn {
   margin-top: 24px;
-}
-
-.spinner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  margin: 0 auto 24px;
-  background: conic-gradient(var(--accent-start), var(--accent-end), transparent);
-  /* `--mask-opaque` is NOT a colour — a mask reads only the alpha channel, so it means "opaque
-     here". It is a token so this sheet holds no literal, and a theme-independent one so the
-     ring's SHAPE cannot follow the theme. */
-  -webkit-mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 6px),
-    var(--mask-opaque) calc(100% - 6px)
-  );
-  mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 6px),
-    var(--mask-opaque) calc(100% - 6px)
-  );
-  animation: cw-spin 1.1s linear infinite;
-}
-
-@keyframes cw-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .icon-circle {
@@ -95,16 +63,10 @@
   gap: 12px;
 }
 
-/* The desktop 48px of padding takes a third of a 360px screen. Everything here is the same
-   surface with less air around it — no layout is rearranged, because there is only one column
-   left by this width anyway (`.cw-layout` collapses at 768). */
+/* Тот же материал с меньшим количеством воздуха — раскладка не меняется, колонка на этой
+   ширине и так одна. Отступы карточки задаёт GenerationScreen, здесь только её содержимое. */
 @media (max-width: 768px) {
-  .doc-area {
-    padding: 24px 20px;
-    min-height: 0;
-  }
-
-  .doc-area .doc-placeholder {
+  .doc-placeholder {
     min-height: 220px;
   }
 

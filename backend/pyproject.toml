@@ -91,7 +91,7 @@ ignore = [
 # ARG002: AllowAllRateLimiter is the null object for the RateLimiter port. It
 # never throttles, so ignoring the bucket key and the clock is its whole
 # definition -- narrowing the signature would break the port instead.
-"usecase/src/auth/oauth/rate_limiter.py" = ["ARG002"]
+"usecase/src/auth/rate_limiting.py" = ["ARG002"]
 # ARG002: the same reason, four more times. Every analytics port ships a null
 # object that ignores its arguments BY DEFINITION -- a recorder that records
 # nothing, a writer that stores nothing, a geolocation that locates nothing, a

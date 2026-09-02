@@ -1,6 +1,7 @@
 import type { ProjectView } from '../hooks/useProjectView'
-import { SearchIcon, GridIcon, ListIcon } from './ProjectsIcons'
+import { SearchIcon, GridIcon, ListIcon, FilterIcon, SortIcon } from './ProjectsIcons'
 import projectsToolbarStyles from './ProjectsToolbar.module.css'
+import controlStyles from './ProjectsToolbarControls.module.css'
 
 // The five orders the contract allows, with the labels this screen shows for them. A table, not
 // a chain of conditions: the server refuses anything outside its allowlist, so a label added here
@@ -47,12 +48,10 @@ export function ProjectsSearchField({
   )
 }
 
-// A real <select>, styled down to the compact control the Figma toolbar draws, rather than the
-// icon-only button next to it there. The icon button in the design opens a sort SHEET that has no
-// spec, and the native element is what makes the five orders reachable by keyboard and by screen
-// reader today. The visible «Сортировка» label is gone — the toolbar is tight and the chosen
-// order is written in the closed select — so the name moves to `aria-label`, which is where it
-// has to be for a control with no visible text.
+// The frame draws an icon-only button here and opens a sort SHEET behind it. The sheet has no
+// spec, so what ships is a real <select> wearing that button: the element sits transparent on top
+// of the glyph, keeping the five orders reachable by keyboard and by screen reader, while the
+// button underneath is what the user sees. A div-and-popover would have to re-implement both.
 export function ProjectsSortSelect({
   sort,
   onSortChange,
@@ -61,8 +60,10 @@ export function ProjectsSortSelect({
   onSortChange: (sort: string) => void
 }) {
   return (
-    <div className={projectsToolbarStyles['projects-sort']}>
+    <div className={controlStyles['projects-sort']}>
+      <SortIcon className={controlStyles['projects-sort-glyph']} />
       <select
+        className={controlStyles['projects-sort-select']}
         data-testid="projects-sort"
         aria-label="Сортировка"
         value={sort}
@@ -75,6 +76,26 @@ export function ProjectsSortSelect({
         ))}
       </select>
     </div>
+  )
+}
+
+// The filter button the frame draws beside it. There is nothing behind it yet: neither
+// `GET /api/v1/generations` nor `GET /api/v1/documents` accepts a filter, so a working control
+// would be a promise the API cannot keep. It ships DISABLED rather than dead — a button that
+// swallows clicks in silence reads as a broken screen, one that is visibly unavailable reads as
+// a feature that has not arrived. It leaves with the story that adds filtering to the contract.
+export function ProjectsFilterButton() {
+  return (
+    <button
+      type="button"
+      className={controlStyles['projects-icon-button']}
+      data-testid="projects-filter"
+      aria-label="Фильтры"
+      title="Фильтры появятся позже"
+      disabled
+    >
+      <FilterIcon />
+    </button>
   )
 }
 

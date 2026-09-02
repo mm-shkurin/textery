@@ -9,10 +9,17 @@
 }
 
 /* A real <button> that looks like the title it wraps: the card must READ as a card and BEHAVE as
-   a button, and only the second half can be delegated to the platform. `display: inline` keeps it
-   inside the title's -webkit-box, so the two-line clamp above still counts its lines. */
+   a button, and only the second half can be delegated to the platform.
+
+   `display: inline` was WRONG and the comment here claimed the opposite: a button inside the
+   title's `-webkit-box` becomes a flex-ish child of that box, so the clamp counted ONE child
+   instead of two lines and every long title rendered three lines with no ellipsis. The clamp has
+   to live on the element that actually holds the text, so it moves here. */
 .project-card-open {
-  display: inline;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   appearance: none;
   margin: 0;
   padding: 0;
@@ -102,4 +109,59 @@
 .project-card-retry-select:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* Мобильная раскладка «Мои проекты» — фреймы 360px (пустой экран, сетка, поиск без
+   результатов). Всё, что отличается от десктопа только числом, живёт в media-блоках
+   своих файлов; здесь лежит то, чего на десктопе НЕТ вообще. */
+
+/* «···» на карточке. На десктопной сетке её нет — там действия живут в таблице вида
+   списком, — поэтому кнопка скрыта, а не отсутствует: разметка карточки одна на оба
+   размера, иначе мобильная и десктопная карточка разъедутся молча. */
+.project-card-more {
+  display: none;
+}
+
+.project-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .project-card-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    /* Выше кнопки в таблице: на телефоне это единственная цель для пальца на карточке,
+       44 — минимальный размер, который попадают без промаха. */
+    width: 32px;
+    height: 32px;
+    margin: -4px -4px -4px 0;
+    padding: 6px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .project-card-more svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Превью на мобильной карточке ниже десктопного: 140 против 128 при полной ширине —
+     иначе картинка растягивается в узкую полосу над текстом. */
+  .project-card-thumb {
+    height: 140px;
+  }
+
+  /* Название под бейджем, а не рядом: на 360 строка «бейдж + две строки заголовка» не
+     помещается, и заголовок начинает переноситься по одному слову. */
+  .project-card-title {
+    margin-top: 10px;
+  }
 }

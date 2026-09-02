@@ -1,3 +1,9 @@
+// The one class this file reaches for: the sort glyph's quiet arrow is a colour, and colours live
+// in the stylesheet. Imported rather than passed in — every caller would otherwise have to know it.
+import controlStyles from './ProjectsToolbarControls.module.css'
+
+const idleArrowClass = controlStyles['projects-sort-arrow-idle']
+
 // The glyphs «Мои проекты» needs that are not the folder on a card. Same justification as
 // `ProjectFolderIcon`: the project has no icon package installed (see package.json), adding a
 // dependency is not a styling change, and every shape below is primitive geometry — circles,
@@ -52,6 +58,47 @@ export function SparkleIcon({ className }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M10 2.5 11.9 8.1 17.5 10 11.9 11.9 10 17.5 8.1 11.9 2.5 10 8.1 8.1Z" />
       <path d="M18 14.5 18.9 17.1 21.5 18 18.9 18.9 18 21.5 17.1 18.9 14.5 18 17.1 17.1Z" />
+    </svg>
+  )
+}
+
+// The funnel on the toolbar's filter button.
+export function FilterIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4.5 6.2h15a1 1 0 0 1 .74 1.67l-5.1 5.6a1.5 1.5 0 0 0-.39 1v3.2a1 1 0 0 1-.55.9l-2.4 1.2a1 1 0 0 1-1.45-.9v-4.4a1.5 1.5 0 0 0-.39-1l-5.1-5.6A1 1 0 0 1 4.5 6.2Z" />
+    </svg>
+  )
+}
+
+// The two arrows on the sort control. The DOWN arrow is drawn in the border colour and the up one
+// in the glyph colour: the pair states a direction, and two equal arrows would state nothing.
+export function SortIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path
+        className={idleArrowClass}
+        stroke="currentColor"
+        d="M8 4.5v14m0 0-3.2-3.2M8 18.5l3.2-3.2"
+      />
+      <path stroke="currentColor" d="M16 19.5v-14m0 0-3.2 3.2M16 5.5l3.2 3.2" />
     </svg>
   )
 }

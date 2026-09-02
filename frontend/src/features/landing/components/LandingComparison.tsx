@@ -1,7 +1,7 @@
+import { LandingCtaButton } from './LandingCtaButton'
 import landingSectionStyles from './LandingSection.module.css'
 import { LandingSectionHead } from './LandingSectionHead'
 import styles from './LandingComparison.module.css'
-import navbarButtonsStyles from '../../../shared/components/navbar/NavbarButtons.module.css'
 
 // Figma `Desktop` → `Comparison` (node 1358:7627): a dark #161616 band carrying a 1160px table —
 // a header row of three 380px columns, then four rows separated by hairlines.
@@ -23,6 +23,10 @@ interface LandingComparisonProps {
 export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps) {
   return (
     <section className={styles.comparison} data-testid="landing-comparison">
+      <span className={styles['comparison-bg']} aria-hidden="true">
+        <span className={`${styles['comparison-glow']} ${styles['comparison-glow-left']}`} />
+        <span className={`${styles['comparison-glow']} ${styles['comparison-glow-right']}`} />
+      </span>
       <div className={`${landingSectionStyles['landing-section']} ${styles['comparison-inner']}`}>
         <LandingSectionHead
           eyebrow="Сравните сами"
@@ -60,18 +64,12 @@ export function LandingComparison({ onPrimaryCtaClick }: LandingComparisonProps)
           </tbody>
         </table>
 
-        {onPrimaryCtaClick !== undefined && (
-          <div className={styles['comparison-action']}>
-            <button
-              type="button"
-              className={navbarButtonsStyles['btn-light']}
-              data-testid="comparison-primary-cta"
-              onClick={onPrimaryCtaClick}
-            >
-              Попробовать бесплатно
-            </button>
-          </div>
-        )}
+        <LandingCtaButton
+          onClick={onPrimaryCtaClick}
+          wrapperClassName={styles['comparison-action']}
+          testId="comparison-primary-cta"
+          label="Попробовать бесплатно"
+        />
       </div>
     </section>
   )

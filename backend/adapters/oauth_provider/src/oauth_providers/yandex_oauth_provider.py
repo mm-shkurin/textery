@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 AUTHORIZE_URL = YANDEX.authorize
 TOKEN_URL = YANDEX.token
 INFO_URL = YANDEX.info
+TIMEOUT_SECONDS = YANDEX.timeout_seconds
 
 
 class YandexOAuthProvider:
@@ -38,7 +39,7 @@ class YandexOAuthProvider:
         return build_authorization_url(AUTHORIZE_URL, self._client_id, self._redirect_uri, state)
 
     async def fetch_identity(self, authorization_code: str) -> ProviderIdentity:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
             access_token = await self._exchange_code(client, authorization_code)
             return await self._read_identity(client, access_token)
 

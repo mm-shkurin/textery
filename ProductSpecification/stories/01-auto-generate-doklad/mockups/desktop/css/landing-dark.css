@@ -1,0 +1,89 @@
+/* Dark comparison table (1358:7627), FAQ (1097:12035), closing CTA (1290:11260). */
+.compare{position:relative; background:var(--dark); color:#fff;
+  margin-top:0; padding:0 var(--pad-x) 120px;}
+.compare::before{content:''; position:absolute; left:-240px; top:-184px; width:2400px;
+  height:500px; background:var(--dark); border-radius:50%; z-index:0;}
+.compare__glow{position:absolute; border-radius:50%; filter:blur(208px); opacity:.75;}
+.compare__glow--a{left:-199px; bottom:20px; width:1400px; height:653px; background:#120ecf;}
+.compare__glow--b{right:-100px; bottom:40px; width:797px; height:577px; background:#0239fe;}
+.compare__glow--c{left:-371px; top:60px; width:1222px; height:805px; background:#02d1fe;
+  filter:blur(260px); opacity:.35;}
+.compare > .section__title, .compare > .compare__wrap, .compare > .btn{
+  position:relative; z-index:1;}
+.compare .eyebrow, .compare .section__heading, .compare .section__lead{color:#fff;}
+.compare__table{width:1160px; border:1px solid rgba(255,255,255,.10); border-radius:var(--radius);
+  overflow:hidden;}
+.compare__row{display:grid; grid-template-columns:380px 390px 390px; align-items:center;
+  border-top:1px solid rgba(255,255,255,.10);}
+.compare__row:first-child{border-top:none;}
+.compare__row--head{height:72px; background:rgba(0,0,0,.40);}
+.compare__row--head > div{padding:16px 20px;}
+.compare__row--head > div:first-child{padding:6px 24px; font-size:20px; font-weight:600;}
+.compare__cell{display:flex; align-items:center; gap:8px; height:64px; padding:20px;
+  font-size:18px; font-weight:600;}
+.compare__cell--label{font-weight:500;}
+.compare__chip{display:inline-flex; align-items:center; height:40px; padding:10px 16px;
+  border-radius:var(--radius-s); font-size:16px; font-weight:500;}
+.compare__chip--own{background:var(--blue); color:#fff;}
+.compare__chip--rival{border:1px solid rgba(255,255,255,.10); color:#fff;}
+.compare__ok{color:var(--green);}
+.compare__no{color:var(--red);}
+.compare__highlight{position:absolute; left:380px; top:0; width:390px; height:100%;
+  border:1px solid var(--blue); border-radius:var(--radius); pointer-events:none;}
+.compare__wrap{position:relative; font-size:0;}
+.compare__wrap > *{font-size:18px;}
+
+.faq{position:relative; z-index:2; padding:80px 80px 80px var(--pad-x); gap:60px;}
+.faq .section__lead{font-size:27px; line-height:36px;}
+.faq > *{position:relative; z-index:1;}
+.faq__cards{display:flex; gap:15px; width:1700px;}
+.faq__col{display:flex; flex-direction:column; gap:15px; width:862px; align-self:flex-start;}
+.faq__card{padding:24px 24px 24px 30px; background:var(--surface); border:1.5px solid var(--line-soft);
+  border-radius:var(--radius); height:max-content;}
+.faq__card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:30px;
+  cursor:pointer; list-style:none;}
+.faq__card-head::-webkit-details-marker{display:none;}
+.faq__answer{margin-top:12px; font-size:18px; line-height:26px; color:var(--muted);}
+.faq__question{font-size:27px; font-weight:600; line-height:36px; color:var(--ink);
+  max-width:730px;}
+/* Плюс в свёрнутом состоянии, крестик в развёрнутом — как в макете. */
+.faq__toggle{flex:none; display:flex; align-items:center; justify-content:center;
+  width:48px; height:48px; font-size:36px; line-height:1; color:var(--dark);}
+.faq__toggle::before{content:'+';}
+.faq__card[open] .faq__toggle::before{content:'×';}
+
+.cta{position:relative; height:880px; overflow:hidden;}
+.cta__tiles{position:absolute; inset:0;}
+.cta__tiles img{position:absolute; width:220px; height:220px; border-radius:var(--radius-l);
+  object-fit:cover;}
+.cta__floor{position:absolute; left:-140px; top:780px; width:2200px; height:500px;
+  background:var(--dark); border-radius:50%;}
+.cta__letter{position:absolute; object-fit:contain;}
+/* Figma держит букву перевёрнутой на 175.6 deg — визуально это отражение по горизонтали. */
+.cta__letter--t{left:352px; top:538px; width:428px; height:430px; transform:scaleX(-1);}
+.cta__letter--at{left:1183px; top:557px; width:383px; height:383px; transform:rotate(-11deg);}
+.cta__info{position:absolute; left:601px; top:382px; width:719px; display:flex;
+  flex-direction:column; align-items:center; gap:28px; text-align:center;}
+.cta__title{font-size:44px; font-weight:600; line-height:48px; color:var(--ink);}
+.cta__title .accent{color:var(--blue);}
+.cta__pill{display:inline-block; vertical-align:-6px; width:68px; height:40px;
+  background:linear-gradient(90deg,#7a3bff,#ff2d8f); border-radius:20px; position:relative;}
+.cta__pill::after{content:''; position:absolute; right:4px; top:4px; width:32px; height:32px;
+  background:#fff; border-radius:50%;}
+.cta__subtitle{font-size:18px; line-height:24px; color:var(--muted); max-width:402px;}
+
+/* Футер — перенесён из frontend/src/shared/components/SiteFooter (variant slab, node 1362:8304). */
+.footer{background:var(--dark); color:#fff; padding:60px 0 40px;}
+.footer__inner, .footer__legal{width:min(1640px, 100% - 80px); margin:0 auto;}
+.footer__inner{display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap;}
+.footer__logo{height:45px; width:auto; display:block;}
+.footer__note{max-width:420px; margin-top:15px; font-size:18px; line-height:22px; opacity:.75;}
+.footer__columns{display:flex; gap:40px; flex-wrap:wrap;}
+.footer__column h2{font-size:14px; line-height:18px; font-weight:500; letter-spacing:.08em;
+  text-transform:uppercase; opacity:.6;}
+.footer__column ul{list-style:none; margin-top:12px; display:grid; gap:8px; font-size:16px;
+  line-height:22px; opacity:.8;}
+.footer__legal{display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap;
+  margin-top:40px; padding-top:24px; border-top:1px solid rgba(255,255,255,.2); font-size:16px;
+  line-height:22px;}
+.footer__links{display:flex; gap:24px; opacity:.75;}

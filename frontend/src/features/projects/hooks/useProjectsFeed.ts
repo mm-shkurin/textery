@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { listProjects, type ProjectSummary } from '../api/projectsApi'
 import { describeLoadFailure } from '../api/loadFailureMessages'
-import { mergeFeedParams, readFeedParams, type FeedParamsPatch } from './feedQueryParams'
+import { mergeFeedParams, readFeedParams, type FeedParamsPatch } from '../utils/feedQueryParams'
 import { projectsQueryKey, useProjectsFeedCache } from './useProjectsFeedCache'
 
 export { projectsQueryKey }

@@ -81,33 +81,10 @@
   cursor: pointer;
 }
 
-/* The list view is the same components in one column — switching re-renders data in hand. */
-.projects-view-list {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
+/* Вид списком — не эти же карточки в одну колонку, а таблица: ProjectsTable.module.css.
+   Прежние `.projects-view-list` правила удалены вместе с той раскладкой — фрейм
+   «Мои проекты — вид списком — вариант 1» рисует шапку столбцов, плитку, бейдж и «···». */
 
-.projects-view-list .project-card {
-  display: flex;
-  align-items: center;
-}
-
-.projects-view-list .project-card-thumb {
-  width: 96px;
-  height: 76px;
-  flex: none;
-}
-
-.projects-view-list .project-card-body {
-  padding: 10px 16px;
-}
-
-.projects-view-list .project-card-title {
-  -webkit-line-clamp: 1;
-}
-
-/* No way IN to the list view on mobile — the toggle is hidden — but a stored preference still
-   arrives as `view="list"`. The grid is what mobile shows, whatever the preference says. */
 @media (max-width: 720px) {
   /* 20 either side — `Main`'s padding in the 360px frame. */
   .projects-screen {
@@ -127,23 +104,6 @@
 
   .projects-section-title {
     margin-top: 28px;
-  }
-
-  .projects-view-list .project-card {
-    display: block;
-  }
-
-  .projects-view-list .project-card-thumb {
-    width: auto;
-    height: 128px;
-  }
-
-  .projects-view-list .project-card-body {
-    padding: 14px 16px 18px;
-  }
-
-  .projects-view-list .project-card-title {
-    -webkit-line-clamp: 2;
   }
 }
 
@@ -197,4 +157,11 @@
 .projects-pager button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* В светлой теме страница и карточка — одна белая поверхность, их разделяет волосяная рамка.
+   В тёмной так нельзя: карточка на фрейме на шаг СВЕТЛЕЕ страницы, и если холст красить тем же
+   `--bg-surface`, вся лента сливается в одно чёрное поле. */
+:root[data-theme='dark'] .projects-shell {
+  background: var(--bg-page);
 }

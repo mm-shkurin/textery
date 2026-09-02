@@ -1,13 +1,13 @@
 from uuid import UUID
 
 from document.document import Document
+from document.document_creation import DocumentCreation, validate_idempotency_key
 from document.document_creation_result import DocumentCreationResult
 from document.document_repository import DocumentRepository
 from document.document_type import DocumentType
-from document.idempotency_key import IdempotencyKey
 from shared.clock import Clock
 from shared.error_codes import ErrorCode
-from shared.exceptions import ConflictException, ValidationException
+from shared.exceptions import ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 
@@ -15,7 +15,6 @@ class CreateDocument:
     """Create an empty manual document. No LLM, no Generation, no polling."""
 
     INVALID_DOCUMENT_TYPE_MESSAGE = "Unsupported document type."
-    INVALID_IDEMPOTENCY_KEY_MESSAGE = "The Idempotency-Key header must be 1 to 128 characters."
     CREATION_FAILED_MESSAGE = "The document could not be created."
 
     def __init__(
@@ -27,6 +26,7 @@ class CreateDocument:
         self._document_repository = document_repository
         self._clock = clock
         self._unit_of_work = unit_of_work or NullUnitOfWork()
+        self._creation = DocumentCreation(document_repository, self._unit_of_work)
 
     async def execute(
         self, owner_id: UUID, document_type: str, idempotency_key: str
@@ -38,12 +38,9 @@ class CreateDocument:
             idempotency_key=idempotency_key,
             created_at=self._clock.now(),
         )
-        try:
-            await self._document_repository.save_new(document)
-        except ConflictException:
-            return await self._recover_replay(owner_id, idempotency_key)
-        await self._unit_of_work.commit()
-        return DocumentCreationResult(document=document, is_replay=False)
+        return await self._creation.created_or_recovered(
+            document, lambda: self._recover_replay(owner_id, idempotency_key)
+        )
 
     def _validate(self, document_type: str, idempotency_key: str) -> None:
         # Both validated before the insert so a bad request never touches the DB.
@@ -54,22 +51,12 @@ class CreateDocument:
                 error_code=ErrorCode.INVALID_DOCUMENT_TYPE,
                 message=self.INVALID_DOCUMENT_TYPE_MESSAGE,
             ) from error
-        try:
-            IdempotencyKey(idempotency_key)
-        except ValueError as error:
-            raise ValidationException(
-                error_code=ErrorCode.INVALID_IDEMPOTENCY_KEY,
-                message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE,
-            ) from error
+        validate_idempotency_key(idempotency_key)
 
     async def _recover_replay(self, owner_id: UUID, idempotency_key: str) -> DocumentCreationResult:
         """The unique constraint fired: this owner already used the key.
 
-        The rollback is load-bearing, not tidy-up. After an IntegrityError the
-        session is poisoned and the very next query raises PendingRollbackError --
-        so without it the re-read below fails and a legitimate retry 500s.
-        RegisterUser never hit this because it rolls back and *aborts*; here we
-        roll back and then *read*.
+        Why the rollback must come first: `DocumentCreation.created_or_recovered`.
         """
         await self._unit_of_work.rollback()
         existing = await self._document_repository.find_by_idempotency_key(

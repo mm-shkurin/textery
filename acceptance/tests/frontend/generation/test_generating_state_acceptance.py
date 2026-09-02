@@ -18,7 +18,8 @@ from tests.frontend.abstract_frontend_test import AbstractFrontendTest
 #
 # What the RED protocol did buy, both found by running it rather than reasoning about it, and both
 # invisible to the renderer-level suite:
-#   1. `.chat-panel h3` carries `text-transform: uppercase`, and Selenium reports RENDERED text —
+#   1. (Историческое) `.chat-panel h3` несла `text-transform: uppercase`, и Selenium читает
+#      РЕНДЕР — панели больше нет, экран ожидания перерисован по фрейму одним блоком —
 #      the panel reads `ХОД ГЕНЕРАЦИИ`, not the source's `Ход генерации`. jsdom applies no CSS, so
 #      this layer is the only one that can see it.
 #   2. `Progress.ChatMsg` puts its `✦` avatar on its own line in `.text`, so the panel's visible

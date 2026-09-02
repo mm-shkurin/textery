@@ -1,0 +1,25 @@
+/* Мобильная раскладка тулбара. Вынесена из projects-toolbar.css, который упёрся в лимит
+   200 строк после правок по фреймам; разбивка по брейкпоинту, а не по случайной границе. */
+
+/* Mobile, per frames 1141:12494 and 674:2534: the search row keeps its controls side by side, the
+   primary action drops to its own full-width row beneath them, and the view toggle is gone — the
+   board's note reads «в мобильной версии только сеткой вид карточек». It is HIDDEN rather than
+   unmounted so a user who rotates back to a wide viewport still has the view they chose. */
+@media (max-width: 720px) {
+  .projects-toolbar {
+    display: grid;
+    gap: 12px;
+  }
+
+  .projects-search {
+    max-width: none;
+  }
+
+  .projects-create-button {
+    width: 100%;
+  }
+
+  .projects-view-toggle {
+    display: none;
+  }
+}

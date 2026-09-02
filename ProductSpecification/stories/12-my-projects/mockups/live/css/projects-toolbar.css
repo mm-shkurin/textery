@@ -1,0 +1,181 @@
+/* The toolbar above the feed: search, sort, «Создать проект», and the grid/list toggle. Split out
+   of ProjectsScreen.css, which sits near the 200-line cap and owns the rest of the screen's chrome.
+   Drawn from the Figma frames 527:1863 (desktop) and 1141:12494 (mobile). Tokens from index.css. */
+
+/* Two groups, pushed apart: filters read left-to-right from the search box, actions sit against
+   the right edge. `space-between` rather than a margin-left auto on the second group — the
+   relationship is between the two, not a property of one of them. */
+.projects-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  /* The frame's toolbar `Container` is a 12/0-padded band 20 under the title block. */
+  margin: 20px 0 0;
+  padding: 12px 0;
+}
+
+.projects-toolbar-filters {
+  display: flex;
+  align-items: center;
+  /* 12 between the search field and the two icon controls, 20 between the primary action and the
+     view toggle — the frame gives the two groups different gaps and they are written out. */
+  gap: 12px;
+}
+
+.projects-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* `Inputs/Search input` is 184x48. Flexible rather than fixed so the row can shrink, but it no
+   longer grows past the design's width. */
+/* 224, не 184: плейсхолдер «Поиск проектов...» в 184 не помещается и обрезается на
+   последней точке — поле должно вмещать собственную подсказку целиком. */
+.projects-search {
+  flex: 1 1 224px;
+  max-width: 224px;
+}
+
+/* The magnifier sits INSIDE the field, so the field is the positioning context and the input gets
+   left padding wide enough to clear it. */
+.projects-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.projects-search-icon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* 48px tall, 12px radius, 14px text — the frame's `Inputs/Search input`. */
+.projects-search-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px 0 42px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.projects-result-count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Фильтр и сортировка — две иконочные кнопки 48x48 (`Dropdown/Icon only`, `Tabs/Sort`),
+   а не нативный `<select>`: на фрейме в тулбаре стоят именно они, а списки открываются
+   поповером. Одинаковая геометрия с полем поиска, чтобы ряд читался одной полосой. */
+.projects-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--projects-edge);
+  /* 16, как у кнопок на фрейме: при 12 квадрат читается жёстче соседнего поля поиска. */
+  border-radius: 16px;
+  background: var(--bg-surface);
+  /* Обводка hex D9D9D9 (`--projects-edge`), рисунок hex 464551. Второй берётся из
+     `--text-divider` — тем же токеном покрашена дата на карточке, где макет требует
+     ровно этот цвет. ВНИМАНИЕ: сам токен сейчас #454748, то есть на 1 шаг холоднее
+     макетного 464551; правим в `tokens-light.css` одним местом, а не литералом здесь. */
+  color: var(--text-divider);
+  cursor: pointer;
+}
+
+/* Верхняя стрелка сортировки тёмная, нижняя — цвета обводки: на фрейме пара показывает
+   НАПРАВЛЕНИЕ, а не два равных значка, и активное направление выделено цветом. */
+.projects-sort-arrow-idle {
+  stroke: var(--projects-edge);
+}
+
+.projects-icon-button:hover {
+  background: var(--projects-well);
+}
+
+/* 24 в кнопке 48 — на фрейме рисунок занимает половину кнопки; при 20 он выглядел
+   мелким рядом с 18px лупой в поле поиска. */
+.projects-icon-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* The screen's primary action, shared with the empty state's button so the two cannot drift into
+   two different blues. */
+/* `Buttons/Main+icon`: 48px tall, 12px radius, 32px side padding, 12px gap, 16/600 text. */
+.projects-create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 12px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.projects-create-button:hover {
+  background: var(--accent-hover);
+}
+
+.projects-create-sparkle {
+  width: 18px;
+  height: 18px;
+}
+
+/* A <fieldset>, so the three UA defaults it ships with are neutralised here: the groove border
+   (replaced below), the ~0.35em/0.75em padding, and `min-inline-size: min-content`, which would
+   stop the toggle from shrinking with the toolbar. Without these the group renders as a boxed
+   form section rather than as the segmented control the design draws. */
+.projects-view-toggle {
+  display: inline-flex;
+  margin: 0;
+  padding: 4px;
+  min-inline-size: 0;
+  gap: 2px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 12px;
+  background: var(--bg-surface);
+}
+
+.projects-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.projects-view-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* The chosen view is announced through aria-pressed, so the styling follows that state rather
+   than a class the markup would have to keep in step with it. */
+.projects-view-toggle button[aria-pressed='true'] {
+  background: var(--projects-well);
+  color: var(--text-primary);
+}

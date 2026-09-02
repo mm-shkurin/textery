@@ -1,176 +1,115 @@
-.me-toolbar {
+/* Панель форматирования редактора по фрейму: вторая белая полоса под полосой документа.
+   Отдельный файл от editor-figma.css — тот описывает страницу и лист, этот контролы, и
+   вместе они выходят за 200 строк. */
+
+.edf-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-surface-raised);
+  gap: 8px;
+  height: 60px;
+  padding: 0 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--projects-edge);
+  overflow-x: auto;
 }
 
-.me-toolbar-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
+/* Группа форматирования центрируется в полосе. `margin: auto` на группе, а не
+   `justify-content`: при прокрутке узкой полосы justify-content прижимает содержимое к
+   левому краю только после переполнения, а auto-отступы ведут себя предсказуемо в обоих
+   случаях. */
+.edf-toolbar-group {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex: none;
+  margin: 0 auto;
+}
+
+.edf-tool {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 15px;
   cursor: pointer;
-  font-family: inherit;
-  font-weight: 600;
+}
+
+.edf-tool:hover {
+  background: var(--projects-well);
+}
+
+.edf-tool[aria-pressed='true'] {
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-fg);
+}
+
+.edf-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.edf-tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Буквенные подписи показывают своё действие собой: иначе «B I S U» — четыре одинаковые
+   буквы, и какая из них что включает, приходится угадывать. */
+.edf-tool-heading {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.edf-tool-bold {
+  font-weight: 800;
+}
+
+.edf-tool-italic {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+}
+
+.edf-tool-underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.edf-tool-strike {
+  text-decoration: line-through;
+}
+
+/* Код — моноширинным и мельче: пара «<>» в основном шрифте читается как значок «меньше-больше»,
+   а не как кнопка кода. */
+.edf-tool-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;
 }
 
-.me-toolbar-btn:hover {
-  background: var(--bg-surface);
-}
-
-.me-toolbar-btn[aria-pressed='true'] {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-/* aria-expanded='true' highlights the link button while its popover is OPEN,
-   an orthogonal state from aria-pressed (cursor-in-link). Mirrors the pressed
-   declarations so an open popover reads as active even outside a link. */
-.me-toolbar-btn[aria-expanded='true'] {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-/* If a future action combines disabled + aria-pressed='true', add
-   background/color overrides here — same specificity as the pressed
-   rule above means source order wins, and the pressed highlight would
-   leak through at reduced opacity instead of reading as disabled. */
-.me-toolbar-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.me-toolbar-btn:disabled:hover {
-  background: transparent;
-}
-
-.me-toolbar-divider {
+.edf-divider {
+  flex: none;
   width: 1px;
-  height: 22px;
-  background: var(--border-subtle);
-  margin: 0 8px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--projects-edge);
 }
 
-.me-toolbar-status {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.me-save-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-fg);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.me-save-btn[aria-disabled='true'] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.me-save-spinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--border-swatch);
-  border-top-color: var(--btn-primary-fg);
-  animation: me-spin 0.7s linear infinite;
-}
-
-@keyframes me-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 768px matches the breakpoint ManualEditor.css already uses — the editor is one surface and
-   splitting it across two breakpoints would make the padding step at a different width than the
-   toolbar reflows. */
-@media (max-width: 768px) {
-  /* WRAP, not scroll. Seventeen 34px buttons plus dividers, the status text and the save button
-     are ~700px of content; at 375px they would push the toolbar's own width out and take the
-     page's horizontal scrollbar with them. The mobile mockup (04-editor-content.html:33) settles
-     this: `flex-wrap:wrap; gap:2px; padding:10px 12px`. Matched here rather than reinvented —
-     a horizontal-scroll toolbar would hide controls behind a gesture nobody is told about. */
-  .me-toolbar {
-    flex-wrap: wrap;
-    gap: 2px;
-    padding: 10px 12px;
+@media (max-width: 720px) {
+  .edf-toolbar {
+    height: 56px;
+    padding: 0 12px;
+    gap: 6px;
   }
 
-  /* `margin-left: auto` pushes the status to the far right on one line; once the toolbar wraps,
-     that same rule strands it alone on a line with the save button jammed against the edge.
-     Giving the block the full row instead keeps Сохранить reachable with a thumb and stops the
-     save status from being clipped mid-word. */
-  .me-toolbar-status {
-    margin-left: 0;
-    width: 100%;
-    justify-content: space-between;
-    padding-top: 6px;
-  }
-
-  /* 44px is the minimum comfortable touch target; the desktop button is a 34px mouse target and
-     the save action is the one control in this toolbar that loses work when mis-tapped. */
-  .me-save-btn {
-    min-height: 44px;
-  }
-}
-
-/* Phones, matching ManualEditor.css's 480 block. The 768 rules above make the toolbar wrap;
-   these make what it wraps into tappable. */
-@media (max-width: 480px) {
-  /* 34px is a mouse target. Formatting is applied to a selection the user is holding with a
-     thumb, so a mis-tap here costs them the selection as well as the click. 40px + a 4px gap
-     still fits eight buttons across 375px, so the toolbar gains rows rather than a scrollbar. */
-  .me-toolbar-btn {
-    width: 40px;
-    height: 40px;
-  }
-
-  .me-toolbar {
-    gap: 4px;
-    padding: 8px;
-  }
-
-  /* The dividers separate groups on one long desktop row. Once the row is three wrapped rows
-     they land in arbitrary places — a vertical rule mid-row that groups nothing — and each one
-     spends 17px of a width that has none to spare. The grouping they encode is not lost: the
-     wrap itself is now the visual break. */
-  .me-toolbar-divider {
-    display: none;
-  }
-
-  /* The status block is already full-width from the 768 block. Wrapping it too keeps a long
-     failure message ("Не удалось сохранить…") from squeezing Сохранить down to an ellipsis:
-     the message takes the row and the button drops beneath it, still full-size. */
-  .me-toolbar-status {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* Full-width because it is the last control before the user leaves the page, and a thumb
-     reaching the bottom-right corner of a phone is the least reliable reach on the screen. */
-  .me-save-btn {
-    flex: 1;
-    justify-content: center;
+  /* На узком экране панель прокручивается, а не переносится: перенос сделал бы её двумя
+     полосами и сдвинул лист вниз на треть экрана. */
+  .edf-toolbar-group {
+    margin: 0;
   }
 }

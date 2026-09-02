@@ -8,6 +8,7 @@ import { RUNTIME } from '../../../shared/config/runtime'
 import {
   generationReducer,
   IDLE_GENERATION,
+  type GenerationState,
   type GenerationUiState,
 } from '../utils/generationState'
 
@@ -27,17 +28,16 @@ const MAX_POLL_ATTEMPTS = RUNTIME.generationPollMaxAttempts
 // `shared/config/runtime` for the number.
 const MAX_CONSECUTIVE_POLL_FAILURES = RUNTIME.generationPollMaxConsecutiveFailures
 
-export interface UseGeneration {
-  state: GenerationUiState
-  content: string | null
-  // The id of the run currently being watched. Exposed because the completed generation has to be
-  // CONVERTED into a document before the editor can save anything, and that conversion
-  // (`POST /documents/from-generation`) takes the id — not the text. Null until `submit` gets the
-  // POST's response back, which is also the moment polling starts.
-  generationId: string | null
-  volumePages: number | null
-  createdAt: string | null
-  error: string | null
+// Exactly `GenerationState` plus the two things a caller can DO with it, rather than the six
+// fields written out a second time. The reducer's state IS what the hook returns — respelling it
+// here let the two drift, and a field added to the reducer and forgotten here is invisible to
+// every consumer that would have used it.
+//
+// `generationId` is exposed because a completed generation has to be CONVERTED into a document
+// before the editor can save anything, and that conversion (`POST /documents/from-generation`)
+// takes the id, not the text. It is null until `submit` gets the POST's response back, which is
+// also the moment polling starts.
+export interface UseGeneration extends GenerationState {
   // The document type the user picked travels with the topic: it is the ONE field that carries
   // that choice to the backend, and dropping it here would generate a доклад whatever card was
   // pressed. Optional for the same read-only-tests reason as createGeneration's parameter.

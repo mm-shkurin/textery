@@ -8,14 +8,20 @@ additive rather than a contract change.
 Named constants rather than literals at the raise sites: each one is also a key
 in the rest layer's status map, and a typo'd literal there answers 400 for a
 code that was meant to be 429 -- silently, since the default is 400.
+
+The codes are `ErrorCode` members bound under this slice's names. The module stays
+because it owns the MESSAGES below; what it no longer owns is a second vocabulary
+of bare strings feeding the same status map as the enum.
 """
 
-UNKNOWN_EVENT_NAME = "UNKNOWN_EVENT_NAME"
-INVALID_VISITOR_ID = "INVALID_VISITOR_ID"
-INVALID_OCCURRENCE_KEY = "INVALID_OCCURRENCE_KEY"
-OCCURRENCE_KEY_CONFLICT = "OCCURRENCE_KEY_CONFLICT"
-RATE_LIMITED = "RATE_LIMITED"
-REQUEST_BODY_TOO_LARGE = "REQUEST_BODY_TOO_LARGE"
+from shared.error_codes import ErrorCode
+
+UNKNOWN_EVENT_NAME = ErrorCode.UNKNOWN_EVENT_NAME
+INVALID_VISITOR_ID = ErrorCode.INVALID_VISITOR_ID
+INVALID_OCCURRENCE_KEY = ErrorCode.INVALID_OCCURRENCE_KEY
+OCCURRENCE_KEY_CONFLICT = ErrorCode.OCCURRENCE_KEY_CONFLICT
+RATE_LIMITED = ErrorCode.RATE_LIMITED
+REQUEST_BODY_TOO_LARGE = ErrorCode.REQUEST_BODY_TOO_LARGE
 
 # Fixed, input-free messages. This is the product's only tokenless write, so its
 # refusals reach anyone who can reach the internet -- echoing the rejected value

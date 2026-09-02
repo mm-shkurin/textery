@@ -1,3 +1,4 @@
+import { SearchIcon } from './ProjectsIcons'
 import styles from './ProjectsEmptyState.module.css'
 import projectsToolbarStyles from './ProjectsToolbar.module.css'
 
@@ -28,6 +29,11 @@ export function ProjectsEmptyState({
   if (searching) {
     return (
       <div className={styles['projects-empty']} data-testid="projects-empty-search">
+        {/* Плитка с лупой, а не рисунок пустого ящика: это состояние про ЗАПРОС, и картинка
+            «работ пока нет» соврала бы пользователю, у которого их двадцать. */}
+        <span className={styles['projects-empty-glyph']} aria-hidden="true">
+          <SearchIcon />
+        </span>
         <p className={styles['projects-empty-title']}>Ничего не найдено.</p>
         <button
           type="button"

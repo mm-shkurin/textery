@@ -1,14 +1,15 @@
 import { memo } from 'react'
 import type { ProjectSummary } from '../api/projectsApi'
-import { documentTypeFromWire, type DocumentType } from '../../../shared/domain/documentTypes'
 import { documentTypeLabelFromWire } from '../../../shared/copy/documentTypeCopy'
 import { ProjectFolderIcon } from './ProjectFolderIcon'
+import { accentClass } from './projectAccent'
 import { formatCardDate } from '../../../shared/lib/formatCardDate'
 import { projectKey } from '../utils/projectKey'
 import styles from './ProjectCard.module.css'
 import projectsPageStyles from './ProjectsPage.module.css'
-import projectsScreenStyles from './ProjectsScreen.module.css'
 import { ProjectRetryControls } from './ProjectRetryControls'
+import { type ProjectActions } from './ProjectCardMenu'
+import { ProjectRowMenu, ProjectTypeBadge } from './ProjectRowMenu'
 import type { RetryOverrides } from '../api/retryGenerationApi'
 
 interface ProjectCardProps {
@@ -20,29 +21,10 @@ interface ProjectCardProps {
   onRetry?: (generationId: string, overrides?: RetryOverrides) => void
   retrying?: boolean
   retryError?: string | null
-}
-
-// The mockup tints each card by document type — badge fill, badge text and folder glyph move
-// together — so the type picks ONE accent name and the stylesheet owns the three colours. Written
-// as a table rather than a chain of ternaries because it is exhaustive on DocumentType: adding a
-// type without an accent is a compile error here, in the file that has to know.
-// Read off the Figma frame «Мои проекты - вид сетка - вариант 1 (Dekstop)» (node 484:1104), one
-// accent per type — эссе is coral there, not teal. It shipped as teal, which gave эссе and
-// сочинение the same badge and the same folder: two document types a user cannot tell apart at a
-// glance is exactly the confusion the tint exists to prevent.
-const ACCENT_BY_TYPE: Record<DocumentType, string> = {
-  referat: 'blue',
-  doklad: 'purple',
-  sochinenie: 'teal',
-  essay: 'coral',
-}
-
-// A type this client has never heard of still gets a card. Blue is the mockup's most common tint
-// and the least-surprising default; the alternative — no accent class — would render an unstyled
-// transparent badge, which reads as a broken card rather than an unfamiliar one.
-function accentClass(wireDocumentType: string): string {
-  const appType = documentTypeFromWire(wireDocumentType)
-  return projectsPageStyles[`project-card-accent-${appType ? ACCENT_BY_TYPE[appType] : 'blue'}`]
+  // Переименовать / удалить. Приходят только там, где лента может себя перечитать — то есть
+  // от экрана, а не от карточки: сама карточка не знает, как обновить список под собой.
+  actions?: ProjectActions
+  actionError?: string | null
 }
 
 // One card. Two nested testids on purpose: `project-card` is what the feed is counted by, and
@@ -55,6 +37,8 @@ function ProjectCardComponent({
   retrying = false,
   retryError = null,
   onRetry,
+  actions,
+  actionError = null,
 }: ProjectCardProps) {
   const namespaced = (name: string) => (testIdPrefix ? `${testIdPrefix}-${name}` : name)
   const openable = onOpen !== undefined && project.kind === 'document'
@@ -65,28 +49,36 @@ function ProjectCardComponent({
   const label = project.title ?? project.preview ?? documentTypeLabelFromWire(project.documentType)
   return (
     <div
-      className={`${projectsPageStyles['project-card']} ${projectsScreenStyles['project-card']} ${accentClass(project.documentType)}${
+      className={`${projectsPageStyles['project-card']} ${accentClass(project.documentType)}${
         openable ? ' ' + styles['project-card-openable'] : ''
       }`}
       data-testid={namespaced('project-card')}
     >
-      <div
-        className={`${projectsPageStyles['project-card-thumb']} ${projectsScreenStyles['project-card-thumb']}`}
-      >
+      <div className={projectsPageStyles['project-card-thumb']}>
         <ProjectFolderIcon className={projectsPageStyles['project-card-folder']} />
       </div>
       <div
-        className={`${projectsPageStyles['project-card-body']} ${projectsScreenStyles['project-card-body']}`}
+        className={projectsPageStyles['project-card-body']}
         data-testid={namespaced(`project-card-${projectKey(project)}`)}
       >
-        {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
-            the history list shipped the raw field once and named one document two ways
-            depending on which screen you looked at. */}
-        <div
-          className={projectsPageStyles['project-card-type']}
-          data-testid={namespaced('project-card-type')}
-        >
-          {documentTypeLabelFromWire(project.documentType)}
+        {/* Бейдж и «···» в одной строке: мобильные фреймы дают карточке кнопку действий,
+            которой в десктопной сетке нет (там действия живут в таблице вида списком).
+            Кнопка рисуется всегда и скрывается CSS выше 720px — одна разметка на оба размера,
+            иначе мобильная и десктопная карточка разъедутся молча. */}
+        <div className={styles['project-card-head']}>
+          {/* The LABEL the rest of the app uses ('Реферат'), never the wire's Cyrillic 'реферат':
+              the history list shipped the raw field once and named one document two ways
+              depending on which screen you looked at. */}
+          <ProjectTypeBadge documentType={project.documentType} namespaced={namespaced} />
+          {/* Действия над проектом. Только у документа: у генерации нет ни своего DELETE, ни
+              названия, которое можно править, поэтому кнопки там нет вовсе — отключённая
+              кнопка обещала бы меню, которого не будет. */}
+          <ProjectRowMenu
+            project={project}
+            label={label}
+            namespaced={namespaced}
+            actions={actions}
+          />
         </div>
         {/* The whole card is the click target — that is what the ::after overlay on
             `.project-card-open` does — but the element that TAKES FOCUS and carries the
@@ -94,7 +86,7 @@ function ProjectCardComponent({
             to re-implement Enter and Space by hand, and a card without a title would announce
             itself as an unnamed button. */}
         <div
-          className={`${projectsPageStyles['project-card-title']} ${projectsScreenStyles['project-card-title']}`}
+          className={projectsPageStyles['project-card-title']}
           data-testid={namespaced('project-card-title')}
         >
           {openable ? (
@@ -125,6 +117,15 @@ function ProjectCardComponent({
             onRetry={onRetry}
             namespaced={namespaced}
           />
+        )}
+        {actionError !== null && (
+          <p
+            className={styles['project-card-retry-error']}
+            data-testid={namespaced('project-card-action-error')}
+            role="alert"
+          >
+            {actionError}
+          </p>
         )}
         {retryError !== null && (
           <p

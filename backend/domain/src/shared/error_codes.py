@@ -20,8 +20,12 @@ really an error-code table costs the reader the same time as a real one.
 
 Two slices keep their own modules -- `analytics.analytics_error_codes` and
 `auth.oauth.oauth_error_codes` -- because those carry the fixed refusal MESSAGES
-and, in OAuth's case, an exception type alongside the codes. This file is the
-codes that had no home at all.
+and, in OAuth's case, an exception type alongside the codes. The CODES themselves
+are members here: those modules now bind names to enum members rather than to
+bare strings, so `_ERROR_CODE_STATUS_MAP` is keyed by one type throughout. A dict
+mixing enum members with raw strings looks equivalent -- `StrEnum` hashes like its
+value -- right up to the point where a typo'd string key silently falls through to
+the 400 default with nothing to compare it against.
 """
 
 from enum import StrEnum, auto
@@ -58,6 +62,11 @@ class ErrorCode(StrEnum):
     # interchangeable to a client reading the spec.
     UNAUTHENTICATED = auto()
 
+    # The per-source bound in front of the password routes, mapped to HTTP 429.
+    # Distinct from OAUTH_RATE_LIMITED so a client can tell which bound refused it,
+    # and it names the class of refusal only -- never the source or the count.
+    AUTH_RATE_LIMITED = auto()
+
     # --- E-mail verification ---
     ALREADY_VERIFIED = auto()
     INVALID_CODE = auto()
@@ -89,3 +98,19 @@ class ErrorCode(StrEnum):
     INVALID_CURSOR = auto()
     INVALID_QUERY = auto()
     INVALID_SORT = auto()
+
+    # --- OAuth, re-exported by `auth.oauth.oauth_error_codes` with its messages ---
+    # The exchange answers ONE code for every "this code will not become a session"
+    # reason -- unknown, already redeemed, expired, over-length. Distinguishing them
+    # would tell an attacker which handoff codes ever existed.
+    INVALID_OR_EXPIRED_OAUTH_CODE = auto()
+    UNKNOWN_OAUTH_PROVIDER = auto()
+    OAUTH_RATE_LIMITED = auto()
+
+    # --- Analytics ingest, re-exported by `analytics.analytics_error_codes` ---
+    UNKNOWN_EVENT_NAME = auto()
+    INVALID_VISITOR_ID = auto()
+    INVALID_OCCURRENCE_KEY = auto()
+    OCCURRENCE_KEY_CONFLICT = auto()
+    RATE_LIMITED = auto()
+    REQUEST_BODY_TOO_LARGE = auto()

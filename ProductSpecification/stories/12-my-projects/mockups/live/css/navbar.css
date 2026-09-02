@@ -1,0 +1,191 @@
+/* The one top bar — Figma `Navbar/Variant5` (node 1086:4929, 1920x100).
+ *
+ * The frame is 1:1 with CSS, which took three independent checks to settle because the file also
+ * contains 1.3333x-drawn components: the hero heading's two lines sit 52.8 apart, which is exactly
+ * 44px at line-height 1.2; the input placeholder measures 16px; and the header's own content
+ * column is 1168 wide. Under that reading the parts add up to the component's declared height —
+ * an 85.2 tall action button and a 72.3 tall wordmark inside a 100 tall bar.
+ *
+ * CORRECTED. The 1:1 reading above was wrong, and it was applied only half way: the bar took the
+ * raw 100 while the logo took 64, which is 85.2 / 1.3333. Half of one reading and half of the
+ * other, so the parts could not add up to anything.
+ *
+ * This file's frames are drawn at 1.3333x — the convention `index.css` has carried since story 1,
+ * from this same Figma file — and every number here now comes from that one division: the 100
+ * frame is a 75px bar, the 72.3 wordmark a 54px logo, the 85.2 action a 64px button. 1920 / 1.3333
+ * is 1440, a laptop, which is what a frame that wide is drawn for.
+ *
+ * The token that would settle it now answers 403, so the arithmetic and the screen are the
+ * evidence: at the previous sizes the bar read as oversized on a 1366 laptop, which is the
+ * viewport most of this product's users are on.
+ *
+ * Sizes step DOWN as the viewport narrows. Height, radius, padding and logo shrink together at
+ * each step, or the bar stops looking like the same object.
+ *
+ * Three shells, one bar. `flat` sits on the page background with no surface of its own (landing),
+ * `pill` floats as a rounded card (projects, profile), `bar` spans the viewport with a bottom rule
+ * (workspace). Nothing INSIDE the bar changes between them. */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 20 in the frame between «Войти» and the blue CTA (1210.67 - 1190.67), so 15 here. */
+  gap: 15px;
+}
+
+.navbar-logo {
+  height: 54px;
+  width: auto;
+  display: block;
+  flex: none;
+}
+
+/* The wordmark is black artwork, so in the dark theme it disappeared into the bar. Two exports,
+   one shown — see the comment in Navbar.tsx for why a filter cannot do this job.
+
+   Keyed off `[data-theme]`, never `prefers-color-scheme`: the attribute is written before first
+   paint by the inline script in index.html, and a stored light choice has to survive a dark OS
+   setting. A media query here would show a white wordmark on a white bar to exactly that user. */
+.navbar-logo-dark {
+  display: none;
+}
+
+:root[data-theme='dark'] .navbar-logo-light {
+  display: none;
+}
+
+:root[data-theme='dark'] .navbar-logo-dark {
+  display: block;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* --- flat: the landing. No bar behind it; the wordmark aligns to the content column. --- */
+.navbar-flat {
+  /* The column stays the page's 1200, NOT the frame's 1168/1.3333: this bar has to line up with
+     the hero and the stat row underneath it, and those are still on the raw-frame numbers. When
+     they are converted too, this becomes 916. */
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 20px 0;
+  background: none;
+}
+
+/* --- pill: «Мои проекты» and «Мой профиль». A white card floating on the page. --- */
+
+/* The pill is NOT the 1.3333x-drawn `Variant5` component. It is the `Navbar` instance the real
+   screens place — node 573:4551 on «Мои проекты» and 1134:12269 on «Профиль», identical in both:
+   1640x84, radius 28, 12/32 padding, a 45px wordmark and a 44px account button. Those frames are
+   1:1 (their content column is the same raw 1640 `.projects-screen` and `.profile-page` already
+   use), so dividing this bar by 1.3333 while the column beneath it stayed raw is what left a
+   66px bar heading a 1640px page — the bar and the thing it heads on two different scales. */
+.navbar-pill .navbar-logo {
+  height: 45px;
+}
+
+.navbar-pill {
+  min-height: 84px;
+  padding: 12px 32px;
+  border-radius: 28px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-navbar);
+}
+
+/* --- bar: the workspace and the editor. Full width, hairline underneath. --- */
+.navbar-bar {
+  min-height: 75px;
+  padding: 5.5px 36px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* No step UP above 1920. The frame divides to 1440, so these ARE the sizes for a laptop and for
+   anything wider; a bar that grew on a big monitor would be the only element on the page that
+   did. */
+
+@media (max-width: 1000px) {
+  .navbar-logo {
+    height: 46px;
+  }
+
+  .navbar-pill,
+  .navbar-bar {
+    min-height: 72px;
+    padding: 10px 24px;
+  }
+
+  .navbar-pill {
+    border-radius: 24px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 40px;
+  }
+
+  /* The avatar comes from the shared ProfileMenu, so it is overridden HERE rather than there — at
+     its full 44px it is taller than the padding box this bar has left and would push the height
+     back up to what the step just took off it. */
+  .navbar .profile-avatar-trigger {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* The landing bar is allowed to wrap here. On a 360px phone the row has 328px while the wordmark
+     and the two actions want about 385 — unwrapped that is a horizontal scroll on the first screen
+     a visitor sees. Arithmetic rather than a screenshot: headless Chrome on this host will not
+     render a window narrower than ~500px, so anything below that was checked on paper. The other
+     two shells carry an avatar rather than buttons and stay on one line at any width. */
+  .navbar-flat {
+    flex-wrap: wrap;
+    row-gap: 12px;
+    padding: 20px 16px 0;
+  }
+
+  .navbar-flat .navbar-actions {
+    margin-left: auto;
+  }
+
+  .navbar-logo {
+    height: 38px;
+  }
+
+  .navbar-actions {
+    gap: 8px;
+  }
+
+  /* The 360px frames (1311:7203, 674:2534) keep the pill's 28px radius and step it to 320x72
+     with 12/20 padding and a 28px wordmark — the bar shrinks, it does not change shape. */
+  .navbar-pill,
+  .navbar-bar {
+    min-height: 72px;
+    padding: 12px 20px;
+  }
+
+  .navbar-pill {
+    border-radius: 28px;
+  }
+
+  .navbar-pill .navbar-logo {
+    height: 28px;
+  }
+
+  /* 32 in the mobile frames' `Button`, against 44 on the desktop bar. */
+  .navbar .profile-avatar-trigger {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .navbar .profile-chevron {
+    width: 20px;
+    height: 20px;
+  }
+}

@@ -6,6 +6,27 @@
   text-align: center;
 }
 
+/* The 60px grid under the hero (mockup `.hero__grid`, 1620x666 at y=417 in the 1920 frame),
+   masked to an ellipse so it dissolves before it reaches the glass. Sized in `%` of the hero
+   rather than in the frame's pixels: the block it sits under is the heading and the prompt bar,
+   and those are centred and fluid. */
+.hero-grid {
+  position: absolute;
+  left: 50%;
+  top: 260px;
+  width: 1620px;
+  max-width: 135%;
+  height: 666px;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--hero-grid-line) 0 1px, transparent 1px 60px),
+    repeating-linear-gradient(to right, var(--hero-grid-line) 0 1px, transparent 1px 60px);
+  -webkit-mask-image: radial-gradient(ellipse at center, var(--mask-opaque) 35%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, var(--mask-opaque) 35%, transparent 78%);
+}
+
 /* Two `Ellipse` shapes bleed off each side of the 1440px frame at y=112 with a 1033px
    diameter in `blue-500`; the glass renders sit on top of them. */
 .hero::before,
@@ -43,14 +64,18 @@
   height: auto;
 }
 
+/* The glass hangs OFF the content column: in the frame its inner edge stops short of the heading,
+   and the shapes that read as ornament at 1920 become a background the text sits on top of if
+   they are allowed to grow with the viewport. Sized in vw so they keep that relationship on a
+   laptop, capped so they cannot swallow the hero on a very wide screen. */
 .hero-glass-left {
-  left: -180px;
-  width: 420px;
+  left: min(-150px, -13vw);
+  width: clamp(240px, 26vw, 400px);
 }
 
 .hero-glass-right {
-  right: -180px;
-  width: 440px;
+  right: min(-150px, -13vw);
+  width: clamp(250px, 27vw, 420px);
 }
 
 .hero-glass-left img:last-child {
@@ -72,8 +97,10 @@
   z-index: 1;
 }
 
+/* 797 in the frame, which is exactly what the two lines need: at 700 «для учебных текстов» wraps
+   to a third line and the heading stops being the shape the design drew. */
 .hero-title {
-  max-width: 700px;
+  max-width: 820px;
   margin: 0 auto;
   font-size: 44px;
   font-weight: 600;
@@ -97,62 +124,6 @@
   font-weight: 700;
 }
 
-/* The hero's prompt bar — node 1362:8223's `Button` frame: 797x96 at a 12px radius, 24/28
-   padding, holding an 18/22 placeholder and, against its right edge, the 197x48 black
-   `Сгенерировать` button (12px radius, 12/20 padding, a 23px icon and a 16/600 label). */
-.hero-prompt {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 797px;
-  height: 96px;
-  margin: 44px auto 0;
-  padding: 24px 28px;
-  background: var(--bg-surface);
-  border-radius: 12px;
-}
-
-.hero-prompt-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: none;
-  font-family: inherit;
-  font-size: 18px;
-  line-height: 22px;
-  color: var(--text-primary);
-  padding: 0;
-}
-
-/* The design's placeholder is a flat grey, not the body colour at reduced opacity: on the white
-   bar those two are close, but an opacity is a different colour on every background it lands on
-   and this bar is white in one theme and a dark surface in the other. */
-.hero-prompt-input::placeholder {
-  color: var(--input-placeholder);
-  opacity: 1;
-}
-
-.hero-prompt-button {
-  flex-shrink: 0;
-  width: 197px;
-  height: 48px;
-  border: none;
-  border-radius: 12px;
-  background: var(--neutral-950);
-  color: var(--text-inverse);
-  font-family: inherit;
-  font-size: 16px;
-  line-height: 19px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.hero-prompt-button:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
 @media (max-width: 900px) {
   .hero-glass,
   .hero::before,
@@ -172,17 +143,5 @@
 
   .hero-subtitle {
     font-size: 16px;
-  }
-
-  .hero-prompt {
-    flex-wrap: wrap;
-    /* The 91px is the design's one-row bar. Once the button wraps under the field there are two
-       rows to hold, and a fixed height would crop the second one. */
-    height: auto;
-    padding: 12px;
-  }
-
-  .hero-prompt-button {
-    width: 100%;
   }
 }

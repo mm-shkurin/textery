@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import * as projectsApi from '../../features/projects/api/projectsApi'
 import { App } from '../App'
 import * as api from '../../features/generation/api/generationApi'
 import * as documentApi from '../../features/generation/api/documentApi'
@@ -36,6 +37,7 @@ import { EMPTY_PARAMETERS } from '../../features/generation/utils/generationPara
 // the behaviour ships today (see the bite verification in the recorded-failure comment below).
 vi.mock('../../features/generation/api/generationApi')
 vi.mock('../../features/generation/api/documentApi')
+vi.mock('../../features/projects/api/projectsApi')
 
 const TOPIC = 'Влияние ИИ на образование'
 
@@ -44,6 +46,8 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     // Never settles. This is the whole mechanism of the test, not a convenience stub.
     vi.mocked(api.createGeneration).mockReturnValue(new Promise(() => {}))
     vi.mocked(documentApi.createDocument).mockReturnValue(new Promise(() => {}))
+    // Подписанный пользователь приземляется на «Мои проекты» — лента висит, экран рисуется.
+    vi.mocked(projectsApi.listProjects).mockReturnValue(new Promise(() => {}))
     window.history.pushState({}, '', '/')
     saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' })
   })
@@ -76,16 +80,16 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
   it('shows the generating surface before the create request resolves', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('features-primary-cta-button'))
+    fireEvent.click(screen.getByTestId('projects-toolbar-create'))
     fireEvent.click(screen.getByTestId('type-card-doklad'))
 
-    // Control: the surface is not simply always there. Before the send the composer is up and the
-    // doc area is on its idle placeholder, which carries no testid at all — so it is pinned by the
-    // heading only the idle branch of DocArea renders. Without this the "before" half of the
-    // contrast is an absence that an empty doc area would also satisfy.
+    // Control: the surface is not simply always there. Before the send the form is up with the
+    // summary card beside it — the idle doc-area placeholder that used to be pinned here went
+    // away with the two-column layout. Without this the "before" half of the contrast is an
+    // absence that an empty screen would also satisfy.
     expect(screen.queryByTestId('generation-generating')).toBeNull()
     expect(screen.getByTestId('topic-input')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Опишите тему доклада' })).toBeInTheDocument()
+    expect(screen.getByTestId('generation-summary-type')).toHaveTextContent(/^Доклад$/)
 
     fireEvent.change(screen.getByTestId('topic-input'), { target: { value: TOPIC } })
     fireEvent.click(screen.getByTestId('topic-send'))
@@ -99,13 +103,12 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     expect(api.createGeneration).toHaveBeenCalledWith(TOPIC, 'doklad', EMPTY_PARAMETERS)
 
     // Existence alone would be satisfied by an empty div that merely carries the testid. The
-    // pending surface is fully determined by DocArea's pending branch, so it is asserted at that
-    // depth: a spinner heading and the wait-time line, both exact and anchored.
+    // pending surface is asserted at full depth: the declined heading and the progress line that
+    // says what is happening. Copy moved with the redesign — the wait time is now the tail of the
+    // same line rather than a sentence of its own.
     const generating = screen.getByTestId('generation-generating')
     expect(within(generating).getByRole('heading')).toHaveTextContent(/^Готовим ваш доклад$/)
-    expect(
-      within(generating).getByText('Обычно занимает 1–2 минуты — страница обновится автоматически'),
-    ).toBeInTheDocument()
+    expect(within(generating).getByText('ИИ пишет доклад')).toBeInTheDocument()
 
     // The run badge and the progress rail are the rest of what the same pending commit puts on
     // screen, and they are what makes this "a generating document shows PROGRESS" rather than a
@@ -113,15 +116,15 @@ describe('DocumentGenerationFlow — the generating state is shown while the cre
     // of the same before-the-await claim, not a second scenario. Of the two only the rail is
     // otherwise unasserted anywhere — ChatWorkspace.test.tsx already pins the badge for `pending`.
     //
-    // The rail is scoped to its panel deliberately: a document-wide getByText throws on
-    // MULTIPLICITY the moment any second surface carries the same string (a run-history strip, a
-    // toast), and it would fail naming a string rather than this premise — the scope fragility the
-    // Selenium poll matcher was fixed for twice. The badge cannot be scoped the same way: it
-    // carries no testid (ChatWorkspace.tsx:71) and adding one is a production edit this phase
-    // forbids. Recorded rather than worked around.
-    expect(screen.getByText('В обработке')).toBeInTheDocument()
+    // Второй свидетель того же состояния — шаги: бейджа «В обработке» на экране больше нет,
+    // его место занял шаг «Введите параметры», помеченный как текущий. Проверяется атрибут, а
+    // не текст: подпись шага — копирайт, а `aria-current` — контракт.
+    const steps = within(screen.getByTestId('generation-steps')).getAllByRole('listitem')
+    expect(steps[1]).toHaveAttribute('aria-current', 'step')
     expect(
-      within(screen.getByTestId('chat-panel')).getByText('ИИ пишет доклад'),
+      // Панель прогресса рядом с областью документа исчезла вместе с перерисовкой экрана:
+      // обе половины сообщения теперь строки одного блока ожидания.
+      within(screen.getByTestId('generation-generating')).getByText('ИИ пишет доклад'),
     ).toBeInTheDocument()
     // The composer is gone in the same commit. Asserted here as the render-ordering fact this
     // file is about — the surface swap IS the state set becoming visible — not as double-billing

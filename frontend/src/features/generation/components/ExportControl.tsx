@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ExportFormat } from '../api/documentApi'
 import styles from './ExportControl.module.css'
+import { ChevronDownIcon, DownloadIcon } from './EditorIcons'
 import { runExport } from '../utils/exportRun'
 
 // Scenario 1.1: the control DISPLAY — a trigger that reveals a PDF and a DOCX choice.
@@ -135,7 +136,9 @@ export function ExportControl({ documentId, hasUnsavedChanges = false, save }: E
         disabled={!documentId}
         onClick={() => setState((current) => ({ ...current, isOpen: !current.isOpen }))}
       >
-        Экспорт
+        <DownloadIcon className={styles['me-export-icon']} />
+        Скачать
+        <ChevronDownIcon className={styles['me-export-chevron']} />
       </button>
       {state.isExporting && (
         <span

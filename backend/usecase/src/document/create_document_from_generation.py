@@ -2,17 +2,17 @@ from uuid import UUID
 
 from document.document import Document
 from document.document_content import MAX_CONTENT_LENGTH, DocumentContent
+from document.document_creation import DocumentCreation, validate_idempotency_key
 from document.document_creation_result import DocumentCreationResult
 from document.document_repository import DocumentRepository
 from document.generated_title import derive_generated_title
 from document.html_sanitizer import HtmlSanitizer
-from document.idempotency_key import IdempotencyKey
 from document.markdown_converter import MarkdownConverter
 from generation.generation import COMPLETED_STATUS, Generation
 from generation.generation_storage import GenerationStorage
 from shared.clock import Clock
 from shared.error_codes import ErrorCode
-from shared.exceptions import ConflictException, NotFoundException, ValidationException
+from shared.exceptions import NotFoundException, ValidationException
 from shared.unit_of_work import NullUnitOfWork, UnitOfWork
 
 
@@ -35,7 +35,6 @@ class CreateDocumentFromGeneration:
     answerable.
     """
 
-    INVALID_IDEMPOTENCY_KEY_MESSAGE = "The Idempotency-Key header must be 1 to 128 characters."
     NOT_COMPLETED_MESSAGE = "This generation is not finished yet and cannot become a document."
     KEY_REUSED_MESSAGE = "This Idempotency-Key already belongs to a different document."
     CONTENT_TOO_LONG_MESSAGE = (
@@ -58,11 +57,12 @@ class CreateDocumentFromGeneration:
         self._html_sanitizer = html_sanitizer
         self._clock = clock
         self._unit_of_work = unit_of_work or NullUnitOfWork()
+        self._creation = DocumentCreation(document_repository, self._unit_of_work)
 
     async def execute(
         self, owner_id: UUID, generation_id: UUID, idempotency_key: str
     ) -> DocumentCreationResult:
-        self._validate_key(idempotency_key)
+        validate_idempotency_key(idempotency_key)
         generation, generated_markdown = await self._load_completed_generation(
             owner_id, generation_id
         )
@@ -75,21 +75,9 @@ class CreateDocumentFromGeneration:
             idempotency_key=idempotency_key,
             created_at=self._clock.now(),
         )
-        try:
-            await self._document_repository.save_new(document)
-        except ConflictException:
-            return await self._recover_existing(owner_id, generation_id)
-        await self._unit_of_work.commit()
-        return DocumentCreationResult(document=document, is_replay=False)
-
-    def _validate_key(self, idempotency_key: str) -> None:
-        try:
-            IdempotencyKey(idempotency_key)
-        except ValueError as error:
-            raise ValidationException(
-                error_code=ErrorCode.INVALID_IDEMPOTENCY_KEY,
-                message=self.INVALID_IDEMPOTENCY_KEY_MESSAGE,
-            ) from error
+        return await self._creation.created_or_recovered(
+            document, lambda: self._recover_existing(owner_id, generation_id)
+        )
 
     async def _load_completed_generation(
         self, owner_id: UUID, generation_id: UUID
@@ -163,9 +151,7 @@ class CreateDocumentFromGeneration:
             somebody else's text under their own generation's name, so it is
             refused instead.
 
-        The rollback is load-bearing, not tidy-up: after an IntegrityError the
-        session is poisoned and the next query raises PendingRollbackError, so
-        without it this read fails and a legitimate replay 500s.
+        Why the rollback must come first: `DocumentCreation.created_or_recovered`.
         """
         await self._unit_of_work.rollback()
         existing = await self._document_repository.find_by_generation_id(owner_id, generation_id)

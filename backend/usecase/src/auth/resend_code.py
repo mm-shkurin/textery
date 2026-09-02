@@ -2,7 +2,11 @@ import logging
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-from auth.account_verification_deps import AccountVerificationDependencies
+from auth.account_verification_deps import (
+    AccountVerificationDependencies,
+    already_verified,
+    invalid_or_expired,
+)
 from auth.email_validation import validate_email
 from auth.verification_code import VerificationCode
 from shared.error_codes import ErrorCode
@@ -34,7 +38,7 @@ class ResendCode(AccountVerificationDependencies):
         if account is None:
             # No account-existence oracle: an unknown email answers with the same
             # generic rejection the verify path uses, per the resend ADR.
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
 
         # Re-read the account under SELECT ... FOR UPDATE so the db serialization
         # proven by the db-adapter race test is exercised in production (scenario 4.4).
@@ -44,7 +48,7 @@ class ResendCode(AccountVerificationDependencies):
         if account is None:
             # Defensive (premortem REMOTE): no delete path exists today, but if the row
             # vanished between find_by_email and the lock, answer with the same rejection.
-            raise self._invalid_or_expired()
+            raise invalid_or_expired()
 
         if account.is_verified:
             # Gate on the POST-lock account (lock_for_update's re-read), BEFORE the
@@ -52,7 +56,7 @@ class ResendCode(AccountVerificationDependencies):
             # taxonomy), never RESEND_COOLDOWN_ACTIVE, and issues no new code. Placed
             # here so a verify that committed inside the lock window is still caught
             # (scenario 4.5).
-            raise self._already_verified()
+            raise already_verified()
 
         newest = await self._verification_code_repository.find_active_by_account_id(account.id)
         if newest is not None:
@@ -88,18 +92,3 @@ class ResendCode(AccountVerificationDependencies):
             await rollback_quietly(self._unit_of_work)
             raise
         return verification_code
-
-    def _already_verified(self) -> ValidationException:
-        # Mirrors VerifyAccount._already_verified (scenario 3.5): the account has
-        # already transitioned, so a resend is a genuine 409 conflict, not the
-        # generic state-hiding rejection.
-        return ValidationException(
-            error_code=ErrorCode.ALREADY_VERIFIED,
-            message="The account is already verified.",
-        )
-
-    def _invalid_or_expired(self) -> ValidationException:
-        return ValidationException(
-            error_code=ErrorCode.INVALID_OR_EXPIRED_CODE,
-            message="The verification code is invalid or has expired.",
-        )

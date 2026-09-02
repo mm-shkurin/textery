@@ -34,24 +34,25 @@ function typeTopic(value: string) {
 }
 
 describe('ChatWorkspace', () => {
-  // The heading slot is owned by two different mockups: before anything is submitted it is
-  // mockup 04's breadcrumb + title, and from the first generation onward it is mockups 05-07's
-  // status badge. Both arms were previously unasserted — deleting the idle branch outright left
-  // the whole suite green.
-  it('introduces the idle composer with the breadcrumb heading and no status badge', () => {
+  // Экран перерисован по фрейму «Создание "Тип документа"»: вместо бейджа состояния —
+  // три шага, вместо хлебных крошек — заголовок с типом и сводка справа. Оба состояния
+  // проверяются, потому что удаление любой из веток раньше оставляло сюиту зелёной.
+  it('называет тип документа в заголовке и держит форму на первом шаге', () => {
     renderWorkspace()
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Доклад$/)
-    expect(screen.getByText('Новая генерация')).toBeInTheDocument()
-    expect(screen.queryByText('Новый запрос')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Создание «Доклад»' })).toBeInTheDocument()
+    expect(screen.getByTestId('generation-summary-type')).toHaveTextContent(/^Доклад$/)
+    const steps = within(screen.getByTestId('generation-steps')).getAllByRole('listitem')
+    expect(steps[0]).toHaveAttribute('aria-current', 'step')
   })
 
-  it('replaces the heading with the run status badge once a generation exists', () => {
+  it('переводит шаг на генерацию и убирает форму, пока идёт прогон', () => {
     renderWorkspace({ state: 'pending' })
 
-    expect(screen.getByText('В обработке')).toBeInTheDocument()
-    expect(screen.queryByTestId('generation-breadcrumb')).not.toBeInTheDocument()
-    expect(screen.queryByText('Новая генерация')).not.toBeInTheDocument()
+    const steps = within(screen.getByTestId('generation-steps')).getAllByRole('listitem')
+    expect(steps[1]).toHaveAttribute('aria-current', 'step')
+    expect(screen.queryByTestId('topic-input')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('generation-summary-type')).not.toBeInTheDocument()
   })
 
   // documentType and documentTypeLabel arrive as independent props, so a caller can pair a
@@ -59,10 +60,10 @@ describe('ChatWorkspace', () => {
   // breadcrumb renders the label, the composer heading renders topicFieldLabel(documentType).
   // DocumentGenerationFlow derives them consistently today; this pins the contract at the
   // component boundary so a future caller cannot silently re-open the bug.
-  it('names one and the same document type in the breadcrumb and the topic field', () => {
+  it('names one and the same document type in the summary and the topic field', () => {
     renderWorkspace({ documentType: 'referat', documentTypeLabel: 'Реферат' })
 
-    expect(screen.getByTestId('generation-breadcrumb')).toHaveTextContent(/^Реферат$/)
+    expect(screen.getByTestId('generation-summary-type')).toHaveTextContent(/^Реферат$/)
     expect(screen.getByRole('textbox', { name: 'Тема реферата' })).toBeInTheDocument()
   })
 
@@ -121,19 +122,22 @@ describe('ChatWorkspace', () => {
     expect(onSubmit).toHaveBeenCalledWith('Тема', EMPTY_PARAMETERS)
   })
 
-  it('shows generated content and actual volumePages when completed', () => {
+  // `findBy`, не `getBy`: разметчик markdown уехал в отдельный чанк (react-markdown стоил
+  // 34 kB в стартовом), и результат генерации появляется на кадр позже — после того, как
+  // Suspense догрузил DocArea.
+  it('shows generated content and actual volumePages when completed', async () => {
     renderWorkspace({ state: 'completed', content: '# Готовый текст', volumePages: 7 })
 
     // Anchored: '# Готовый текст' must arrive as a rendered heading, so the '#' is consumed and
     // the body's whole text is exactly the title — a substring match would pass on raw markdown.
-    expect(screen.getByTestId('doc-body')).toHaveTextContent(/^Готовый текст$/)
+    expect(await screen.findByTestId('doc-body')).toHaveTextContent(/^Готовый текст$/)
     expect(screen.getByText('Доклад · 7 страниц · создан только что')).toBeInTheDocument()
   })
 
-  it('shows error message when failed', () => {
+  it('shows error message when failed', async () => {
     renderWorkspace({ state: 'failed', error: 'Не удалось создать запрос' })
 
-    const errorBlock = screen.getByTestId('doc-error')
+    const errorBlock = await screen.findByTestId('doc-error')
     expect(within(errorBlock).getByText('Не удалось создать запрос')).toBeInTheDocument()
     expect(within(errorBlock).getByRole('heading')).toHaveTextContent(
       /^Не удалось сгенерировать доклад$/,
@@ -143,18 +147,18 @@ describe('ChatWorkspace', () => {
   // Both reset buttons were unreachable by test and by locator — no data-testid, and nothing
   // asserted either one invokes onReset. Severing the onClick, or the onReset prop-drill above
   // it, was green across the whole suite. The failed panel is the one screen with no other exit.
-  it('offers a way out of a completed generation', () => {
+  it('offers a way out of a completed generation', async () => {
     const { onReset } = renderWorkspace({ state: 'completed', content: '# Готово', volumePages: 3 })
 
-    fireEvent.click(screen.getByTestId('doc-reset'))
+    fireEvent.click(await screen.findByTestId('doc-reset'))
 
     expect(onReset).toHaveBeenCalledTimes(1)
   })
 
-  it('offers a way out of a failed generation', () => {
+  it('offers a way out of a failed generation', async () => {
     const { onReset } = renderWorkspace({ state: 'failed', error: 'Не удалось создать запрос' })
 
-    fireEvent.click(screen.getByTestId('error-reset'))
+    fireEvent.click(await screen.findByTestId('error-reset'))
 
     expect(onReset).toHaveBeenCalledTimes(1)
   })
@@ -164,12 +168,12 @@ describe('ChatWorkspace', () => {
   // holding the topic that was just generated, with the send button already enabled — one
   // keystroke re-bills the user for the document they already have. Unlike the double-Ctrl+Enter
   // case, this second submit is a separate gesture, so nothing about render ordering helps.
-  it('comes back to an empty composer after a reset, not the topic just generated', () => {
+  it('comes back to an empty composer after a reset, not the topic just generated', async () => {
     const { setState } = renderWorkspace()
     typeTopic('Влияние ИИ на образование')
 
     setState({ state: 'completed', content: '# Готово', volumePages: 3 })
-    fireEvent.click(screen.getByTestId('doc-reset'))
+    fireEvent.click(await screen.findByTestId('doc-reset'))
     setState({ state: 'idle' })
 
     expect(screen.getByTestId('topic-input')).toHaveValue('')

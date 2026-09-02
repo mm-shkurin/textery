@@ -1,0 +1,96 @@
+/* «Нам доверяют» — Figma `Desktop` → `Add` (node 862:6410, 1155x186 at y=1145 in the 1920 frame).
+   The caption sits centred above the row of marks, framed by four crop ticks; the marks are 42px
+   glyphs beside a 27/500 name, 90 apart. */
+
+.trusted {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  margin: 96px auto 0;
+  padding: 0 20px;
+}
+
+.trusted-caption {
+  position: relative;
+  padding: 10px 26px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.trusted-caption span {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1.65px solid var(--accent);
+}
+
+.trusted-caption span:nth-child(1) {
+  left: 0;
+  top: 0;
+}
+
+.trusted-caption span:nth-child(2) {
+  right: 0;
+  top: 0;
+}
+
+.trusted-caption span:nth-child(3) {
+  left: 0;
+  bottom: 0;
+}
+
+.trusted-caption span:nth-child(4) {
+  right: 0;
+  bottom: 0;
+}
+
+.trusted-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px 68px;
+  list-style: none;
+}
+
+.trusted-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* The names are one line each in the frame; wrapping «Student Labs» under its own mark turns a
+     row of three logos into a ragged stack. */
+  white-space: nowrap;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-hero);
+}
+
+.trusted-logo img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .trusted {
+    margin-top: 64px;
+    gap: 24px;
+  }
+
+  .trusted-caption {
+    font-size: 16px;
+  }
+
+  .trusted-logo {
+    font-size: 16px;
+  }
+
+  .trusted-logo img {
+    width: 24px;
+    height: 24px;
+  }
+}

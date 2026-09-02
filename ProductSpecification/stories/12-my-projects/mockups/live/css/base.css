@@ -1,0 +1,34 @@
+/* Мок-обвязка: то, что в приложении даёт index.css (сброс, шрифт, фон страницы).
+   Всё остальное в этой папке — копии CSS реальных компонентов «Мои проекты»
+   (frontend/src/features/projects/components/*.module.css и shared/*). Правим здесь,
+   потом переносим обратно в компоненты. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import './palette.css';
+@import './tokens-light.css';
+@import './tokens-dark.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/* Меню профиля в моке всегда закрыто — в компоненте панель рисуется по клику. */
+.profile-panel {
+  display: none;
+}

@@ -1,0 +1,83 @@
+/* Панель форматирования редактора по фрейму: вторая белая полоса под полосой документа.
+   Отдельный файл от editor-figma.css — тот описывает страницу и лист, этот контролы, и
+   вместе они выходят за 200 строк. */
+
+.edf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 60px;
+  padding: 0 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--projects-edge);
+  overflow-x: auto;
+}
+
+/* Группа форматирования центрируется в полосе. `margin: auto` на группе, а не
+   `justify-content`: при прокрутке узкой полосы justify-content прижимает содержимое к
+   левому краю только после переполнения, а auto-отступы ведут себя предсказуемо в обоих
+   случаях. */
+.edf-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  margin: 0 auto;
+}
+
+.edf-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.edf-tool:hover {
+  background: var(--projects-well);
+}
+
+.edf-tool[aria-pressed='true'] {
+  background: var(--chip-blue-bg);
+  color: var(--chip-blue-fg);
+}
+
+.edf-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.edf-tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+.edf-divider {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--projects-edge);
+}
+
+@media (max-width: 720px) {
+  .edf-toolbar {
+    height: 56px;
+    padding: 0 12px;
+    gap: 6px;
+  }
+
+  /* На узком экране панель прокручивается, а не переносится: перенос сделал бы её двумя
+     полосами и сдвинул лист вниз на треть экрана. */
+  .edf-toolbar-group {
+    margin: 0;
+  }
+}

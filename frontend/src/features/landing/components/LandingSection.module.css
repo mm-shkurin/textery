@@ -41,6 +41,13 @@
   background: var(--accent);
 }
 
+/* The frame paints part of most section headings in the brand blue — «Простой рабочий процесс»,
+   «Учебные текста под ключ», «Лучшее качество». One class rather than one per section: it is the
+   same emphasis every time, and a per-section copy is how two of them end up different blues. */
+.landing-section-title-accent {
+  color: var(--accent-hero);
+}
+
 .landing-section-title {
   max-width: 900px;
   font-size: 36px;

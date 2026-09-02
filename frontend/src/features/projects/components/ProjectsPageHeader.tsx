@@ -1,29 +1,20 @@
 import projectsScreenStyles from './ProjectsScreen.module.css'
 
-interface ProjectsPageHeaderProps {
-  // Absent when the host gives the screen no way back — the button is then not rendered at all
-  // rather than rendered inert, so nothing on screen offers a route that does not exist.
-  onBack?: () => void
-}
-
-// The screen's title block: the optional way back, the heading, and the one line of copy under it.
-export function ProjectsPageHeader({ onBack }: ProjectsPageHeaderProps) {
+/**
+ * Заголовок экрана: название и одна строка копирайта под ним.
+ *
+ * Кнопки «Назад» здесь НЕТ. Она вела `backToLanding` — на лендинг, то есть на страницу-продажу
+ * для того, кто уже купил; для авторизованного пользователя «Мои проекты» И ЕСТЬ дом, и выход
+ * из дома «назад» никуда не ведёт. На проде она читалась как сломанная, потому что нажатие
+ * возвращало на витрину, а не туда, откуда пользователь пришёл.
+ */
+export function ProjectsPageHeader() {
   return (
     <div className={projectsScreenStyles['projects-header']}>
-      {onBack !== undefined && (
-        <button
-          type="button"
-          className={projectsScreenStyles['projects-back']}
-          data-testid="projects-back"
-          onClick={onBack}
-        >
-          Назад
-        </button>
-      )}
       <div className="projects-titles">
         <h1 className={projectsScreenStyles['projects-heading']}>Мои проекты</h1>
-        {/* The one line of copy the screen has, and it is fixed rather than user-specific: it
-          names what the page holds, which is why it can live in the markup. */}
+        {/* Единственная строка копирайта экрана, и она фиксированная, а не пользовательская:
+            она называет, что лежит на странице, — поэтому живёт в разметке. */}
         <p className={projectsScreenStyles['projects-subtitle']} data-testid="projects-subtitle">
           Все ваши рефераты, курсовые, статьи и другие работы — в одном месте
         </p>

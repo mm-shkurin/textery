@@ -1,0 +1,109 @@
+/* Экран ожидания генерации по фрейму: пустая страница, по центру диск с искрой, строка
+   состояния, строка-пояснение и три точки. Никаких карточек — на этом шаге пользователю
+   нечего читать и не с чем взаимодействовать, поэтому экран сознательно пустой. */
+
+/* Центрируется в остатке экрана под шапкой, а не в 100vh: иначе шапка сдвигает блок вниз
+   и «центр» оказывается ниже настоящего. */
+.genpend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.genpend-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-pill);
+  /* Заливка — светлый акцент, а не серый: диск с искрой на фрейме читается как «работает
+     генерация», и серый круг превратил бы его в пустое место. */
+  background: var(--chip-blue-bg);
+  color: var(--accent);
+}
+
+.genpend-disc svg {
+  width: 30px;
+  height: 30px;
+}
+
+.genpend-title {
+  margin-top: 20px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.genpend-text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-divider);
+}
+
+/* Три точки — индикатор, а не текст: многоточие в строке выше уже намекает на процесс, а
+   точки показывают, что он ЖИВ. Анимация волной, со сдвигом фазы на точку. */
+.genpend-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.genpend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  animation: genpend-pulse 1.2s ease-in-out infinite;
+}
+
+.genpend-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.genpend-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes genpend-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Пользователь, попросивший систему остановить анимацию, получает статичные точки: они
+   остаются видимыми — это единственный признак, что процесс не завис. */
+@media (prefers-reduced-motion: reduce) {
+  .genpend-dot {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: 720px) {
+  /* 60vh на телефоне — это почти весь экран под одним диском: блок и так центрирован в
+     остатке страницы, ему хватает 44vh, а остальное отдаётся шагам сверху. */
+  .genpend {
+    min-height: 44vh;
+    padding: 0 16px;
+  }
+
+  .genpend-disc {
+    width: 60px;
+    height: 60px;
+  }
+
+  .genpend-disc svg {
+    width: 26px;
+    height: 26px;
+  }
+}

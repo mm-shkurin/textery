@@ -1,0 +1,202 @@
+/* SEMANTIC tokens, light theme — the defaults, on a bare `:root`.
+ *
+ * Every token the product uses is defined HERE and only overridden in `tokens-dark.css`. A token
+ * that exists only inside `[data-theme='dark']` (or only inside a media query) is a hole: the
+ * other mode resolves it to nothing and the property falls back to the initial value — black
+ * text, transparent background — which reads as a rendering bug rather than a missing token.
+ * `contrast.test.ts` fails the build on any dark token with no light counterpart.
+ */
+:root {
+  /* Surfaces. The light product is a blue page with white panels on it. */
+  --bg-page: var(--blue-50);
+  --bg-header: var(--neutral-000);
+  --bg-surface: var(--neutral-000);
+  --bg-surface-raised: var(--neutral-000);
+  --bg-card: var(--neutral-000);
+  --bg-card-muted: #d2e2f2;
+  /* The recessed fill behind a surface's own inset areas — a card's thumbnail well, a table head. */
+  --bg-sunken: #f7f8fa;
+  /* The landing footer's slab. It stays DARK in both themes and keeps `--text-inverse` on it; see
+     the note on `--text-inverse` below for why this pair does not flip. */
+  --bg-inverse: var(--neutral-950);
+  --surface-light: var(--neutral-000);
+  --surface-light-2: #d9d9d9;
+
+  /* Borders. `--border-hairline` is the flat grey divider (menu panel, its account row) as
+     distinct from `--border-subtle`, which is tinted toward the page's blue. */
+  --border-subtle: #d5e6f7;
+  --border-strong: var(--blue-200);
+  --border-hairline: #d9d9d9;
+  /* The ring around a colour swatch in the editor toolbar: it must read against both the swatch's
+     own fill and the panel, so it is a near-black hairline here and a near-white one in dark. */
+  --border-swatch: rgba(17, 18, 20, 0.35);
+
+  /* Text. */
+  --text-primary: var(--neutral-950);
+  --text-secondary: var(--neutral-700);
+  --text-muted: var(--neutral-600);
+  /* Deliberately NOT flipped in dark. Every use is text on something that is dark or saturated in
+     BOTH themes — the avatar's gradient, a filled brand button, the footer slab — so flipping it
+     would put near-black text on a blue gradient. "Inverse" here means "against the page", not
+     "against the theme". */
+  --text-inverse: var(--neutral-000);
+
+  /* Brand. */
+  --accent: var(--blue-700);
+  --accent-hover: var(--blue-500);
+  --accent-soft: var(--blue-50);
+  --accent-start: var(--blue-700);
+  --accent-end: var(--blue-500);
+  --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  --btn-primary-bg: var(--blue-700);
+  --btn-primary-fg: var(--neutral-000);
+  /* The unfilled part of a button's inline spinner ring. It sits on the primary fill in both
+     themes, so it is keyed to the fill and not to the page. */
+  --spinner-track: rgba(255, 255, 255, 0.45);
+
+  /* Status accents. */
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --error: #ef4444;
+
+  /* Status BANNERS — a boxed alert needs three related colours, not one. Named so a second banner
+     cannot invent a fourth amber. */
+  --warning-fg: #b45309;
+  --warning-bg: #fffbeb;
+  --warning-border: #fcd34d;
+  --success-fg: #15803d;
+  --error-soft-bg: rgba(239, 68, 68, 0.12);
+  --error-soft-border: rgba(239, 68, 68, 0.3);
+
+  /* Elevation. Three depths, not one: a resting card, a menu panel, an overlaid dropdown. In dark
+     a shadow at light-theme alpha is invisible, so all three deepen there rather than tint. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-panel: 0 4px 6px rgba(0, 0, 0, 0.09);
+  --shadow-navbar: 0 4px 12px rgba(0, 0, 0, 0.09);
+  --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* Frosted panels — the landing stat cards, the type-picker caption strip. A literal
+     `rgba(255,255,255,…)` is a light-theme constant: in dark it is a white haze over a dark page,
+     which is the single most visible way an inverted theme goes wrong. */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-strong: rgba(255, 255, 255, 0.8);
+  /* The hairline inside the footer slab. Keyed to the slab, which does not flip. */
+  --footer-divider: rgba(255, 255, 255, 0.2);
+
+  /* The blue wash behind the auth card, and the wash the modal blurs the page through. */
+  --auth-glow-strong: rgba(24, 131, 255, 0.35);
+  --auth-glow-soft: rgba(24, 131, 255, 0.3);
+  /* Нейтральная вуаль, а не голубая: на фрейме «Создание проекта» страница за модалкой
+     размыта и обесцвечена почти до белого, цветными остаются только карточки — голубой
+     скрим красил весь экран в синий и делал подложку заметнее самой панели.
+  --scrim-modal: rgba(113, 183, 253, 0.55);
+  /* Вторая подложка — нейтральная. «Создание проекта» (788:5094) размывает страницу проектов
+     и обесцвечивает её почти до серого; голубой скрим генерации красил бы весь экран в синий
+     и был заметнее самой панели. Серая, а не белая: панель белая, на белой вуали она
+     растворяется — подложка обязана быть на шаг ТЕМНЕЕ панели. */
+  --scrim-panel: rgba(17, 24, 39, 0.12);
+
+  /* The account avatar's gradient — Figma `Button/Container` (node 573:4506), the one gradient
+     surface left in the UI. Not `--accent-gradient`: that resolves to the flat brand blues. */
+  --avatar-gradient: linear-gradient(135deg, #51a2ff, #4f39f6);
+  --avatar-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.1);
+  /* The travelling highlight of a loading skeleton, brighter than `--bg-sunken` it rides on. */
+  --skeleton-highlight: #eef0f4;
+
+  /* Per-type project tints — Figma frame 484:1104. Three swatches per type: the badge fill, the
+     badge text, and the folder glyph. */
+  --chip-blue-bg: #e5f3fe;
+  --chip-blue-fg: #004ee0;
+  --chip-blue-icon: #4894fe;
+  --chip-coral-bg: #fff0ed;
+  --chip-coral-fg: #e76455;
+  --chip-coral-icon: #e76455;
+  --chip-purple-bg: #efeaff;
+  --chip-purple-fg: #6730ff;
+  --chip-purple-icon: #8a38f5;
+  --chip-teal-bg: #eafffd;
+  --chip-teal-fg: #2d978d;
+  --chip-teal-icon: #2d978d;
+
+  /* Off-palette Figma values: exact numbers read from the file that are NOT one of the ten
+     `Pallete` swatches. They stay byte-exact here so a near-miss (#222222 vs #262728) cannot be
+     retyped per component and read as intentional. */
+  --text-near-black: #222222;
+  --text-hero: #1f1f1f;
+  --text-divider: #454748;
+  --accent-hero: #1252d3;
+  --accent-orb: #1e87ff;
+  --input-placeholder-fg: #fafdff;
+  /* The grey the landing's prompt placeholder is drawn in (node 90:880, the text at x=607 y=484).
+     Distinct from `--input-placeholder-fg` above, which is the near-white used for a placeholder
+     sitting ON a saturated field. */
+  --input-placeholder: #6b7280;
+  /* The hairline of the grid the hero is drawn on (node 90:880, `Component 7`). Tinted with the
+     brand blue on the pale page and lifted to a white wash in dark, because a blue line on a
+     near-black background is invisible long before it is subtle. */
+  --hero-grid-line: rgba(0, 78, 224, 0.1);
+  /* The grey of a placeholder line inside an illustration — the «document being written» bars on
+     the feature cards and the unfilled dots of their progress cluster. Not `--border-*`: this is
+     a filled shape, and reusing a border colour for it made the bars vanish in dark. */
+  --skeleton-line: #ececee;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Component-scoped colours, moved here from the component sheets: a value written
+     beside the rule that uses it is a value the next screen retypes slightly differently. Names
+     keep their component prefix — they are specific, not general — but every colour in the
+     product is now declared in these two files. */
+
+  /* ProfileButtons */
+  --profile-danger-fg: #ff383c;
+
+  /* ProfileModal */
+  --profile-modal-line: #cbd5e1;
+  --profile-modal-scrim: rgba(15, 23, 42, 0.35);
+
+  /* ProfilePage */
+  --profile-page-bg: #f4f6fb;
+  --profile-row-fg: #6b7280;
+  --profile-card-line: #d9d9d9;
+
+  /* ProfileTheme */
+  --profile-track-bg: #f5f5f7;
+
+  /* ProjectsPage */
+  --projects-well: var(--bg-sunken);
+  --projects-edge: var(--border-hairline);
+
+  /* Mask stencil. NOT a colour: a mask reads only the alpha channel, so this is the "opaque" end
+     of a mask gradient — geometry, not paint. It is a token anyway so that no component sheet has
+     to carry a literal and no reader has to decide which literals are exceptions. Never theme it:
+     flipping it would punch the hole on the wrong side of the ring. */
+  --mask-opaque: #000;
+
+  /* Neutral greys that predate this file and were written as `var(--x, #hex)` fallbacks in the
+     component sheets — the var was never declared, so the hex is what actually rendered, in BOTH
+     themes. They are declared here at exactly those values so the move changes nothing; they are
+     deliberately NOT overridden in dark, because they never were. */
+  --bg-subtle: #f3f4f6;
+  --bg-subtle-soft: #f9fafb;
+  --danger: #dc2626;
+
+  /* ManualEditor — the ProseMirror table surface. */
+  --editor-cell-selected: rgba(99, 102, 241, 0.16);
+
+  /* HistoryDeleteModal */
+  --history-modal-scrim: rgba(17, 24, 39, 0.45);
+  --history-modal-shadow: 0 24px 48px rgba(17, 24, 39, 0.18);
+
+  /* LandingComparison — the table head inside the dark band. A true black, one step below
+     `--neutral-950` the band itself is drawn in, so the header reads as a deeper inset. */
+  --landing-comparison-head-bg: #000000;
+
+  /* ThemeSwitch — the knob's drop shadow. Keyed to the knob, which is a light disc in both
+     themes, so it does not flip. */
+  --theme-switch-knob-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}

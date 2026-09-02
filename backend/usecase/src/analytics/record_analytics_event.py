@@ -56,6 +56,29 @@ class RecordAnalyticsEvent:
     Everything this usecase refuses, it refuses BEFORE the insert and with a
     message that repeats none of the input. This is the product's only tokenless
     write; its errors reach anyone.
+
+    `visitor_id` and `occurrence_key` arrive as the RAW strings the request
+    carried: the DTO types them permissively so a bad value reaches the domain and
+    returns the canonical 400 rather than Pydantic's 422, which would echo the
+    rejected input back on that same tokenless route. `_reported_event` parses them
+    into `UUID`, so the four spellings of one visitor id (§2.4) resolve to one value
+    before anything downstream sees them.
+
+    A `CONFLICTING_NAME` outcome is NOT a replay of anything: the same key under a
+    different name is a client bug or a probe, and collapsing it would silently
+    discard a real event while answering success (`endpoints.md` § five decisions,
+    2). Nothing is stored and the first row is untouched.
+
+    «The event is recorded» means DURABLE: the acceptance test reads the row back on
+    a separate connection, where an uncommitted insert is invisible. Committed for
+    `ALREADY_RECORDED` too — there is nothing to write, and answering 204 without
+    closing the transaction would leave the read-after-write guarantee resting on an
+    open one.
+
+    `degraded` is the one field a client is trusted with, because only the browser
+    knows its own storage failed. Nothing downstream decides anything on it: it
+    marks a row as one page load rather than one person, so Story 15 can leave it
+    out of unique-visitor counts (§4.1, §4.2).
     """
 
     def __init__(
@@ -80,11 +103,7 @@ class RecordAnalyticsEvent:
         degraded: bool = False,
         source: str = "",
     ) -> None:
-        """`visitor_id` and `occurrence_key` arrive as the raw strings the request
-        carried -- the DTO types them permissively so a bad value reaches the
-        domain and returns the canonical 400 rather than Pydantic's 422, which
-        would echo the rejected input back on the product's only tokenless route.
-        """
+        """Record the event, or refuse it. Rationale: the class docstring."""
         await self._guard_the_rate(source)
         event = self._reported_event(
             user_id=user_id,
@@ -96,18 +115,9 @@ class RecordAnalyticsEvent:
         )
         outcome = await self._analytics_event_repository.save_new(event)
         if outcome is SaveOutcome.CONFLICTING_NAME:
-            # Not a replay of anything: the same key under a different name is a
-            # client bug or a probe, and collapsing it would silently discard a
-            # real event while answering success (`endpoints.md` § five
-            # decisions, 2). Nothing is stored and the first row is untouched.
             raise ValidationException(
                 message=OCCURRENCE_KEY_CONFLICT_MESSAGE, error_code=OCCURRENCE_KEY_CONFLICT
             )
-        # «The event is recorded» means durable: the acceptance test reads the
-        # row back on a separate connection, where an uncommitted insert is
-        # invisible. Committed for ALREADY_RECORDED too -- there is nothing to
-        # write, and answering 204 without closing the transaction would leave
-        # the read-after-write guarantee resting on an open one.
         await self._unit_of_work.commit()
 
     def _reported_event(
@@ -122,25 +132,16 @@ class RecordAnalyticsEvent:
         """What the request said, once every field has been through the domain."""
         return AnalyticsEvent(
             event_name=accepted_name(event_name),
-            # Parsed, not stored as text: the entity types both identifiers as
-            # `UUID` so the four spellings of one visitor id (§2.4) resolve to
-            # one value before anything downstream sees them.
             visitor_id=identifier(visitor_id, INVALID_VISITOR_ID, INVALID_VISITOR_ID_MESSAGE),
             occurrence_key=identifier(
                 occurrence_key, INVALID_OCCURRENCE_KEY, INVALID_OCCURRENCE_KEY_MESSAGE
             ),
-            # Straight through from the caller. The usecase never reads an id
-            # out of the reported event, so a client cannot attribute its
-            # events to another account.
+            # Straight through from the caller, never read out of the event body.
             user_id=user_id,
-            # The injected Clock, never `datetime.now()` -- that is what keeps
-            # every later time-dependent scenario controllable.
+            # The injected Clock, never `datetime.now()`: that is what keeps every
+            # later time-dependent scenario controllable.
             event_time=self._clock.now(),
             payload=validate_payload(payload),
-            # The one field a client is trusted with, because only the browser
-            # knows its own storage failed. Nothing downstream decides anything
-            # on it: it marks a row as one page load rather than one person, so
-            # Story 15 can leave it out of unique-visitor counts (§4.1, §4.2).
             degraded=bool(degraded),
         )
 

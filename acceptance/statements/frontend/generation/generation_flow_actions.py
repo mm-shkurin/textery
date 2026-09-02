@@ -25,7 +25,10 @@ from statements.frontend.generation.composer_locators import TOPIC_INPUT, TOPIC_
 # breadcrumb (idle only) or the composer. That makes it the honest "did we leave the landing"
 # probe: if this is absent, the flow never reached the workspace at all. In a non-idle state it
 # also carries the Progress view, so its text is the panel-side generating indicator.
-CHAT_PANEL = (By.CSS_SELECTOR, "[data-testid='chat-panel']")
+# Карточка формы на экране генерации. Раньше это была панель-композер рядом с областью
+# документа (`chat-panel`); экран перерисован по фрейму, панели больше нет, а форма —
+# отдельная карточка на первом шаге.
+GENERATION_FORM = (By.CSS_SELECTOR, "[data-testid='generation-form']")
 
 GENERATIONS_PATH = "/api/v1/generations"
 

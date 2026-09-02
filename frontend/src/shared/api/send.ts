@@ -52,47 +52,57 @@ export function describeFailure(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
+/**
+ * The failure to rethrow UNCHANGED, or `null` when it should be flattened to text.
+ *
+ * Three kinds of failure carry information past this boundary, and each one was
+ * flattened here at some point with a real consequence:
+ *
+ * 1. **An expired session is not an operation failure.** The UI shows it as "you
+ *    are signed out", not "your document could not be created". Flattening erases
+ *    the distinction the caller has to make.
+ *
+ * 2. **A version conflict is matched on the CODE, not the bare status.** 409 is not
+ *    one thing: `PUT /documents/{id}` sends `VERSION_CONFLICT` for a stale version,
+ *    while `POST /documents` carries an Idempotency-Key and can 409 over the key
+ *    itself — an operation with no version at all. Matching on the status alone told
+ *    a user whose create collided «Документ был изменён другим сохранением»: a
+ *    lost-update message for a document that was never saved once, sending them to
+ *    reopen a document that does not exist. Any other 409 keeps the caller's
+ *    fallback, which at least names the operation that failed.
+ *
+ * 3. **A failure whose OUTCOME IS UNKNOWN keeps its shape.** A client-side deadline
+ *    and any 5xx are the two answers that do not say whether the server took the
+ *    write. The autosave retry policy decides "retry?" and "may this have landed?"
+ *    from `error.status` and the timeout's identity (`autosaveRetryPolicy.ts`), and
+ *    `new Error(describeFailure(...))` destroys both: a status becomes a substring
+ *    of a sentence, and a `RequestTimeoutError` becomes an `Error` whose message
+ *    merely reads 'Request timed out'. Flattening here is what made the whole
+ *    H9.3/H9.4 retry branch unreachable in production while every fixture that
+ *    hand-rolled `{status: 5xx}` stayed green.
+ *
+ * 4xx keeps flattening: those are decided answers, and no caller has to classify
+ * them. Callers that only RENDER a preserved failure must not read `.message` off
+ * it — `HttpError` is a bare object literal, not an `Error` — they call
+ * `describeFailure`, which handles both shapes.
+ */
+function preserved(error: unknown): unknown | null {
+  if (error instanceof SessionExpiredError) return error
+  if (isHttpError(error) && error.status === 409 && error.body.error_code === 'VERSION_CONFLICT') {
+    return new VersionConflictError()
+  }
+  if (error instanceof RequestTimeoutError || (isHttpError(error) && error.status >= 500)) {
+    return error
+  }
+  return null
+}
+
 export async function send<T>(path: string, options: RequestOptions, fallback: string): Promise<T> {
   try {
     return await authorizedRequest<T>(path, options)
   } catch (error) {
-    // An expired session is NOT an operation failure and must keep its type: the UI shows it as
-    // "you are signed out", not as "your document could not be created". Flattening it into a
-    // generic Error here would erase the distinction the caller has to make.
-    if (error instanceof SessionExpiredError) {
-      throw error
-    }
-    // The CODE, not the bare status. 409 means "conflict", which is not one thing: PUT
-    // /documents/{id} sends VERSION_CONFLICT for a stale version, but POST /documents carries an
-    // Idempotency-Key and can 409 over the key itself — an operation that has no version at all.
-    // Matching on the status alone told a user whose create collided "Документ был изменён
-    // другим сохранением": a lost-update message for a document that was never saved once, and
-    // one that sends them to reopen a document that does not exist. Any other 409 keeps the
-    // caller's fallback text, which at least names the operation that actually failed.
-    if (
-      isHttpError(error) &&
-      error.status === 409 &&
-      error.body.error_code === 'VERSION_CONFLICT'
-    ) {
-      throw new VersionConflictError()
-    }
-    // A failure whose OUTCOME IS UNKNOWN keeps its shape. A client-side deadline
-    // (`RequestTimeoutError`) and any 5xx are the two answers that do not tell us whether the
-    // server took the write — the autosave retry policy has to decide "retry?" and "may this have
-    // landed?" from `error.status` and from the timeout's identity (`autosaveRetryPolicy.ts`), and
-    // `new Error(describeFailure(...))` destroys both before the caller ever sees them: a status
-    // becomes a substring of a sentence, and a `RequestTimeoutError` becomes an `Error` whose
-    // message still reads 'Request timed out'. Flattening here is what made the whole H9.3/H9.4
-    // retry branch unreachable in production while every fixture that hand-rolled `{status: 5xx}`
-    // stayed green.
-    //
-    // Callers that only ever RENDER the failure must not read `.message` off these — `HttpError` is
-    // a bare object literal (httpClient.ts:141), not an `Error` — they call `describeFailure`
-    // instead, which handles both shapes and is the same text they were getting before.
-    // 4xx keeps flattening: those are decided answers, no caller has to classify them.
-    if (error instanceof RequestTimeoutError || (isHttpError(error) && error.status >= 500)) {
-      throw error
-    }
+    const keep = preserved(error)
+    if (keep !== null) throw keep
     throw new Error(describeFailure(error, fallback))
   }
 }

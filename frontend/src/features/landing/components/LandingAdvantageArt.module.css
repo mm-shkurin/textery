@@ -1,0 +1,122 @@
+/* Card artwork for «Возможности» (node 1337:6860). Every position here is the frame's, expressed
+   as a share of the 598x280 card so the composition survives a narrower column: the renders bleed
+   past the card's top and right edges by design, and the card clips them. */
+
+.art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.art img {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+}
+
+/* The grey lines standing in for a document being written — four bars of falling width, the
+   frame's `Lines` frame at x=95 y=24. */
+.art-skeleton {
+  position: absolute;
+  left: 16%;
+  top: 24px;
+  width: 42%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.art-skeleton i {
+  height: 12px;
+  border-radius: 8px;
+  background: var(--skeleton-line);
+}
+
+.art-skeleton i:nth-child(2) {
+  width: 78%;
+}
+
+.art-skeleton i:nth-child(3) {
+  width: 52%;
+}
+
+.art-skeleton i:nth-child(4) {
+  width: 36%;
+}
+
+.art-ai .art-splash {
+  left: 17%;
+  top: -53%;
+  width: 48%;
+}
+
+.art-ai .art-chart {
+  left: 44%;
+  top: -47%;
+  width: 76%;
+}
+
+.art-ai .art-dots {
+  left: 56%;
+  top: 23%;
+  width: 15%;
+}
+
+.art-editor .art-star {
+  right: -14%;
+  top: 1%;
+  width: 47%;
+  opacity: 0.55;
+}
+
+.art-editor .art-letter {
+  left: 18%;
+  top: 3%;
+  width: 28%;
+}
+
+.art-pdf .art-pdf {
+  left: 63%;
+  top: -8%;
+  width: 39%;
+}
+
+.art-backup .art-cloud {
+  left: 5%;
+  top: -46%;
+  width: 58%;
+  /* The frame mirrors the render so the cloud's opening faces the card, not the page edge. */
+  transform: scaleX(-1);
+}
+
+.art-backup .art-case {
+  left: 59%;
+  top: -16%;
+  width: 37%;
+}
+
+/* Below the two-column breakpoint the card is much narrower than 598, and art positioned as a
+   share of it starts to overlap the copy. The composition is ornament; the claim is not. */
+@media (max-width: 900px) {
+  /* Арт перестаёт быть подложкой во всю карточку и становится её первым блоком: карточка на
+     телефоне — обычный поток (см. LandingAdvantages.module.css), и растянутый на всю площадь
+     рисунок ложился ПОД текст, из-за чего строки читались поверх картинки, а первая строка
+     обрезалась краем карточки. */
+  .art {
+    position: relative;
+    inset: auto;
+    height: 168px;
+    margin: -4px -8px 16px;
+    flex: none;
+    /* Рисунки нарочно вылетают за верх и правый край — клипается коробка арта, а не карточка. */
+    overflow: hidden;
+  }
+
+  .art-skeleton {
+    display: none;
+  }
+
+  .art img {
+    opacity: 0.9;
+  }
+}

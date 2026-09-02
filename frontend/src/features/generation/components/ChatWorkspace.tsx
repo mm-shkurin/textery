@@ -1,21 +1,23 @@
-import { useState } from 'react'
-import styles from './ChatWorkspace.module.css'
-import chatWorkspaceDocStyles from './ChatWorkspaceDoc.module.css'
-import './DocMarkdown.module.css'
+import { Suspense, lazy, useState } from 'react'
+import styles from './GenerationScreen.module.css'
 import type { GenerationUiState } from '../hooks/useGeneration'
 import { ComposerPanel } from './ComposerPanel'
 import type { GenerationParameters } from '../utils/generationParameters'
-import { Progress } from './Progress'
-import { DocArea } from './DocArea'
-import { GenerationHeading } from './GenerationHeading'
+import { GenerationPending } from './GenerationPending'
+import { GenerationSteps } from './GenerationSteps'
+import { GenerationSummary } from './GenerationSummary'
 import { AppHeader } from '../../../shared/components/AppHeader'
 import { type DocumentType } from '../../../shared/domain/documentTypes'
 import { topicFieldLabel } from '../../../shared/copy/documentTypeCopy'
 
+// Ленивая: DocArea тянет react-markdown, а он был в стартовом чанке — том, что грузится до
+// первого кадра для КАЖДОГО посетителя. Показывается эта ветка редко: завершённую генерацию с
+// текстом перехватывает DocumentGenerationFlow и открывает редактор, так что сюда попадают
+// только пустой ответ и ошибка. Платить за разметчик markdown на входе ради этих двух случаев
+// незачем — он приезжает, когда действительно нужен.
+const DocArea = lazy(() => import('./DocArea').then((m) => ({ default: m.DocArea })))
+
 interface ChatWorkspaceProps {
-  // Both the id and its label, as ManualEditor already takes them: the label is what the
-  // breadcrumb shows, while the composer's heading needs the genitive form, which only the id
-  // can look up.
   documentType: DocumentType
   documentTypeLabel: string
   state: GenerationUiState
@@ -25,31 +27,34 @@ interface ChatWorkspaceProps {
   error: string | null
   onSubmit: (topic: string, parameters: GenerationParameters) => void
   onReset: () => void
-  // The workspace is where a signed-in user actually spends their time, and it replaces the
-  // landing entirely — so without a sign-out here, the only way out of a session on a shared
-  // machine is closing the tab.
   onLogoutClick?: () => void
 }
 
-const BADGE: Record<GenerationUiState, string> = {
-  idle: 'Новый запрос',
-  pending: 'В обработке',
-  completed: 'Готово',
-  failed: 'Ошибка',
+// Какой шаг горит на каждом состоянии прогона. `completed` — третий: экран с готовым
+// документом пользователь видит только тогда, когда текста нет и редактор не открылся;
+// шаг всё равно пройден. `failed` остаётся на втором — документа нет, и третий шаг был бы
+// обещанием того, чего не случилось.
+const STEP_BY_STATE: Record<GenerationUiState, 1 | 2 | 3> = {
+  idle: 1,
+  pending: 2,
+  failed: 2,
+  completed: 3,
 }
 
+/**
+ * Экран генерации: форма темы и параметров, ожидание, результат.
+ *
+ * Перерисован по фрейму «Создание "Тип документа"» — мок
+ * `ProductSpecification/stories/12-my-projects/mockups/live/07-generation-figma.html`.
+ * Прежняя раскладка была двухколоночной: композер-панель слева, область документа справа,
+ * а над ними бейдж состояния. Фрейм разворачивает её в одну колонку с шагами: пока тема не
+ * отправлена, справа стоит сводка «Что будет в документе?», а не пустая область, в которой
+ * до первой генерации нечего показывать.
+ */
 export function ChatWorkspace(props: ChatWorkspaceProps) {
   const { documentType, documentTypeLabel, state, content, volumePages, createdAt, error } = props
   const { onSubmit, onReset } = props
   const { onLogoutClick } = props
-  // Identifies the current draft. The workspace is never unmounted across a reset — only the
-  // idle branch swaps Progress back for the composer — so without this the «Создать новый
-  // доклад» screen came back pre-filled with the topic that was just generated, send button
-  // already enabled: one keystroke re-bills the user for the document they already have.
-  //
-  // A nonce rather than a `setTopic('')` reaching down: the draft now belongs to ComposerPanel,
-  // and remounting it is how an owner discards a draft without reading it first. The parameters
-  // — требования and объём — go with the topic, for the same re-billing reason.
   const [draftId, setDraftId] = useState(0)
 
   const reset = () => {
@@ -58,50 +63,65 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
   }
 
   return (
-    <div className={styles['chat-page']}>
+    <div className={styles['genform-page']}>
       <AppHeader onLogoutClick={onLogoutClick} />
-      <div className={styles['cw-container']}>
-        {/* Two different mockups own this slot. Before anything is submitted the surface is
-            mockup 04 (breadcrumb naming the picked type + page title); from the moment a
-            generation exists it is mockups 05-07, whose status badge tells the user where the
-            run stands. Showing both at once would state the obvious twice. */}
-        {state === 'idle' ? (
-          <GenerationHeading documentTypeLabel={documentTypeLabel} />
-        ) : (
-          <div className={`${styles['cw-badge']} ${styles[`cw-badge-${state}`]}`}>
-            <span className={styles['cw-dot']} />
-            {BADGE[state]}
-          </div>
-        )}
-        <div className={styles['cw-layout']}>
-          <aside className={styles['chat-panel']} data-testid="chat-panel">
-            {state === 'idle' ? (
+
+      <div className={styles['genform-container']}>
+        <div className={styles['genform-head']}>
+          <h1 className={styles['genform-title']}>Создание «{documentTypeLabel}»</h1>
+          <p className={styles['genform-subtitle']}>Укажите тему — Textery подготовит остальное</p>
+        </div>
+
+        <GenerationSteps current={STEP_BY_STATE[state]} />
+
+        {state === 'idle' && (
+          <div className={styles['genform-grid']}>
+            <section className={styles['genform-card']} data-testid="generation-form">
+              {/* key сбрасывает черновик после reset: топик живёт в состоянии композера, и
+                  без пересоздания экран новой генерации возвращался бы с уже набранной темой
+                  и активной кнопкой — один клик, и пользователь платит за тот же документ. */}
               <ComposerPanel
                 key={draftId}
                 topicLabel={topicFieldLabel(documentType)}
                 documentType={documentType}
                 onSubmit={onSubmit}
               />
-            ) : (
-              <Progress state={state} documentType={documentType} />
-            )}
-          </aside>
-          <section
-            className={`${styles['doc-area']} ${chatWorkspaceDocStyles['doc-area']}`}
-            data-testid="doc-area"
-          >
-            <DocArea
-              state={state}
-              content={content}
-              volumePages={volumePages}
-              createdAt={createdAt ?? null}
-              error={error}
-              documentType={documentType}
-              label={documentTypeLabel}
-              onReset={reset}
-            />
+            </section>
+            <aside className={styles['genform-card']}>
+              <GenerationSummary
+                documentType={documentType}
+                documentTypeLabel={documentTypeLabel}
+              />
+            </aside>
+          </div>
+        )}
+
+        {state === 'pending' && <GenerationPending documentType={documentType} />}
+
+        {/* Готово и ошибка — одна карточка на всю ширину: сводка «что будет в документе»
+            после генерации отвечает на вопрос, который уже закрыт.
+            Готовый документ виден здесь только когда текста нет и редактор не открылся сам
+            (DocumentGenerationFlow) — то есть на пустом ответе, где показать нечего, но и
+            молчать нельзя. */}
+        {(state === 'completed' || state === 'failed') && (
+          <section className={styles['genform-card']} data-testid="doc-area">
+            {/* Фолбэк говорит, что происходит, а не показывает пустую карточку: чанк
+                догружается уже после того, как генерация завершилась, и на медленной сети
+                это видимая пауза. */}
+            <Suspense fallback={<p className={styles['genform-loading']}>Загрузка…</p>}>
+              <DocArea
+                state={state}
+                content={content}
+                volumePages={volumePages}
+                createdAt={createdAt ?? null}
+                error={error}
+                documentType={documentType}
+                label={documentTypeLabel}
+                onReset={reset}
+              />
+            </Suspense>
           </section>
-        </div>
+        )}
       </div>
     </div>
   )

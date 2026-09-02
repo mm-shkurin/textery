@@ -1,0 +1,138 @@
+/* Меню «···» проекта: кнопка, панель с двумя действиями и форма переименования.
+   Одинаково выглядит на карточке в сетке и в строке таблицы — это одно и то же меню, и два
+   набора стилей были бы двумя местами, где оно разъедется. */
+
+.project-menu {
+  position: relative;
+  /* Над оверлеем, которым карточка делает себя одной большой кнопкой открытия: без этого
+     нажатие на «···» открывало бы документ. */
+  z-index: 2;
+  flex: none;
+}
+
+.project-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px -4px 0;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.project-menu-trigger:hover {
+  background: var(--projects-well);
+  color: var(--text-primary);
+}
+
+.project-menu-trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.project-menu-trigger svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Панель прижата к ПРАВОМУ краю кнопки: «···» стоит у правой границы карточки, и панель,
+   растущая вправо, вылезала бы за неё. */
+.project-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  min-width: 196px;
+  padding: 6px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-dropdown);
+  text-align: left;
+}
+
+.project-menu-item {
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-menu-item:hover {
+  background: var(--projects-well);
+}
+
+/* Удаление необратимо, и это единственное, что говорит об этом до нажатия. */
+.project-menu-item-danger {
+  color: var(--error);
+}
+
+.project-menu-item-danger:hover {
+  background: var(--error-soft-bg);
+}
+
+.project-menu-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--projects-edge);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+}
+
+.project-menu-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.project-menu-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.project-menu-quiet,
+.project-menu-primary {
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.project-menu-quiet {
+  background: var(--projects-well);
+  color: var(--text-primary);
+}
+
+.project-menu-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+@media (max-width: 720px) {
+  /* На телефоне панель шириной с карточку: 196px рядом с правым краем узкого экрана уезжают
+     за границу вьюпорта. */
+  .project-menu-panel {
+    min-width: min(240px, calc(100vw - 64px));
+  }
+}

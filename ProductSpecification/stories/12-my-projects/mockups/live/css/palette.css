@@ -1,0 +1,47 @@
+/* RAW palette only — swatches, never roles. Nothing outside `tokens-light.css` /
+   `tokens-dark.css` may reference these: a component that reaches for `--blue-700` directly is a
+   component that cannot change with the theme, because a swatch has no light/dark opinion.
+
+   The ten `--blue-*` / `--neutral-*` values are the Figma file "Labs-2026 ООО ИИ" (page Textery),
+   frame `Pallete` (node 315:2139), unchanged. The `--dark-*` ramp and `--blue-600` are new: a dark
+   theme needs steps that a light-only file never had to draw. They are NOT inversions of the
+   neutrals — an inverted `--neutral-600` lands on grey-over-grey, which is the failure mode this
+   ramp exists to avoid (see the contrast test). */
+:root {
+  --blue-900: #042e7b;
+  --blue-700: #004ee0;
+  /* The one step between blue-700 and blue-500. blue-700 is too dark to sit as a filled button on
+     a dark page (2.6:1 against the surface) and blue-500 is too light to carry white text
+     (3.7:1). This holds both: 5.4:1 with white on it, 3.2:1 against the dark surface. */
+  --blue-600: #0a5cf5;
+  --blue-500: #1883ff;
+  --blue-200: #99caff;
+  --blue-50: #e3f2ff;
+  --neutral-000: #ffffff;
+  --neutral-600: #797d81;
+  --neutral-700: #4f555b;
+  --neutral-900: #262728;
+  --neutral-950: #161616;
+
+  /* Dark ramp. Backgrounds climb 950 -> 800 as a surface rises toward the reader; 600/500 are the
+     two borders; 100/200/300 are the three text weights. */
+  --dark-950: #0f1216;
+  --dark-900: #12161b;
+  --dark-850: #1a1f26;
+  --dark-800: #1e242c;
+  --dark-750: #232a34;
+  --dark-700: #262d36;
+  --dark-600: #2a323c;
+  --dark-500: #3a4553;
+  --dark-300: #8d97a3;
+  --dark-200: #b3bdc9;
+  --dark-100: #e8edf3;
+
+  /* The brand blue re-lit for a dark background. `--blue-500` measures 4.52:1 on `--dark-850`,
+     which passes by 0.02 — close enough that a single future tweak to either end silently breaks
+     it. This is the same hue at 5.6:1. */
+  --blue-400: #3d97ff;
+  /* Status hues re-lit the same way: `#ef4444` measures 4.40:1 on the dark surface and fails. */
+  --red-400: #ff6b6b;
+  --green-400: #4ade80;
+}

@@ -2,7 +2,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from statements.frontend.base_frontend_statements import BaseFrontendStatements
 from statements.frontend.generation.composer_assertions import ComposerAssertionsMixin
-from statements.frontend.generation.generation_flow_actions import CHAT_PANEL
+from statements.frontend.generation.generation_flow_actions import GENERATION_FORM
 
 
 class ChatWorkspaceStatements(ComposerAssertionsMixin, BaseFrontendStatements):
@@ -31,11 +31,11 @@ class ChatWorkspaceStatements(ComposerAssertionsMixin, BaseFrontendStatements):
         """
         self.navigate_to_doklad_type_modal(driver, app_url)
 
-    def assert_chat_panel_is_visible(self, driver: WebDriver) -> None:
+    def assert_generation_form_is_visible(self, driver: WebDriver) -> None:
         # `_wait_for_visible` waits on `visibility_of_element_located`, so the element it returns
         # is displayed by construction — a follow-up `assert element.is_displayed()` could never
         # fire, and its message could never be read. The wait's TimeoutException IS the failure.
-        self._wait_for_visible(driver, CHAT_PANEL)
+        self._wait_for_visible(driver, GENERATION_FORM)
 
     def assert_topic_input_is_visible_and_empty(self, driver: WebDriver) -> None:
         self._assert_topic_input_empty_and_prompting(driver)

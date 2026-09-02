@@ -1,0 +1,157 @@
+/* One document-type tile on the creation modal, measured off the Figma frame «Мои проекты -
+   Создать проект» (788:5094) 1:1 — the frame places the same 1640x84 navbar and 218px project
+   cards as «Мои проекты», so it is drawn at screen scale and its modal is too. Dividing this one
+   card by 1.3333 is what left the product's type names at 11.25px and their descriptions at
+   9.75px: the smallest text in the product, on the screen where a user makes their first choice.
+
+   The card is a pale panel — NOT a full-bleed image. It holds a coloured tile, then the name with
+   its chevron, then the description, each on the panel's own background. Tokens from index.css. */
+.type-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  /* 16, не 24: на фрейме плитка отстоит от края карточки на 12 при масштабе 0.751, то есть
+     на 16 в единицах макета. Лишние 8 съедали ширину плитки — она и была уже нужного. */
+  padding: 16px 16px 21px;
+  border: none;
+  /* 9.6 in the frame — the same rounding as a 10px `--radius-md`. */
+  border-radius: var(--radius-md);
+  /* Frame value hex f4f6fb; `--bg-sunken` is hex f7f8fa, three points of red apart from it. The token is
+     taken instead of a private colour because the difference is invisible and the token is the
+     only one of the two that already has a dark-theme form. */
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.type-card:hover {
+  filter: brightness(0.985);
+}
+
+.type-card.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 114x99 in the frame — wider than it is tall, while the source art is square, so the tile crops
+   equally off the top and bottom of the folder. That crop is the frame's, not an accident of
+   `cover`: the papers touch the tile's top edge in 788:5094 and clear it by a margin in the
+   original image. */
+.type-card-tile {
+  width: 100%;
+  /* Квадрат, хотя на фрейме плитка 128x98.
+     Экспортированные PNG — квадраты 625x625, где цветная плашка с бумагами занимает весь кадр.
+     В прямоугольном боксе выходит выбор из трёх: `cover` срезает ~24% высоты и обрывает стопку
+     бумаг по верхнему краю (так и было), `contain` вписывает рисунок целиком, но оставляет белые
+     поля по бокам — цвет перестаёт заливать плитку, чего на фрейме нет, а раскрасить фон
+     самим нельзя: у плашки свой градиент и свои скругления, и CSS-подложка проступала бы швом.
+     Поэтому бокс подгоняется под рисунок: карточка становится 236 вместо фреймовых 213.
+     Правильное решение — экспорт плитки в пропорции 128x98 из Figma; до него это меньшее зло. */
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* The four tiles the modal spends. The other four in the palette
+   (orange, green, yellow, magenta) are downloaded alongside them and wait for the document types
+   that do not exist yet. */
+.type-card-blue .type-card-tile {
+  background-image: url('../../../../../../frontend/public/design/doc-types/blue.png');
+}
+
+.type-card-coral .type-card-tile {
+  background-image: url('../../../../../../frontend/public/design/doc-types/coral.png');
+}
+
+.type-card-violet .type-card-tile {
+  background-image: url('../../../../../../frontend/public/design/doc-types/violet.png');
+}
+
+.type-card-teal .type-card-tile {
+  background-image: url('../../../../../../frontend/public/design/doc-types/teal.png');
+}
+
+.type-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* 16, не 12: на фрейме между плиткой и текстом больше воздуха — при 12 карточка выходила
+     199 против фреймовых 213, и подпись сидела прямо на плитке. */
+  margin-top: 16px;
+}
+
+.type-card-name {
+  min-width: 0;
+  /* 14/17 at 600 — the card's name is the same size as a project card's title. */
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 600;
+}
+
+.type-card-chevron {
+  width: 7px;
+  height: 12px;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+/* 12/15 in the frame. The description is drawn in the same near-black as the name — it reads as
+   the lighter of the two because it is smaller and unbolded, not because it is grey. */
+.type-card-description {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--text-primary);
+}
+
+/* Two cards to a row on a phone, so the padding comes in while the type keeps the frame's sizes —
+   they are already the smallest the product uses and there is nothing below them to step to. */
+@media (max-width: 640px) {
+  /* Карточек в ряду две, а не четыре, поэтому воздух внутри меньше: на мобильном фрейме
+     плитка отстоит от края на 12, а подпись занимает две строки из четырёх слов. */
+  .type-card {
+    padding: 12px 12px 16px;
+  }
+
+  /* На 360 шеврон уходит к ПРАВОМУ краю карточки, а не стоит вплотную к названию: строка
+     растягивается на всю ширину. На десктопе наоборот — там он вплотную к слову, как на
+     фрейме, поэтому растяжение живёт только здесь (у карточки `align-items: flex-start`,
+     и по умолчанию строка сжата по контенту). */
+  .type-card-heading {
+    align-self: stretch;
+    margin-top: 12px;
+  }
+
+  .type-card-name {
+    font-size: 13px;
+    line-height: 16px;
+  }
+
+  .type-card-description {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+}
+
+/* The «скоро» marker for a type that cannot be generated yet. Sits on the tile, clear of the
+   text, so it reads as a stamp on the card rather than as part of the description. All four types
+   are available today; the frame therefore does not draw this, and its placement is ours. */
+.soon-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
