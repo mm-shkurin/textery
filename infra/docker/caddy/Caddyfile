@@ -1,0 +1,40 @@
+# The public edge. Terminates TLS and hands everything to the frontend
+# container, which already serves the SPA and proxies /api/ to the backend —
+# see infra/docker/nginx/frontend.conf. One routing table, not two.
+#
+# Certificates are obtained and renewed by Caddy itself from Let's Encrypt, on
+# first request for the domain. That is the whole reason this file exists rather
+# than a hand-run certbot on the host: a cert issued by hand lives only on the
+# machine it was issued on, and the next rebuild loses it. The state lives in the
+# `caddy_data` volume.
+#
+# NEVER add rate limiting, a maintenance page, or any error handler that can
+# answer 503 here. `frontend/src/features/generation/hooks/autosaveRetryPolicy.ts`
+# treats 503 as the one 5xx that PROVES the write never landed, and keeps its
+# memory of the last saved content across that failure — so a 503 emitted after a
+# write was accepted makes the editor show «Сохранено» over content the server
+# never received. Caddy's own upstream failure is 502, which is safe and is why
+# no `handle_errors` block appears below. The same warning, at length, is in
+# infra/docker/nginx/frontend.conf.
+
+{$PUBLIC_DOMAIN} {
+	encode zstd gzip
+
+	# 4 MB, matching client_max_body_size in frontend.conf. Kept at or above the
+	# application's own body cap so the canonical {error_code, message} 413 is
+	# what a client sees, never an edge-generated HTML error page.
+	request_body {
+		max_size 4MB
+	}
+
+	reverse_proxy frontend:80 {
+		# The backend derives its rate-limit buckets and registration analytics
+		# from X-Forwarded-For, taking the hop TRUSTED_PROXY_HOPS names (default
+		# 1). Caddy appends exactly one entry — the real client — and the
+		# frontend nginx passes it through untouched, so that default is correct
+		# for this topology. Adding another proxy in front means raising
+		# TRUSTED_PROXY_HOPS in the same change, or every caller in the world
+		# shares one bucket.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

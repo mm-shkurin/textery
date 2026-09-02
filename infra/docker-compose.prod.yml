@@ -1,0 +1,59 @@
+# Production overlay. Applied ON TOP of docker-compose.yml, never instead of it:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# It adds the two things a public deployment needs and local development must not
+# have: a TLS edge, and services that come back by themselves after a reboot.
+#
+# What it deliberately does NOT do is re-declare ports. Compose CONCATENATES the
+# `ports` lists of two files rather than replacing them, so an override here
+# could only ever add a second publication, never remove the base file's. The
+# base publications are narrowed instead through infra/.env, whose port variables
+# accept a bind address: `BACKEND_PORT=127.0.0.1:8000` publishes the backend on
+# loopback only. That matters more than a firewall rule, because Docker writes
+# its own iptables chain and a published port bypasses ufw entirely — a
+# `0.0.0.0` Postgres publication here would be an open database on the internet
+# with ufw reporting everything closed.
+#
+# See infra/architecture.md for the topology this extends.
+
+services:
+  postgres:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  backend:
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # The only service on the public interface. Everything else reaches the
+    # world through it.
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # No default on purpose: Caddy issues a certificate for whatever this
+      # names, and a fallback value would mean a deployment quietly serving the
+      # wrong hostname — or hammering Let's Encrypt for a domain it does not own
+      # until the rate limit locks it out for a week.
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Issued certificates and the ACME account key. Without this volume every
+      # `up` starts a fresh issuance, and five of those in a week hit Let's
+      # Encrypt's duplicate-certificate limit.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:
