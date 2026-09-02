@@ -56,6 +56,24 @@ export function useGeneratedDocumentInit({
   // legitimately re-runs when the editor instance arrives.
   const convertedRef = useRef(false)
 
+  // The callbacks are read through refs so they can stay OUT of the dependency array below, and
+  // that is a correctness fix rather than a tidy-up. `ManualEditor` passes
+  // `onReady: () => setHasUnsavedChanges(false)` — a new identity on every render — so with the
+  // callbacks as dependencies the effect re-ran on every render. Each re-run's cleanup set
+  // `cancelled = true` on the run holding the in-flight POST, while the new run returned at once
+  // because `convertedRef` was already true: when the response finally arrived there was nobody
+  // left to apply it, and `setContent` never ran. The conversion still SUCCEEDED, so the document
+  // was on the server and in «Мои проекты» while the editor on screen stayed empty and no error
+  // was shown. Reported from production 2026-09-02.
+  const onReadyRef = useRef(onReady)
+  const onErrorRef = useRef(onError)
+  const setDocumentIdRef = useRef(setDocumentId)
+  const setVersionRef = useRef(setVersion)
+  onReadyRef.current = onReady
+  onErrorRef.current = onError
+  setDocumentIdRef.current = setDocumentId
+  setVersionRef.current = setVersion
+
   useEffect(() => {
     if (generationId === undefined || !editor || convertedRef.current) return
     convertedRef.current = true
@@ -64,7 +82,7 @@ export function useGeneratedDocumentInit({
     createDocumentFromGeneration(generationId, idempotencyKeyRef.current)
       .then((result) => {
         if (cancelled) return
-        setDocumentId(result.documentId)
+        setDocumentIdRef.current(result.documentId)
         // One opening per DOCUMENT, not per render and not per effect run. The tracker is keyed
         // on the id, so opening the same document twice in one gesture -- which this very hook's
         // comment records StrictMode doing -- is one opening, while opening a second document
@@ -72,7 +90,7 @@ export function useGeneratedDocumentInit({
         trackEditorOpened(result.documentId)
         // The server's version, not a guess: `useState(1)` would ship a stale token on the first
         // save and collect a 409 blaming a concurrent save that never happened.
-        setVersion(result.version)
+        setVersionRef.current(result.version)
         // Only write into the editor if the user has not started typing into it. They can — the
         // editor is live while this request is out — and replacing their sentence with the model's
         // text would be the same "it deleted my report" failure from the other direction. An
@@ -83,18 +101,23 @@ export function useGeneratedDocumentInit({
           // The editor now holds exactly what the server holds, so the document is clean. Said
           // explicitly because ManualEditor mounts dirty; leaving it dirty would arm beforeunload
           // and let the next autosave re-send content the server already has.
-          onReady()
+          onReadyRef.current()
         }
-        onError(null)
+        onErrorRef.current(null)
       })
       .catch((error) => {
         if (cancelled) return
         // Nothing can persist this document until the conversion succeeds, so the banner says so
         // rather than letting the user type into a page that cannot save.
-        onError(describeFailure(error, CONVERT_FAILED_MESSAGE))
+        onErrorRef.current(describeFailure(error, CONVERT_FAILED_MESSAGE))
       })
     return () => {
       cancelled = true
     }
-  }, [generationId, editor, setDocumentId, setVersion, onReady, onError])
+    // The callbacks are deliberately absent, read through refs above instead: as dependencies they
+    // re-ran this effect on every render and cancelled the conversion's own response. Only the two
+    // values that identify WHICH conversion this is belong here. Same narrowing, for the same
+    // reason, as `useDocumentInit`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generationId, editor])
 }

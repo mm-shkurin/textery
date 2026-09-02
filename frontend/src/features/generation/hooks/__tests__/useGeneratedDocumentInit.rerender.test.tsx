@@ -25,7 +25,7 @@ const CONVERTED_HTML = '<p>Готовый текст реферата</p>'
 // document that was written correctly. Observed in production 2026-09-02 — the backend log for that
 // session reads `POST /api/v1/documents/from-generation HTTP/1.1" 201 Created` with 6245 characters
 // stored, while the editor on screen showed nothing.
-describe.skip('useGeneratedDocumentInit when the editor re-renders mid-conversion', () => {
+describe('useGeneratedDocumentInit when the editor re-renders mid-conversion', () => {
   it('still puts the converted document in the editor', async () => {
     let resolveConversion!: (value: documentApi.DocumentFromGenerationResult) => void
     vi.mocked(documentApi.createDocumentFromGeneration).mockReturnValue(
