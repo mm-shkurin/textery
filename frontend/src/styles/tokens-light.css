@@ -49,6 +49,11 @@
   --accent-end: var(--blue-500);
   --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
   --btn-primary-bg: var(--blue-700);
+  /* The hover step for a filled primary control: one shade LIGHTER than the resting fill, so the
+     pointer's target brightens rather than dimming. Named rather than reached for directly —
+     palette.css says a component taking `--blue-500` by name is the smell this layer exists to
+     prevent. */
+  --btn-primary-hover-bg: var(--blue-500);
   --btn-primary-fg: var(--neutral-000);
   /* The unfilled part of a button's inline spinner ring. It sits on the primary fill in both
      themes, so it is keyed to the fill and not to the page. */

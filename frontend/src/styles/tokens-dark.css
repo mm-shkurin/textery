@@ -43,6 +43,11 @@
   --accent-start: var(--blue-600);
   --accent-end: var(--blue-400);
   --btn-primary-bg: var(--blue-600);
+  /* Same idea as the light theme's, and the same value: `--blue-500` is one step above this
+     theme's resting `--blue-600`, so hover brightens here too. NOT `--accent-hover`, which is
+     `--blue-200` on dark — a pale fill that would leave white label text at roughly 1.4:1, the
+     very contrast this change exists to remove. */
+  --btn-primary-hover-bg: var(--blue-500);
 
   --warning: #fbbf24;
   --success: var(--green-400);

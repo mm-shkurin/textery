@@ -32,19 +32,26 @@
   gap: 8px;
 }
 
-/* `Group 18`/`Group 19` — `blue-200` fill with a white label; the Variant2 (hover) state
-   deepens to `blue-500`. Height scaled down from the Figma 68 to match the fields. */
+/* `Group 18`/`Group 19`, filled like every other primary control in the app. Height scaled down
+   from the Figma 68 to match the fields.
+
+   The Figma pairing of a `blue-200` fill with `--input-placeholder-fg` was taken literally here and
+   is unreadable in BOTH themes: near-white #fafdff on #99caff is about 1.4:1 in light, and a grey
+   label on the same pale fill in dark. Only `:hover` filled it properly, so the control announced
+   itself only once the pointer was already on it — you could see where you were pointing, never
+   where you were about to point. The resting state now carries the readable pairing (white on
+   `--btn-primary-bg`, 5.4:1 in dark, 7.4:1 in light) and hover brightens it. */
 .btn-oauth {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   height: 52px;
-  background: var(--blue-200);
+  background: var(--btn-primary-bg);
   border: none;
   border-radius: var(--radius-md);
   padding: 0 8px;
-  color: var(--input-placeholder-fg);
+  color: var(--btn-primary-fg);
   font-size: 15px;
   font-weight: 400;
   font-family: inherit;
@@ -54,8 +61,7 @@
 }
 
 .btn-oauth:hover {
-  background: var(--blue-500);
-  color: var(--neutral-000);
+  background: var(--btn-primary-hover-bg);
 }
 
 /* The white chip the provider mark sits inside. */
