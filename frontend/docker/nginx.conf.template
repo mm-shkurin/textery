@@ -40,6 +40,15 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
+    # The backend's liveness endpoint, at the ROOT of the API app rather than under /api/, so the
+    # proxy above never matched it. Without this the path fell through to the SPA and answered 200
+    # with index.html — a green health check proving only that nginx serves files, while the backend
+    # behind it could be dead. `=` matches this one path exactly.
+    location = /health {
+        proxy_pass ${API_UPSTREAM}/health;
+        proxy_set_header Host $host;
+    }
+
     # A single-page app: every route the router owns must resolve to the entry document, or a
     # refresh on /projects returns 404 from the filesystem.
     location / {
